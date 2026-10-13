@@ -1,0 +1,9 @@
+work/
+output/
+__pycache__/
+
+.env
+.env.*
+!.env.example
+.venv/
+*.pyc
