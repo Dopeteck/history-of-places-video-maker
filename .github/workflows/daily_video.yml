@@ -1,0 +1,113 @@
+name: Scheduled stickman video
+
+on:
+  # Enable after the first successful test render:
+  # schedule:
+  #   - cron: "0 7 * * *"  # 08:00 Lagos (WAT)
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Video category"
+        type: choice
+        default: random
+        options: [random, history, explainer, story, joke, riddle]
+      mode:
+        description: "Video length profile"
+        type: choice
+        default: long
+        options: [short, long]
+      aspect:
+        description: "Canvas"
+        type: choice
+        default: auto
+        options: [auto, portrait, landscape]
+      minutes:
+        description: "Target minutes (blank = profile default)"
+        required: false
+        default: ""
+      topic:
+        description: "Optional topic override"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stickman-video
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install FFmpeg + fonts
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core jq
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate video
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CATEGORY: ${{ github.event.inputs.category || 'random' }}
+          MODE: ${{ github.event.inputs.mode || 'long' }}
+          ASPECT: ${{ github.event.inputs.aspect || 'auto' }}
+          MINUTES: ${{ github.event.inputs.minutes || '' }}
+          TOPIC: ${{ github.event.inputs.topic || '' }}
+        run: |
+          ARGS=(--category "$CATEGORY" --mode "$MODE" --aspect "$ASPECT")
+          if [ -n "$MINUTES" ]; then ARGS+=(--minutes "$MINUTES"); fi
+          if [ -n "$TOPIC" ]; then ARGS+=(--topic "$TOPIC"); fi
+          python main.py "${ARGS[@]}"
+
+      - name: Upload rendered files
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: stickman-video-${{ github.run_number }}
+          path: output/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Telegram delivery
+        if: success() && env.TG_TOKEN != '' && env.TG_CHAT != ''
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ART_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          TITLE=$(jq -r .title output/latest.json)
+          VIDEO="output/$(jq -r .video output/latest.json)"
+          CAPTION=$(jq -r '.title + "\n\n" + .description + "\n" + (.hashtags | join(" "))' output/latest.json)
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=🎬 ${TITLE}\n${ART_URL}"
+          # Telegram Bot API delivery is attempted only for smaller files.
+          if [ "$(stat -c%s "$VIDEO")" -lt 49000000 ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendVideo" \
+              -F "chat_id=${TG_CHAT}" -F "video=@${VIDEO}" -F "caption=${CAPTION}" -F "supports_streaming=true"
+          fi
+
+      - name: Telegram failure alert
+        if: failure() && env.TG_TOKEN != '' && env.TG_CHAT != ''
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=❌ Stickman render failed: ${RUN_URL}"
