@@ -89,7 +89,7 @@ Add these repository secrets:
 - `TELEGRAM_BOT_TOKEN` — optional delivery
 - `TELEGRAM_CHAT_ID` — optional delivery
 
-The included workflow runs daily at **07:00 UTC / 08:00 WAT**. Scheduled runs default to long mode. You can also open **Actions → Scheduled stickman video → Run workflow** and choose category, mode, aspect, minutes and topic.
+The daily schedule is currently commented out until the first successful test render. When enabled, it runs at **07:00 UTC / 08:00 WAT** and defaults to long mode. You can also open **Actions → Scheduled stickman video → Run workflow** and choose category, mode, aspect, minutes and topic.
 
 ## Why GitHub Actions instead of Colab for scheduling
 
