@@ -8,9 +8,20 @@ import numpy as np
 
 from captions import build_ass, word_timings
 from tts import Narrator, RATE, duration, write_wav
+from scripts.render_kokoro_preview import fixture_plan
+from scene_planner import make_review_template, validate_scene_plan_review
 
 
 class NarrationContractTests(unittest.TestCase):
+    def test_technical_preview_fixture_passes_human_review_contract(self):
+        plan = fixture_plan()
+        review = make_review_template(plan)
+        review.update({"reviewer": "Test reviewer", "full_script_reviewed": True,
+                       "sources_checked": ["technical_preview"]})
+        validate_scene_plan_review(plan, review)
+        self.assertEqual(len(plan["scenes"]), 6)
+        self.assertTrue(all("narration" in scene for scene in plan["scenes"]))
+
     def test_written_wav_is_valid_mono_24khz_pcm_and_duration_is_measured(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "voice.wav"
