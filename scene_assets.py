@@ -59,6 +59,22 @@ def validate_image(image: Image.Image, size: tuple[int, int] = DEFAULT_SIZE) -> 
     return image.resize(size, Image.Resampling.LANCZOS)
 
 
+def _fit_cover(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """Center-crop provider output to the requested card ratio before the quality gate."""
+    image = image.convert("RGB")
+    target = size[0] / size[1]
+    ratio = image.width / image.height
+    if ratio > target:
+        width = max(1, round(image.height * target))
+        left = (image.width - width) // 2
+        image = image.crop((left, 0, left + width, image.height))
+    elif ratio < target:
+        height = max(1, round(image.width / target))
+        top = (image.height - height) // 2
+        image = image.crop((0, top, image.width, top + height))
+    return image
+
+
 def _download(url: str, timeout: int = 45) -> Image.Image:
     response = requests.get(url, timeout=timeout)
     response.raise_for_status()
@@ -191,7 +207,7 @@ class ImageProviderChain:
                     path.unlink(missing_ok=True)
             for attempt in range(self.retries + 1):
                 try:
-                    image = validate_image(provider(prompt, size, self.timeout), size)
+                    image = validate_image(_fit_cover(provider(prompt, size, self.timeout), size), size)
                     tmp = path.with_suffix(".tmp.png")
                     image.save(tmp, format="PNG", optimize=True)
                     tmp.replace(path)
