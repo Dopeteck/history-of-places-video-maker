@@ -145,6 +145,64 @@ def _compose_scene(image: Image.Image, plan: dict, scene: dict,
     return frame.convert("RGB")
 
 
+
+def _wrap_headline(text: str, font, max_width: int, draw: ImageDraw.ImageDraw) -> list[str]:
+    words = str(text).split()
+    lines, current = [], ""
+    for word in words:
+        candidate = word if not current else current + " " + word
+        if draw.textbbox((0, 0), candidate, font=font, stroke_width=2)[2] <= max_width:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    if len(lines) > 3:
+        lines = lines[:3]
+        last = lines[-1]
+        while last and draw.textbbox((0, 0), last + "…", font=font, stroke_width=2)[2] > max_width:
+            last = last[:-1]
+        lines[-1] = last.rstrip() + "…"
+    return lines
+
+
+def _compose_reference_scene(image: Image.Image, plan: dict, scene: dict,
+                             canvas_size: tuple[int, int]) -> Image.Image:
+    """Portrait composition inspired by the supplied reference: persistent headline,
+    full-width 16:9 illustration strip, and dark blurred scene-derived background."""
+    width, height = canvas_size
+    background = _cover(image, canvas_size).filter(ImageFilter.GaussianBlur(max(16, width // 22)))
+    frame = Image.alpha_composite(background.convert("RGBA"),
+                                  Image.new("RGBA", canvas_size, (9, 12, 18, 174)))
+
+    strip_h = min(round(width * 9 / 16), int(height * 0.36))
+    strip_y = (height - strip_h) // 2
+    strip = _cover(image, (width, strip_h)).convert("RGB")
+    frame.paste(strip, (0, strip_y))
+
+    # Persistent headline over the blurred background, without a solid title card.
+    draw = ImageDraw.Draw(frame)
+    max_width = int(width * 0.92)
+    font_size = max(16, int(width * 0.036))
+    while font_size > max(13, int(width * 0.025)):
+        font = _font(font_size, bold=True)
+        lines = _wrap_headline(plan["title"], font, max_width, draw)
+        line_h = int(font_size * 1.18)
+        if len(lines) * line_h <= int(height * 0.15):
+            break
+        font_size -= 1
+    x = int(width * 0.035)
+    y = int(height * 0.255)
+    for line in lines:
+        draw.text((x + 2, y + 2), line, font=font, fill=(0, 0, 0, 220),
+                  stroke_width=2, stroke_fill=(0, 0, 0, 220))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255),
+                  stroke_width=1, stroke_fill=(22, 22, 22, 220))
+        y += line_h
+    return frame.convert("RGB")
+
 def _make_audio(audio_path: Path, audio_rows: list[dict], intro_seconds: float,
                 total_seconds: float) -> None:
     with wave.open(str(audio_path), "wb") as out:
@@ -214,8 +272,10 @@ def render_scene_cards(plan: dict, review: dict, output: Path, assets_dir: Path 
         entries.append({"start": cursor, "duration": audio["duration"]})
         cursor += audio["duration"]
     total = cursor
-    base_frames = [_compose_scene(img, plan, scene, size) for img, scene in zip(images, plan["scenes"])]
-    intro_frame = _compose_scene(images[0], plan, plan["scenes"][0], size, is_intro=True)
+    compose = _compose_reference_scene if mode == "shorts" else _compose_scene
+    base_frames = [compose(img, plan, scene, size) for img, scene in zip(images, plan["scenes"])]
+    intro_frame = compose(images[0], plan, plan["scenes"][0], size) if mode == "shorts" else _compose_scene(
+        images[0], plan, plan["scenes"][0], size, is_intro=True)
 
     def frame(t: float):
         if t < INTRO_SECONDS:
