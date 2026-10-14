@@ -46,7 +46,7 @@ class NarrationContractTests(unittest.TestCase):
         ass = build_ass([{"start": 1.8, "words": words}], (540, 960), karaoke=True)
         self.assertIn("[Events]", ass)
         self.assertIn("Dialogue: 0,", ass)
-        self.assertIn(r"{\\k", ass)
+        self.assertIn(r"{\k", ass)
         self.assertIn("(unsafe)", ass)
         self.assertNotIn("{unsafe}", ass)
 
