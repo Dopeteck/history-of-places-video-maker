@@ -8,6 +8,8 @@ on:
       - 'scene_assets.py'
       - 'scene_cards_cli.py'
       - 'scene_cards_render.py'
+      - 'scripts/**'
+      - '.github/workflows/kokoro-voice-preview.yml'
       - 'tests/**'
       - 'requirements*.txt'
       - '.github/workflows/scene-cards-tests.yml'
