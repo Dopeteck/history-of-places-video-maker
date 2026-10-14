@@ -62,6 +62,24 @@ class SceneCardRenderTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),
                          "FFmpeg/ffprobe required for end-to-end smoke render")
+    def test_portrait_smoke_render_creates_vertical_video(self):
+        plan, review = reviewed_plan()
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "out"
+            video = render_scene_cards(plan, review, output, mode="shorts",
+                                       preview=True, captions=False, smoke=True)
+            self.assertTrue(video.is_file())
+            metadata = json.loads((output / "render-metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual(metadata["mode"], "shorts")
+            self.assertEqual(metadata["resolution"], [540, 960])
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(video)],
+                check=True, capture_output=True, text=True)
+            self.assertEqual(probe.stdout.strip(), "540x960")
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),
+                         "FFmpeg/ffprobe required for end-to-end smoke render")
     def test_smoke_render_creates_real_video_and_metadata(self):
         plan, review = reviewed_plan()
         with tempfile.TemporaryDirectory() as tmp:
