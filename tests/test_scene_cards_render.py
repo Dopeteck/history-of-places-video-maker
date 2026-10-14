@@ -6,7 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scene_cards_render import render_scene_cards
+from PIL import Image, ImageOps
+
+from scene_cards_render import _compose_reference_scene, render_scene_cards
 from scene_planner import make_review_template
 from story import digest
 
@@ -38,6 +40,19 @@ def reviewed_plan():
 
 
 class SceneCardRenderTests(unittest.TestCase):
+    def test_portrait_reference_style_uses_full_width_art_strip(self):
+        plan, _ = reviewed_plan()
+        image = Image.new("RGB", (160, 90), (212, 158, 79))
+        frame = _compose_reference_scene(image, plan, plan["scenes"][0], (540, 960))
+        self.assertEqual(frame.size, (540, 960))
+        strip_h = min(round(540 * 9 / 16), int(960 * 0.36))
+        strip_y = (960 - strip_h) // 2
+        expected = ImageOps.fit(image, (540, strip_h), method=Image.Resampling.LANCZOS)
+        self.assertEqual(frame.getpixel((0, strip_y + strip_h // 2)),
+                         expected.getpixel((0, strip_h // 2)))
+        self.assertEqual(frame.getpixel((539, strip_y + strip_h // 2)),
+                         expected.getpixel((539, strip_h // 2)))
+
     def test_unreviewed_plan_is_rejected(self):
         plan, review = reviewed_plan()
         review["full_script_reviewed"] = False
