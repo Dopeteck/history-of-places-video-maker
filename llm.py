@@ -30,10 +30,24 @@ def extract_json(raw: str) -> dict:
 
 
 def provider_call(provider: dict, model: str, system: str, user: str) -> str:
-    # Reuse the already integrated SDK adapters; no credentials in prompts/logs.
-    from main import _call_gemini, _call_openai_compatible
-    call = _call_gemini if provider["type"] == "gemini" else _call_openai_compatible
-    return call(provider, model, system, user)
+    if provider['type'] == 'gemini':
+        from google import genai
+        from google.genai import types
+        with genai.Client(api_key=os.environ[provider['env_key']],
+                          http_options=types.HttpOptions(timeout=60000)) as client:
+            response = client.models.generate_content(model=model, contents=user,
+                config=types.GenerateContentConfig(system_instruction=system,
+                    response_mime_type='application/json', temperature=0.8))
+            return response.text or ''
+    from openai import OpenAI
+    with OpenAI(base_url=provider['base_url'], api_key=os.environ[provider['env_key']],
+                timeout=60, max_retries=0) as client:
+        kwargs = dict(model=model, messages=[{'role':'system','content':system},
+                      {'role':'user','content':user}], temperature=0.8)
+        if provider.get('json_mode'):
+            kwargs['response_format'] = {'type':'json_object'}
+        return client.chat.completions.create(**kwargs).choices[0].message.content or ''
+
 
 
 class JsonLLM:

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--prefetch-assets', action='store_true', help='Warm procedural art cache in work/, never overwrite assets')
     parser.add_argument('--render', action='store_true', help='Render an approved saved draft')
     parser.add_argument('--smoke-test', action='store_true', help='Offline 20-second renderer test; no speech')
     parser.add_argument('--preview', action='store_true', help='Half-size preview')
@@ -32,8 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--topics', type=Path, default=ROOT / 'topics.json')
     parser.add_argument('--output', type=Path, default=ROOT / 'output' / 'stories')
     parser.add_argument('--state-dir', type=Path, default=ROOT / 'state')
-    parser.add_argument('--require-approval', action='store_true', help='Explicit review mode; always enforced in Stage 2')
-    parser.add_argument('--script-only', action='store_true', help='Generate a draft (Stage 2 default)')
+    parser.add_argument('--require-approval', action='store_true', help='Stop for review; always enforced before first render')
+    parser.add_argument('--script-only', action='store_true', help='Generate a review draft')
     parser.add_argument('--approve', action='store_true')
     parser.add_argument('--recheck', action='store_true', help='Re-review edited story.json into a new saved draft')
     parser.add_argument('--draft', type=Path, help='Exact saved draft directory; required for approval/resume')
@@ -43,6 +44,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
     try:
+        if args.prefetch_assets:
+            from characters import character
+            from story import ACCESSORIES
+            destination = ROOT / 'work' / 'art-preview'
+            destination.mkdir(parents=True, exist_ok=True)
+            for accessory in sorted(ACCESSORIES):
+                character('preview', 'standing', 'neutral', accessory, '#1FA2A6').save(destination / (accessory + '.png'))
+            print(destination)
+            return 0
         if args.smoke_test:
             if args.render or args.draft or args.approve or args.recheck:
                 parser.error('--smoke-test cannot be combined with draft/review/render actions')
@@ -74,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
                 parser.error('--approve requires --draft and --review')
             receipt = approve(args.draft, args.review, args.state_dir)
             print('Approved exact story SHA-256: ' + receipt['story_sha256'])
-            print('Saved for Stage 3 rendering; no video was rendered.')
+            print('Approval saved; run --render with this draft to create the video.')
             return 0
         if args.draft:
             story = load_approved(args.draft, args.series_part)

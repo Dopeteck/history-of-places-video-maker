@@ -138,3 +138,28 @@ def load_approved(draft: Path, part: int | None = None) -> dict:
             raise ValueError('Part is outside this Shorts series')
         return {**story, 'selected_part': part, 'chapters': [story['chapters'][part - 1]]}
     return story
+
+
+def record_render(state_root: Path, draft: Path, part: int | None,
+                  metadata: dict, run_url: str = '') -> None:
+    """Record only a completed render against the full approved script hash."""
+    story = load_approved(draft)
+    number = part if story['mode'] == 'shorts' else 1
+    if number is None or not 1 <= number <= (len(story['chapters']) if story['mode']=='shorts' else 1):
+        raise ValueError('Invalid completed part')
+    with state_lock(state_root):
+        path = state_root / 'series.json'
+        state = read_json(path) if path.exists() else {'schema_version':1,'stories':{}}
+        previous = state['stories'].get(draft.name, {})
+        completed = set(previous.get('rendered_parts', []))
+        acceptable = metadata.get('duration_in_target') is True
+        if acceptable: completed.add(number)
+        else: completed.discard(number)
+        total = len(story['chapters']) if story['mode']=='shorts' else 1
+        status = ('rendered' if len(completed)==total else 'partially_rendered') if acceptable else 'needs_timing_review'
+        state['stories'][draft.name] = {**previous, 'topic':story['topic'], 'mode':story['mode'],
+            'sha256':digest(story), 'parts':total, 'status':status,
+            'rendered_parts':sorted(completed), 'last_run_url':run_url,
+            'last_duration_seconds':metadata['duration_seconds'],
+            'updated_at':datetime.now(timezone.utc).isoformat()}
+        write_json(path,state)

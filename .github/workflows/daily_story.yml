@@ -1,0 +1,146 @@
+name: Stickman history pipeline
+run-name: Story ${{ inputs.action || 'smoke' }} · ${{ inputs.mode || 'long' }}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.py'
+      - 'tests/**'
+      - 'requirements*.txt'
+      - '.github/workflows/daily_story.yml'
+  # Paused until the cloud test passes and the user chooses to enable scheduling.
+  # schedule:
+  #   - cron: '0 7 * * *'  # 08:00 Africa/Lagos
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'smoke = offline test; draft = new script; render = approved script'
+        type: choice
+        options: [smoke, draft, recheck, render]
+        default: smoke
+      mode:
+        description: 'New draft format (render uses saved script format)'
+        type: choice
+        options: [shorts, long]
+        default: long
+      topic:
+        description: 'New topic; blank selects the next enabled queue entry'
+        type: string
+      draft_id:
+        description: 'Exact saved draft ID, required for render/recheck'
+        type: string
+      approve:
+        description: 'Validate the completed review before rendering; does not bypass review'
+        type: boolean
+        default: false
+      part:
+        description: 'Shorts part 1–5; 0 for long mode'
+        type: number
+        default: 0
+      review_path:
+        description: 'Completed JSON under state/reviews/; required when approve=true'
+        type: string
+      sources:
+        description: 'Evidence JSON under research/, for example research/my-topic.json'
+        type: string
+      minutes:
+        description: 'Long draft target, 8–15 minutes'
+        type: number
+        default: 10
+      parts:
+        description: 'Shorts series length, 3–5 parts'
+        type: number
+        default: 4
+
+permissions:
+  contents: read
+concurrency:
+  group: stickman-story-main
+  cancel-in-progress: false
+
+jobs:
+  story:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    env:
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      STORY_ACTION: ${{ inputs.action || 'smoke' }}
+      STORY_MODE: ${{ inputs.mode || 'long' }}
+      STORY_TOPIC: ${{ inputs.topic || '' }}
+      STORY_DRAFT: ${{ inputs.draft_id || '' }}
+      STORY_APPROVE: ${{ inputs.approve || false }}
+      STORY_PART: ${{ inputs.part || 0 }}
+      STORY_REVIEW: ${{ inputs.review_path || '' }}
+      STORY_SOURCES: ${{ inputs.sources || '' }}
+      STORY_MINUTES: ${{ inputs.minutes || 10 }}
+      STORY_PARTS: ${{ inputs.parts || 4 }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      HF_HUB_DOWNLOAD_TIMEOUT: '60'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: 'requirements*.txt'
+      - name: Install renderer system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng
+      - name: Install base dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Restore speech models
+        if: inputs.action == 'render' || github.event_name == 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: kokoro-cpu-${{ runner.os }}-${{ hashFiles('requirements-voice.txt') }}
+      - name: Install CPU narration dependencies
+        if: inputs.action == 'render' || github.event_name == 'schedule'
+        run: |
+          python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-voice.txt
+          python -m pip check
+      - name: Execute story pipeline
+        id: pipeline
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python workflow_run.py
+      - name: Upload videos and review/recovery files
+        if: always()
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/**/video.mp4
+            output/**/thumbnail.png
+            output/**/render-metadata.json
+            output/**/description.txt
+            output/run.json
+            state/
+      - name: Persist draft and series state
+        if: success() && github.event_name != 'push' && (inputs.action != 'smoke' || github.event_name == 'schedule')
+        run: python persist_state.py
+      - name: Telegram delivery or failure alert
+        if: always() && github.event_name != 'push'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          PIPELINE_FAILED: ${{ job.status != 'success' }}
+        run: python telegram_notify.py

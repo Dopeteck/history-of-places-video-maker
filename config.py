@@ -67,7 +67,7 @@ PROVIDERS = [
         "type": "openai",
         "env_key": "OPENROUTER_API_KEY",
         "base_url": "https://openrouter.ai/api/v1",
-        "models": ["deepseek/deepseek-r1:free"],
+        "models": ["openrouter/free"],
         "json_mode": False,
     },
 ]
@@ -226,3 +226,8 @@ def apply_runtime_profile(mode: str = "short", aspect: str = "auto", minutes: fl
         TITLE_FONT_SIZE = 64
         TITLE_MARGIN_V = 230
         CAPTION_WORDS_PER_CHUNK = 3
+
+# Narrator-led production defaults.
+STORY_VOICE = "bm_george"
+STORY_SPEED = 1.0
+STORY_NICHE = "world history"

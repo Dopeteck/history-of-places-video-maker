@@ -87,13 +87,20 @@ def render_story(story,output,voice_name='bm_george',speed=1.0,preview=False,cap
     (output/'concat.txt').write_text(''.join(f"file '{p.relative_to(output).as_posix()}'\n" for p in segments))
     command(['ffmpeg','-y','-v','error','-f','concat','-safe','1','-i','concat.txt','-c','copy','-movflags','+faststart','video.mp4'],cwd=output)
     elapsed=media_duration(output/'video.mp4');seconds=time.monotonic()-started
-    metadata={'title':story['outline']['title'],'duration_seconds':elapsed,'chapters':stamps,'voice':voice_name if not smoke else 'synthetic tone; no speech','word_alignment':'estimated','sources':story.get('sources',[]),'disclosure':story.get('disclosure','Offline renderer test; synthetic tone audio.'),'render_wall_seconds':seconds,'render_seconds_per_video_second':seconds/elapsed,'resolution':size,'duration_in_target':(60<=elapsed<=90 if mode=='shorts' else 480<=elapsed<=900) if not smoke else None}
-    description=[story.get('outline',{}).get('logline',''),metadata['disclosure']]
+    display_title=story['outline']['title']
+    if mode=='shorts':
+        chapter=story['chapters'][0]
+        display_title=(f"Part {chapter['number']}/{len(story['outline']['chapters'])}: "+chapter['title'])[:70]
+    metadata={'title':display_title,'duration_seconds':elapsed,'chapters':stamps,'voice':voice_name if not smoke else 'synthetic tone; no speech','word_alignment':'estimated','sources':story.get('sources',[]),'disclosure':story.get('disclosure','Offline renderer test; synthetic tone audio.'),'render_wall_seconds':seconds,'render_seconds_per_video_second':seconds/elapsed,'resolution':size,'duration_in_target':(60<=elapsed<=90 if mode=='shorts' else 480<=elapsed<=900) if not smoke else None}
+    metadata['hashtags']=['#History','#Stickman']+(['#Shorts'] if mode=='shorts' else [])
+    metadata['tags']=['history','animated history','stickman']
+    description=[display_title,story.get('outline',{}).get('logline',''),metadata['disclosure']]
     if mode=='long':
         description+=['','Chapters']+[f"{int(c['seconds'])//60}:{int(c['seconds'])%60:02d} {c['title']}" for c in stamps]
         from thumbnail import create_thumbnail
         create_thumbnail(story['outline']['title'],list(cast.values()),output/'thumbnail.png')
     description+=['','Sources']+[x['title']+' — '+x['url'] for x in story.get('sources',[])]
+    description+=['',' '.join(metadata['hashtags'])]
     (output/'description.txt').write_text('\n'.join(description)+'\n',encoding='utf-8');write_json(output/'render-metadata.json',metadata)
     if metadata['duration_in_target'] is False:print('Duration outside target: revise narration or voice speed before publishing.')
     print(f'Rendered {elapsed:.2f}s in {seconds:.2f}s ({seconds/elapsed:.2f}x video duration): {output / "video.mp4"}')

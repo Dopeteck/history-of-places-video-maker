@@ -1,8 +1,4 @@
-# Pinned to a known-compatible set. moviepy 1.0.3 needs numpy<2.
-openai>=1.40,<2
-edge-tts>=6.1.12,<8
-moviepy==1.0.3
-numpy<2
-Pillow>=9.5,<12
-requests>=2.31
-google-generativeai>=0.8
+# Narrator-led pipeline. Voice model dependencies are installed only for rendering.
+-r requirements-render.txt
+openai==1.68.2
+google-genai==1.26.0
