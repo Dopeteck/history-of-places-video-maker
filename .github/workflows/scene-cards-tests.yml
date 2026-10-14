@@ -7,6 +7,7 @@ on:
       - 'scene_planner.py'
       - 'scene_assets.py'
       - 'scene_cards_cli.py'
+      - 'scene_cards_render.py'
       - 'tests/**'
       - 'requirements*.txt'
       - '.github/workflows/scene-cards-tests.yml'
