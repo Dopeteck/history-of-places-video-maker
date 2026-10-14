@@ -15,6 +15,8 @@ from story import text, validate_sources
 
 KINDS = {"illustration", "statistic", "comparison", "timeline", "steps", "verdict"}
 BACKGROUNDS = {"ivory", "midnight", "sand", "teal", "slate"}
+UNCERTAINTY = {"documented", "disputed", "legend", "unverified"}
+TRANSITIONS = {"crossfade", "cut", "push"}
 MAX_SCENES = 18
 
 
@@ -59,6 +61,12 @@ def validate_scene_plan(data: dict, source_ids: set[str], min_scenes: int = 6,
             raise ValueError(f"scene {sid}: references an unknown source")
         if not raw_sources:
             raise ValueError(f"scene {sid}: every factual scene needs at least one source ID")
+        uncertainty = raw.get("uncertainty", "documented")
+        if uncertainty not in UNCERTAINTY:
+            raise ValueError(f"scene {sid}: invalid uncertainty label")
+        transition = raw.get("transition", "crossfade")
+        if transition not in TRANSITIONS:
+            raise ValueError(f"scene {sid}: unsupported transition")
         labels = raw.get("labels", [])
         if not isinstance(labels, list) or len(labels) > 6:
             raise ValueError(f"scene {sid}: labels must be a list of at most six")
@@ -91,7 +99,7 @@ def validate_scene_plan(data: dict, source_ids: set[str], min_scenes: int = 6,
             "id": sid, "kind": kind, "title": text(raw.get("title"), "scene title", 100),
             "narration": narration, "visual_prompt": prompt, "background": background,
             "source_ids": list(dict.fromkeys(raw_sources)), "labels": clean_labels,
-            "claims": clean_claims, "transition": raw.get("transition", "crossfade"),
+            "claims": clean_claims, "uncertainty": uncertainty, "transition": transition,
         })
     return {"schema_version": 1, "title": title, "hook": hook, "scenes": scenes,
             "source_ids": sorted(source_ids), "status": "needs_human_review"}
@@ -130,7 +138,7 @@ def plan_scene_cards(llm, topic: str, sources: list[dict], min_scenes: int = 6,
                                "claims": [{"claim": "checkable factual claim",
                                            "source_ids": ["source_1"], "confidence": 0.5,
                                            "what_to_verify": "specific verification task"}],
-                               "transition": "crossfade"}]},
+                               "transition": "crossfade", "uncertainty": "documented"}]},
     }
     def validate(data: dict) -> dict:
         return validate_scene_plan(data, source_ids, min_scenes, max_scenes)
@@ -165,8 +173,11 @@ def validate_scene_plan_review(plan: dict, review: dict) -> None:
         raise ValueError("At least one supplied source must be checked")
     decisions = review.get("claims")
     expected = {c["id"] for c in plan.get("review", {}).get("claims", [])}
-    if not isinstance(decisions, list) or {d.get("id") for d in decisions} != expected:
+    if (not isinstance(decisions, list) or len(decisions) != len(expected)
+            or {d.get("id") for d in decisions} != expected):
         raise ValueError("Every extracted claim needs exactly one review decision")
+    claims_by_id = {c["id"]: c for c in plan.get("review", {}).get("claims", [])}
+    scenes_by_id = {s["id"]: s for s in plan["scenes"]}
     for decision in decisions:
         if decision.get("decision") not in {"verified", "qualified"}:
             raise ValueError("Unresolved claims cannot be approved")
@@ -175,6 +186,14 @@ def validate_scene_plan_review(plan: dict, review: dict) -> None:
             raise ValueError("Every claim must cite a source the reviewer checked")
         if not isinstance(decision.get("note"), str) or not decision["note"].strip():
             raise ValueError("Every claim needs a reviewer note")
+        if decision.get("decision") == "qualified":
+            claim = claims_by_id[decision["id"]]
+            scene = scenes_by_id[claim["scene_id"]]
+            qualifiers = ("according to legend", "according to tradition", "accounts differ",
+                          "is disputed", "some accounts", "oral tradition", "legend says")
+            if scene["uncertainty"] not in {"disputed", "legend"} or not any(
+                    phrase in scene["narration"].casefold() for phrase in qualifiers):
+                raise ValueError("Qualified claims require a disputed/legend scene and audible qualification")
     for scene in plan["scenes"]:
         if not set(scene["source_ids"]).intersection(checked):
             raise ValueError(f"Scene {scene['id']} has no source checked by the reviewer")
