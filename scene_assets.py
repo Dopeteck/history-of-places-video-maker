@@ -217,7 +217,7 @@ class ImageProviderChain:
                     if attempt < self.retries:
                         time.sleep(min(2 ** attempt, 3))
         # Cache the deterministic local result under a prompt-specific key as well.
-        fallback_key = image_sha1(prompt + "\\nbackground=" + background, "procedural", "v1", size)
+        fallback_key = image_sha1(prompt + "|background=" + background, "procedural", "v1", size)
         fallback_path = self.cache_dir / (fallback_key + ".png")
         if fallback_path.exists():
             try:
