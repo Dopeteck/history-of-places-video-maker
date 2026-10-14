@@ -36,3 +36,13 @@ Output directories must be new or empty. Rendering does not imply approval to pu
 ## CI coverage
 
 The scene-card workflow runs offline tests, including an end-to-end FFmpeg smoke render with six scenes, plus a test confirming that an incomplete human review blocks rendering. It does not test paid image providers, remote credentials, or voice quality.
+
+## Stage 4: reference-style portrait composition
+
+In `shorts` mode, each scene uses the supplied reference's broad composition: darkened blurred full-screen background, a persistent white outlined headline above the center, and a full-width 16:9 illustration strip across the middle. The landscape `long` mode retains the earlier card layout. This is a visual-layout approximation; exact style matching still depends on the quality of generated or supplied artwork and a human review of the rendered MP4.
+
+Preview the reference-oriented layout after approval with:
+
+`python scene_cards_render.py --plan output/scene-card-draft/scene_plan.json --review output/scene-card-draft/review.template.json --out output/reference-style-preview --mode shorts --preview --smoke --no-captions`
+
+This smoke preview uses tones, not narration, and does not publish.
