@@ -1,0 +1,10 @@
+# Small, independently installable offline renderer.
+moviepy==1.0.3
+numpy==1.26.4
+Pillow==11.1.0
+decorator==4.4.2
+imageio==2.37.0
+imageio-ffmpeg==0.6.0
+proglog==0.1.10
+tqdm==4.67.1
+requests==2.32.3

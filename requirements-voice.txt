@@ -1,0 +1,11 @@
+# Install CPU torch first, then this file after requirements-render.txt.
+kokoro==0.9.4
+soundfile==0.13.1
+torch==2.6.0
+transformers==4.48.3
+huggingface-hub==0.28.1
+misaki[en]==0.9.4
+spacy==3.8.4
+spacy-curated-transformers==0.3.0
+typer==0.15.1
+click==8.1.8

@@ -35,7 +35,7 @@ if __name__ == "__main__":
         arg == "--mode" and i + 1 < len(sys.argv) and sys.argv[i + 1] == "shorts"
         for i, arg in enumerate(sys.argv)
     ) or any(
-        flag in sys.argv for flag in ("--script-only", "--require-approval", "--approve", "--draft", "--suggest-topics", "--recheck")
+        flag in sys.argv for flag in ("--render", "--smoke-test", "--script-only", "--require-approval", "--approve", "--draft", "--suggest-topics", "--recheck")
     ):
         from story_cli import main as story_main
         sys.exit(story_main([arg for arg in sys.argv[1:] if arg != "--story"]))

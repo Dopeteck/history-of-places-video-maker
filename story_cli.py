@@ -1,4 +1,4 @@
-"""Stage 2 CLI. Produces reviewable scripts; audio/rendering arrives in Stage 3."""
+"""Story CLI: draft, review, approve, and render saved narration."""
 from __future__ import annotations
 
 import argparse
@@ -17,6 +17,12 @@ ROOT = Path(__file__).resolve().parent
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--render', action='store_true', help='Render an approved saved draft')
+    parser.add_argument('--smoke-test', action='store_true', help='Offline 20-second renderer test; no speech')
+    parser.add_argument('--preview', action='store_true', help='Half-size preview')
+    parser.add_argument('--captions', action='store_true', help='Enable captions in long mode')
+    parser.add_argument('--voice', choices=['bm_george','bm_fable','am_michael'], default='bm_george')
+    parser.add_argument('--speed', type=float, default=1.0)
     parser.add_argument('--mode', choices=['shorts', 'long'], default='long')
     parser.add_argument('--topic')
     parser.add_argument('--niche', default='world history')
@@ -37,6 +43,21 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
     try:
+        if args.smoke_test:
+            if args.render or args.draft or args.approve or args.recheck:
+                parser.error('--smoke-test cannot be combined with draft/review/render actions')
+            from render import render_story, smoke_story
+            render_story(smoke_story(args.mode), args.output / ('smoke-' + args.mode), preview=args.preview, captions=args.captions, smoke=True)
+            return 0
+        if args.render:
+            if not args.draft or args.approve or args.recheck or args.script_only:
+                parser.error('--render requires an already approved --draft; no script-only or review action')
+            story = load_approved(args.draft, args.series_part)
+            if story['mode'] == 'shorts' and args.series_part is None:
+                parser.error('--render for Shorts requires --series-part')
+            from render import render_story
+            render_story(story, args.output / ('render-' + args.draft.name + ('-part-' + str(args.series_part) if args.series_part else '')), args.voice, args.speed, args.preview, args.captions)
+            return 0
         if args.recheck:
             if not args.draft or args.approve:
                 parser.error('--recheck requires --draft and cannot be combined with --approve')
