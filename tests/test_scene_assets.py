@@ -6,7 +6,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from scene_assets import ImageProviderChain, image_sha1, procedural_illustration, validate_image
-from scene_planner import validate_scene_plan
+from scene_planner import (make_review_template, plan_scene_cards, validate_scene_plan,
+                           validate_scene_plan_review)
 
 
 def valid_plan():
@@ -42,6 +43,70 @@ class ScenePlannerTests(unittest.TestCase):
         data["scenes"][0]["source_ids"] = []
         with self.assertRaises(ValueError):
             validate_scene_plan(data, {"source_1"})
+
+    def test_planner_runs_existing_json_validator_and_factcheck(self):
+        class FakeLLM:
+            def generate(self, system, prompt, validate):
+                data = {
+                    "title": "Evidence-led explainer",
+                    "hook": "Here is what the record shows",
+                    "scenes": [{
+                        "id": f"scene_{i:02d}", "kind": "illustration",
+                        "title": f"Scene {i}", "narration": "The source describes this event.",
+                        "visual_prompt": "Editorial illustration with no text.",
+                        "background": "ivory", "source_ids": ["source_1"],
+                        "labels": [], "claims": [{
+                            "claim": f"Checkable claim number {i}.",
+                            "source_ids": ["source_1"], "confidence": 0.8,
+                            "what_to_verify": "Confirm this statement in the original source."
+                        }]
+                    } for i in range(1, 7)]
+                }
+                return validate(data)
+
+        plan = plan_scene_cards(
+            FakeLLM(), "A sourced topic",
+            [{"id": "source_1", "title": "Source", "url": "https://example.org/source",
+              "excerpt": "A relevant source excerpt."}], min_scenes=6, max_scenes=6)
+        self.assertEqual(len(plan["review"]["claims"]), 6)
+        self.assertTrue(all(c["status"] == "needs_human_review" for c in plan["review"]["claims"]))
+        review = make_review_template(plan)
+        review["reviewer"] = "Human reviewer"
+        review["full_script_reviewed"] = True
+        review["sources_checked"] = ["source_1"]
+        for row in review["claims"]:
+            row["decision"] = "verified"
+            row["source_ids"] = ["source_1"]
+            row["note"] = "Compared with the original source."
+        validate_scene_plan_review(plan, review)
+
+    def test_review_rejects_duplicate_decisions(self):
+        class FakeLLM:
+            def generate(self, system, prompt, validate):
+                return validate({
+                    "title": "Evidence-led explainer", "hook": "What we know",
+                    "scenes": [{
+                        "id": f"scene_{i:02d}", "kind": "illustration",
+                        "title": f"Scene {i}", "narration": "The source describes this event.",
+                        "visual_prompt": "Editorial illustration with no text.",
+                        "source_ids": ["source_1"], "claims": [{
+                            "claim": f"Claim {i}", "source_ids": ["source_1"],
+                            "confidence": 0.8, "what_to_verify": "Check the source."
+                        }]
+                    } for i in range(1, 7)]
+                })
+        plan = plan_scene_cards(
+            FakeLLM(), "A sourced topic",
+            [{"id": "source_1", "title": "Source", "url": "https://example.org/source",
+              "excerpt": "A relevant source excerpt."}], min_scenes=6, max_scenes=6)
+        review = make_review_template(plan)
+        review.update({"reviewer": "Reviewer", "full_script_reviewed": True,
+                       "sources_checked": ["source_1"]})
+        for row in review["claims"]:
+            row.update({"decision": "verified", "source_ids": ["source_1"], "note": "Checked."})
+        review["claims"][-1] = dict(review["claims"][0])
+        with self.assertRaises(ValueError):
+            validate_scene_plan_review(plan, review)
 
 
 class ImageAssetsTests(unittest.TestCase):
