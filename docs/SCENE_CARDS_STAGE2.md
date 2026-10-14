@@ -21,14 +21,14 @@ No key is needed for procedural artwork. The default provider chain is determini
 
 ## Integration status
 
-This is an additive planning/asset API, not yet connected to the existing video renderer or Actions workflow. A caller can create a plan with `plan_scene_cards(llm, topic, sources)`, create a review template with `make_review_template(plan)`, and validate a completed review with `validate_scene_plan_review(plan, review)`. Rendering and persistent approval integration remain later-stage work. Keep the current schedule paused.
+This is an additive planning/asset API, not yet connected to the existing video renderer or Actions workflow. Run the standalone draft planner with `python scene_cards_cli.py --topic "Your topic" --sources sources.json --out output/my-draft`. The source file must be a JSON list of records containing `id`, `title`, `url`, and a relevant `excerpt`. Add `--generate-images` to exercise the provider chain and save images plus an `assets.json` manifest; remote image providers may incur charges when configured. The command saves `scene_plan.json`, `scene_plan.md`, and `review.template.json`, then stops. A caller can also use `plan_scene_cards(llm, topic, sources)`, `make_review_template(plan)`, and `validate_scene_plan_review(plan, review)` directly. Rendering and persistent approval integration remain later-stage work. Keep the current schedule paused.
 
 ## Offline tests
 
 Run:
 
 ```bash
-python -m unittest tests.test_scene_assets -v
+python -m unittest discover -s tests -p "test_scene_assets.py" -v
 ```
 
 The tests cover schema/source rejection, claim extraction and human-review binding, duplicate review rejection, SHA-1 stability, image quality checks, and procedural fallback caching. Tests use fake providers and synthetic source excerpts; they do not prove real-world factual accuracy or verify live image API credentials.
