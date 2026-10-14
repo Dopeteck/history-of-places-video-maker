@@ -174,6 +174,7 @@ def validate_scene_plan_review(plan: dict, review: dict) -> None:
     decisions = review.get("claims")
     expected = {c["id"] for c in plan.get("review", {}).get("claims", [])}
     if (not isinstance(decisions, list) or len(decisions) != len(expected)
+            or any(not isinstance(d, dict) or not isinstance(d.get("id"), str) for d in decisions)
             or {d.get("id") for d in decisions} != expected):
         raise ValueError("Every extracted claim needs exactly one review decision")
     claims_by_id = {c["id"]: c for c in plan.get("review", {}).get("claims", [])}
@@ -182,8 +183,10 @@ def validate_scene_plan_review(plan: dict, review: dict) -> None:
         if decision.get("decision") not in {"verified", "qualified"}:
             raise ValueError("Unresolved claims cannot be approved")
         refs = decision.get("source_ids")
-        if not isinstance(refs, list) or not refs or any(s not in checked for s in refs):
-            raise ValueError("Every claim must cite a source the reviewer checked")
+        allowed_refs = set(claims_by_id[decision["id"]]["source_ids"])
+        if (not isinstance(refs, list) or not refs
+                or any(s not in checked or s not in allowed_refs for s in refs)):
+            raise ValueError("Every claim must cite its own source(s), checked by the reviewer")
         if not isinstance(decision.get("note"), str) or not decision["note"].strip():
             raise ValueError("Every claim needs a reviewer note")
         if decision.get("decision") == "qualified":
