@@ -28,6 +28,18 @@ from math import sin
 from pathlib import Path
 from string import Template
 
+# Route script-only commands before loading legacy renderer dependencies.
+
+if __name__ == "__main__":
+    if "--story" in sys.argv or "--mode=shorts" in sys.argv or any(
+        arg == "--mode" and i + 1 < len(sys.argv) and sys.argv[i + 1] == "shorts"
+        for i, arg in enumerate(sys.argv)
+    ) or any(
+        flag in sys.argv for flag in ("--script-only", "--require-approval", "--approve", "--draft", "--suggest-topics", "--recheck")
+    ):
+        from story_cli import main as story_main
+        sys.exit(story_main([arg for arg in sys.argv[1:] if arg != "--story"]))
+
 import requests
 import config
 
@@ -112,7 +124,7 @@ def _call_gemini(provider: dict, model: str, system: str, user: str) -> str:
         system_instruction=system,
         generation_config={"response_mime_type": "application/json", "temperature": 0.9},
     )
-    return gm.generate_content(user).text
+    return gm.generate_content(user, request_options={"timeout": 60}).text
 
 
 def _is_rate_limit(exc: Exception) -> bool:

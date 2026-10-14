@@ -1,5 +1,7 @@
 # Stickman Video Bot V2 — short + long, local assets
 
+**History rebuild — Stage 2:** narrator-led scripts, evidence review, and saved-script approval are implemented. See [STAGE2.md](STAGE2.md) for commands and limitations. The renderer below is still the legacy V2 path.
+
 A lightweight Python/MoviePy/FFmpeg generator adapted for **stickman videos instead of stock footage**.
 It can render portrait shorts or longer landscape/portrait videos and can run unattended in GitHub Actions.
 
