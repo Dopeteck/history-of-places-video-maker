@@ -258,7 +258,7 @@ def render_scene_cards(plan: dict, review: dict, output: Path, assets_dir: Path 
     else:
         args += ["-c:v", "copy"]
     args += ["-c:a", "aac", "-ar", "24000", "-b:a", "96k",
-             "-t", f"{total:.3f}", "-movflags", "+faststart", "video.mp4"]
+             "-t", f"{total:.3f}", "-movflags", "+faststart", "../video.mp4"]
     _run(args, work)
     meta = {
         "title": plan["title"], "hook": plan["hook"], "mode": mode,
