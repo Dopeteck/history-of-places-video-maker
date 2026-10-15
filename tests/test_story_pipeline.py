@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from factcheck import review_story, review_template, validate_review
-from llm import JsonLLM, extract_json
+from llm import JsonLLM, ProviderHTTPError, extract_json
 from story import build_story, digest, validate_sources
 from story_store import approve, load_approved, next_topic, read_json, save_draft, state_lock, write_json
 from story_cli import main
@@ -125,12 +125,36 @@ class ProviderTests(unittest.TestCase):
         delays=[];attempts=[]
         def call(provider,model,system,prompt):
             attempts.append(model)
-            if model=='first':raise RuntimeError('429 quota')
+            if model=='first':raise ProviderHTTPError(429, '{"error":"quota"}', 'rate limited')
             return '{"ok":true}'
         with patch.dict(os.environ,{'TEST_LLM_KEY':'test'}):
             result=JsonLLM(call=call,sleep=delays.append,providers=PROVIDERS).generate('',{},lambda d:d)
         self.assertEqual(attempts,['first','first','second']);self.assertTrue(result['ok'])
-        self.assertTrue(any(d>=8 for d in delays))
+        self.assertEqual(len(delays),1)
+        self.assertGreaterEqual(delays[0],0.5)
+        self.assertLess(delays[0],2.0)
+
+    def test_client_errors_are_not_retried(self):
+        for status in (400, 404):
+            with self.subTest(status=status):
+                attempts=[]
+                def call(provider,model,system,prompt):
+                    attempts.append(model)
+                    raise ProviderHTTPError(status, '{"error":"bad request"}', 'client error')
+                with patch.dict(os.environ,{'TEST_LLM_KEY':'test'}):
+                    with self.assertRaisesRegex(RuntimeError, 'All script providers failed'):
+                        JsonLLM(call=call,sleep=lambda _:None,providers=PROVIDERS).generate('',{},lambda d:d)
+                self.assertEqual(attempts,['first','second'])
+
+    def test_budget_exhausted_before_provider_call(self):
+        attempts=[]
+        def call(*args):
+            attempts.append(args)
+            return '{"ok":true}'
+        with patch.dict(os.environ,{'TEST_LLM_KEY':'test'}), patch('llm.config.PROVIDER_TOTAL_BUDGET_SECONDS', 0):
+            with self.assertRaisesRegex(RuntimeError, 'time budget'):
+                JsonLLM(call=call,providers=PROVIDERS).generate('',{},lambda d:d)
+        self.assertEqual(attempts,[])
     def test_malformed_repair_and_cache(self):
         replies=iter(['bad JSON','{"ok":true}'])
         with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'TEST_LLM_KEY':'test'}):
