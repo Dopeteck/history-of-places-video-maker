@@ -6,7 +6,7 @@ on:
     paths:
       - 'animation_engine.py'
       - 'reference_art_direction.py'
-      - 'tests/golden_storyboard.json'
+      - 'tests/**'
       - '.github/workflows/animation-preview.yml'
   workflow_dispatch:
 
