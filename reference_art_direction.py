@@ -318,14 +318,14 @@ def _draw_background(plate, hook, size, tint):
     stops=[(0.0,(0,0,0)),(.07,(3,3,3)),(.16,(14,12,10)),(.25,(34,28,23)),
            (.32,(49,40,32)),(.36,(53,43,34)),(.64,(51,41,32)),(.76,(29,23,18)),
            (.91,(5,4,4)),(1.0,(0,0,0))]
-    bg=Image.new("RGB",size);pixels=bg.load()
+    bg=Image.new("RGB",size);gradient=ImageDraw.Draw(bg)
     for y in range(h):
         p=y/max(1,h-1)
         for j in range(len(stops)-1):
             if stops[j][0]<=p<=stops[j+1][0]:
                 a,ca=stops[j];b,cb=stops[j+1];q=(p-a)/(b-a)
                 color=tuple(round(ca[k]*(1-q)+cb[k]*q) for k in range(3));break
-        for x in range(w):pixels[x,y]=color
+        gradient.line((0,y,w,y),fill=color)
     blur=e._cover(plate,size).filter(ImageFilter.GaussianBlur(radius=max(45,round(w*.095))))
     blur=Image.blend(blur,Image.new("RGB",size,(0,0,0)),.83)
     toned=Image.new("RGB",size,tuple(round(c*.4) for c in tint))
