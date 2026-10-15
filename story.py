@@ -521,6 +521,8 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
             "narration": narration,
             "visual_title": safe_text(first_value(scene, ("visual_title", "scene_title", "heading"), ""),
                                        " ".join(narration.split()[:5]), 60),
+            "show_character_labels": first_value(
+                scene, ("show_character_labels", "label_characters"), False) is True,
             "characters_on_screen": checked,
             "action_beats": beats,
             "background": background,
@@ -668,6 +670,8 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
                     'Use visible movement and pose changes, not one standing pose throughout. Keep action feasible, readable, and non-graphic. '
                     'Props list means objects physically visible in this exact shot: never draw an object described as missing, absent, lost, or already removed. '
                     'Prefer a table or chest prop when the narration describes searching furniture; place the discovered object only when the story says it was found. '
+                    'Block physical interactions precisely: the table is staged at x=0.50 and the chest at x=0.86. When checking under a table, move the acting character to x=0.50 and use crouch/point/hold beats there; when inspecting a chest, move the acting character near x=0.76 before crouching or reaching. '
+                    'A character must visibly approach the object before touching, inspecting, retrieving, or celebrating it. Stage the discovery/retrieval as a sequence, and never leave the actor on the opposite side of the room from the object named in the narration. '
                     'Keep characters and props readable: for a table or chest scene, stage people at the sides or approaching the object, not walking through its center. '
                     'End non-final parts on a truthful cliffhanger; final part delivers the ending. Do not repeat recap filler.'),
                 'allowed': allowed, 'schema': chapter_schema,
