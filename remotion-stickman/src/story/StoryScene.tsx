@@ -252,6 +252,29 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
       const swing = Math.sin(t * 0.22);
       return addPose(p, {la1: -36 + 9*swing, la2: -26, ra1: 42 - 10*swing, ra2: 24, head: Math.sin(t*.13)*3}, true);
     }
+    if (state.action === "cheer" || state.action === "laugh") {
+      const bounce = Math.sin(t * 0.34);
+      return addPose(p, {
+        y: -Math.max(0, bounce) * 4 * scale,
+        la1: 7 * bounce, ra1: -7 * bounce,
+        la2: 5 * bounce, ra2: -5 * bounce,
+        head: Math.sin(t * 0.34) * 3,
+      }, false);
+    }
+    if (state.action === "shock" || state.action === "fall") {
+      const recoil = Math.sin(t * 0.42);
+      return addPose(p, {y: Math.max(0, recoil) * 2 * scale, lean: 3 * recoil, head: 3 * recoil}, false);
+    }
+    if (state.action === "point") {
+      const pulse = Math.sin(t * 0.24);
+      return addPose(p, {ra1: 3 * pulse, head: 2 * pulse}, false);
+    }
+    if (state.action === "think") {
+      return addPose(p, {head: Math.sin(t * 0.11) * 4, y: Math.sin(t * 0.13) * scale}, false);
+    }
+    if (state.action === "hold" || state.action === "carry") {
+      return addPose(p, {y: Math.sin(t * 0.13) * 1.5 * scale, la1: Math.sin(t * 0.18) * 2, ra1: -Math.sin(t * 0.18) * 2}, false);
+    }
     return addPose(p, idle(t, id.length), false);
   };
   const fxStart = Math.round(duration * 0.53);
