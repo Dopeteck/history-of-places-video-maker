@@ -172,15 +172,26 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
     if provider['type'] == 'gemini':
         from google import genai
         from google.genai import types
-        # google-genai 1.x API: Client.models.generate_content(..., config=GenerateContentConfig).
-        with genai.Client(api_key=os.environ[provider['env_key']],
-                          http_options=types.HttpOptions(timeout=int(timeout * 1000))) as client:
+        # google-genai 1.26.0 does not implement Client's context-manager protocol.
+        # Close explicitly so the pinned SDK works and connections are released.
+        client = genai.Client(
+            api_key=os.environ[provider['env_key']],
+            http_options=types.HttpOptions(timeout=int(timeout * 1000)),
+        )
+        try:
             response = client.models.generate_content(
                 model=model, contents=user,
                 config=types.GenerateContentConfig(
                     system_instruction=system, response_mime_type='application/json',
                     temperature=0.8))
             return parse_gemini_response(response)
+        finally:
+            close = getattr(client, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    log.warning("Gemini client cleanup failed", exc_info=True)
 
     from openai import OpenAI
     with OpenAI(base_url=provider['base_url'], api_key=os.environ[provider['env_key']],
@@ -221,13 +232,23 @@ class JsonLLM:
         self.min_interval = min_interval
         self.last_call: float | None = None
         self._groq_models_cache: set[str] | None = None
+        self._groq_catalogue_unavailable = False
 
     def _model_available(self, provider: dict, model: str) -> bool:
         if provider.get("name") != "groq" or not provider.get("verify_models"):
             return True
+        if self._groq_catalogue_unavailable:
+            return False
         if self._groq_models_cache is None:
-            self._groq_models_cache = _groq_models(
-                os.environ[provider["env_key"]], float(config.PROVIDER_TIMEOUT_SECONDS))
+            try:
+                self._groq_models_cache = _groq_models(
+                    os.environ[provider["env_key"]], float(config.PROVIDER_TIMEOUT_SECONDS))
+            except ProviderHTTPError as exc:
+                # A blocked/forbidden catalogue is an owner-side access problem, not
+                # a transient model failure. Avoid repeating the same doomed request.
+                if exc.status_code in (400, 401, 403, 404):
+                    self._groq_catalogue_unavailable = True
+                raise
         if model not in self._groq_models_cache:
             log.warning("Skipping Groq model %s: absent from live /models catalogue", model)
             return False
