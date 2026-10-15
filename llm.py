@@ -26,17 +26,19 @@ class ProviderHTTPError(RuntimeError):
         self.response_body = body[:_BODY_LIMIT]
 
 
-def _safe(value: Any) -> str:
-    """Redact known API keys before writing provider diagnostics."""
+def _redact(value: Any) -> str:
+    """Redact credentials without truncating diagnostics or tracebacks."""
     result = str(value)
     for key_name in ("GROQ_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"):
         secret = os.getenv(key_name)
         if secret:
             result = result.replace(secret, "[REDACTED]")
-    result = re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._-]+", r"\1[REDACTED]", result)
-    return result[:_BODY_LIMIT]
+    return re.sub(r"(?i)(bearer\\s+)[A-Za-z0-9._-]+", r"\\1[REDACTED]", result)
 
 
+def _safe(value: Any) -> str:
+    """Redact and bound provider response bodies and messages."""
+    return _redact(value)[:_BODY_LIMIT]
 def _error_details(exc: Exception) -> tuple[int | None, str]:
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
     response = getattr(exc, "response", None)
