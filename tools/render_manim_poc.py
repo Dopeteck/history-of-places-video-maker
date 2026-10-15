@@ -92,7 +92,8 @@ def _contact_sheet(video: Path, output: Path, duration: float) -> Path:
     ]
     font_path = next((path for path in font_candidates if path.exists()), None)
     font = ImageFont.truetype(str(font_path), 14) if font_path else ImageFont.load_default()
-    times = [duration * (i + 0.5) / 6 for i in range(6)]
+    # Sample shots after their entrances/FX have settled, especially the steam card.
+    times = [min(value, duration - 0.25) for value in (0.82, 2.45, 4.08, 5.72, 7.90, 9.20)]
     for index, seconds in enumerate(times):
         frame_path = output.parent / f".manim-poc-frame-{index}.png"
         _run([
