@@ -147,7 +147,7 @@ def normalise_accent(value: Any, default: str = "#1FA2A6") -> str:
         if candidate in ACCENTS:
             return candidate
         rgb = tuple(int(candidate[i:i + 2], 16) for i in (1, 3, 5))
-        return min(ACCENT_RGB, key=lambda colour: sum(
+        return min(_ACCENT_RGB, key=lambda colour: sum(
             (rgb[index] - _ACCENT_RGB[colour][index]) ** 2 for index in range(3)))
     return _ACCENT_NAMES.get(candidate, default)
 
