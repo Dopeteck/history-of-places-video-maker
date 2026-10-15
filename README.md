@@ -144,3 +144,10 @@ python -m unittest discover -s tests -v
 | `legacy_main.py`, `requirements-legacy.txt`, `docs/legacy_daily_video.yml` | Archived V2 path; no active legacy workflow |
 
 Stage 3 verified real Kokoro synthesis and a short narrated render, plus 1080p portrait and landscape tone tests. These do not guarantee a ten-minute cloud render time or historical accuracy. Production narration must still be reviewed. The current workflow test outcome is reported in GitHub Actions. Full source listings are in [docs/SOURCE.md](docs/SOURCE.md).
+
+
+## Experimental scene-card planner (Stage 2)
+
+An additive planner and image-asset layer is available on the `feat/scene-planner-assets` branch. It does not replace the current renderer or change the existing human approval workflow. See [docs/SCENE_CARDS_STAGE2.md](docs/SCENE_CARDS_STAGE2.md) for source JSON, CLI usage, optional image-provider keys, procedural fallback, caching and review requirements.
+
+Create a storyboard draft with `python scene_cards_cli.py --topic "Your topic" --sources sources.json --out output/my-draft`. Add `--generate-images` to create cached scene art; remote image APIs may incur charges when configured. The command stops at a review package and never approves or renders the story.
