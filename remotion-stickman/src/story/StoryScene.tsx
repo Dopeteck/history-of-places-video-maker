@@ -96,28 +96,28 @@ const Backdrop: React.FC<{kind: string}> = ({kind}) => {
   const accent = "#1FA2A6";
   return (
     <AbsoluteFill style={{background: cssBackground[kind] ?? "#F7F1E3"}}>
-      <svg width={width} height={height} viewBox={\`0 0 \${width} \${height}\`}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         <rect x={0} y={ground} width={width} height={height-ground} fill="#CBB58E" opacity={0.78}/>
         {kind === "river" && <>
-          <path d={\`M0 \${ground-95} Q\${width*.24} \${ground-145} \${width*.48} \${ground-85} T\${width} \${ground-110} L\${width} \${ground+10} L0 \${ground+10} Z\`} fill="#75B8B1"/>
-          {[0.12,0.34,0.56,0.78].map((x) => <path key={x} d={\`M\${width*x} \${ground-30} q\${width*.045} -12 \${width*.09} 0\`} fill="none" stroke="#E7F4F0" strokeWidth={Math.max(2,width*.003)} />)}
+          <path d={`M0 ${ground-95} Q${width*.24} ${ground-145} ${width*.48} ${ground-85} T${width} ${ground-110} L${width} ${ground+10} L0 ${ground+10} Z`} fill="#75B8B1"/>
+          {[0.12,0.34,0.56,0.78].map((x) => <path key={x} d={`M${width*x} ${ground-30} q${width*.045} -12 ${width*.09} 0`} fill="none" stroke="#E7F4F0" strokeWidth={Math.max(2,width*.003)} />)}
         </>}
         {(kind === "palace" || kind === "throne") && <>
           <rect x={width*.06} y={height*.18} width={width*.88} height={ground-height*.18} fill="#E5D0A5" stroke={ink} strokeWidth={Math.max(2,width*.003)}/>
-          {[.12,.31,.69,.88].map((x) => <g key={x}><rect x={width*x} y={height*.19} width={width*.035} height={ground-height*.19} fill="#FAEAC9" stroke={ink} strokeWidth={Math.max(2,width*.002)}/><path d={\`M\${width*(x-.015)} \${height*.19} q\${width*.032} -\${height*.07} \${width*.065} 0\`} fill="#F5E3BC" stroke={ink} strokeWidth={Math.max(2,width*.002)}/></g>)}
-          {kind === "throne" && <g><rect x={width*.44} y={ground-height*.30} width={width*.12} height={height*.25} rx={8} fill="#A96835" stroke={ink} strokeWidth={5}/><rect x={width*.415} y={ground-height*.37} width={width*.17} height={height*.12} rx={12} fill="#BE854A" stroke={ink} strokeWidth={5}/><path d={\`M\${width*.44} \${ground-height*.37} L\${width*.46} \${ground-height*.45} L\${width*.50} \${ground-height*.39} L\${width*.54} \${ground-height*.45} L\${width*.56} \${ground-height*.37} Z\`} fill="#E0A526" stroke={ink} strokeWidth={5}/></g>}
+          {[.12,.31,.69,.88].map((x) => <g key={x}><rect x={width*x} y={height*.19} width={width*.035} height={ground-height*.19} fill="#FAEAC9" stroke={ink} strokeWidth={Math.max(2,width*.002)}/><path d={`M${width*(x-.015)} ${height*.19} q${width*.032} -${height*.07} ${width*.065} 0`} fill="#F5E3BC" stroke={ink} strokeWidth={Math.max(2,width*.002)}/></g>)}
+          {kind === "throne" && <g><rect x={width*.44} y={ground-height*.30} width={width*.12} height={height*.25} rx={8} fill="#A96835" stroke={ink} strokeWidth={5}/><rect x={width*.415} y={ground-height*.37} width={width*.17} height={height*.12} rx={12} fill="#BE854A" stroke={ink} strokeWidth={5}/><path d={`M${width*.44} ${ground-height*.37} L${width*.46} ${ground-height*.45} L${width*.50} ${ground-height*.39} L${width*.54} ${ground-height*.45} L${width*.56} ${ground-height*.37} Z`} fill="#E0A526" stroke={ink} strokeWidth={5}/></g>}
         </>}
         {(kind === "hut" || kind === "market" || kind === "street") && <>
-          {[.06,.68].map((x) => <g key={x}><rect x={width*x} y={ground-height*.28} width={width*.24} height={height*.27} fill="#B88D5B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><path d={\`M\${width*(x-.02)} \${ground-height*.28} L\${width*(x+.12)} \${ground-height*.43} L\${width*(x+.26)} \${ground-height*.28} Z\`} fill="#915E3B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><rect x={width*(x+.09)} y={ground-height*.18} width={width*.06} height={height*.17} fill="#4A3425"/></g>)}
-          {kind === "market" && <g><path d={\`M\${width*.36} \${ground-height*.23} L\${width*.64} \${ground-height*.23} L\${width*.60} \${ground-height*.39} L\${width*.40} \${ground-height*.39} Z\`} fill="#1FA2A6" stroke={ink} strokeWidth={4}/><line x1={width*.38} y1={ground-height*.23} x2={width*.36} y2={ground-height*.03} stroke={ink} strokeWidth={5}/><line x1={width*.62} y1={ground-height*.23} x2={width*.64} y2={ground-height*.03} stroke={ink} strokeWidth={5}/></g>}
+          {[.06,.68].map((x) => <g key={x}><rect x={width*x} y={ground-height*.28} width={width*.24} height={height*.27} fill="#B88D5B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><path d={`M${width*(x-.02)} ${ground-height*.28} L${width*(x+.12)} ${ground-height*.43} L${width*(x+.26)} ${ground-height*.28} Z`} fill="#915E3B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><rect x={width*(x+.09)} y={ground-height*.18} width={width*.06} height={height*.17} fill="#4A3425"/></g>)}
+          {kind === "market" && <g><path d={`M${width*.36} ${ground-height*.23} L${width*.64} ${ground-height*.23} L${width*.60} ${ground-height*.39} L${width*.40} ${ground-height*.39} Z`} fill="#1FA2A6" stroke={ink} strokeWidth={4}/><line x1={width*.38} y1={ground-height*.23} x2={width*.36} y2={ground-height*.03} stroke={ink} strokeWidth={5}/><line x1={width*.62} y1={ground-height*.23} x2={width*.64} y2={ground-height*.03} stroke={ink} strokeWidth={5}/></g>}
         </>}
         {kind === "battlefield" && <>
-          <path d={\`M0 \${ground-height*.28} Q\${width*.25} \${ground-height*.40} \${width*.5} \${ground-height*.25} T\${width} \${ground-height*.32} L\${width} \${ground} L0 \${ground} Z\`} fill="#B59A79"/>
-          {[.08,.18,.82,.92].map((x,i)=><g key={x}><line x1={width*x} y1={ground-height*.52} x2={width*x} y2={ground} stroke={ink} strokeWidth={5}/><path d={\`M\${width*x} \${ground-height*.52} L\${width*(x+.08)} \${ground-height*.48} L\${width*x} \${ground-height*.43} Z\`} fill={i%2 ? "#C0392B" : "#E0A526"}/></g>)}
+          <path d={`M0 ${ground-height*.28} Q${width*.25} ${ground-height*.40} ${width*.5} ${ground-height*.25} T${width} ${ground-height*.32} L${width} ${ground} L0 ${ground} Z`} fill="#B59A79"/>
+          {[.08,.18,.82,.92].map((x,i)=><g key={x}><line x1={width*x} y1={ground-height*.52} x2={width*x} y2={ground} stroke={ink} strokeWidth={5}/><path d={`M${width*x} ${ground-height*.52} L${width*(x+.08)} ${ground-height*.48} L${width*x} ${ground-height*.43} Z`} fill={i%2 ? "#C0392B" : "#E0A526"}/></g>)}
         </>}
         {kind === "map" && <>
-          <path d={\`M\${width*.14} \${height*.28} L\${width*.36} \${height*.20} L\${width*.57} \${height*.30} L\${width*.79} \${height*.23} L\${width*.88} \${height*.53} L\${width*.66} \${height*.69} L\${width*.4} \${height*.64} L\${width*.18} \${height*.54} Z\`} fill="#D5BE91" stroke="#8D7652" strokeWidth={4}/>
-          <path d={\`M\${width*.25} \${height*.35} C\${width*.40} \${height*.42} \${width*.53} \${height*.34} \${width*.69} \${height*.52}\`} fill="none" stroke={accent} strokeWidth={Math.max(3,width*.005)} strokeDasharray="10 10"/>
+          <path d={`M${width*.14} ${height*.28} L${width*.36} ${height*.20} L${width*.57} ${height*.30} L${width*.79} ${height*.23} L${width*.88} ${height*.53} L${width*.66} ${height*.69} L${width*.4} ${height*.64} L${width*.18} ${height*.54} Z`} fill="#D5BE91" stroke="#8D7652" strokeWidth={4}/>
+          <path d={`M${width*.25} ${height*.35} C${width*.40} ${height*.42} ${width*.53} ${height*.34} ${width*.69} ${height*.52}`} fill="none" stroke={accent} strokeWidth={Math.max(3,width*.005)} strokeDasharray="10 10"/>
         </>}
         <line x1={0} y1={ground} x2={width} y2={ground} stroke={ink} strokeWidth={Math.max(2,width*.002)} opacity={0.45}/>
       </svg>
@@ -218,7 +218,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
       svg={
         <>
           {scene.props?.map((name, i) => (
-            <At key={\`\${scene.id}-prop-\${name}-\${i}\`}
+            <At key={`${scene.id}-prop-${name}-${i}`}
               x={width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.105)}
               y={ground - 82*scale} s={scale*0.8}>
               <SceneProp name={name} scale={1}/>
