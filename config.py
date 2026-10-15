@@ -63,7 +63,6 @@ PROVIDERS = [
         "env_key": "GROQ_API_KEY",
         "base_url": "https://api.groq.com/openai/v1",
         "models": _model_list("GROQ_MODELS", ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]),
-        "verify_models": True,
         "json_mode": True,
     },
     {
