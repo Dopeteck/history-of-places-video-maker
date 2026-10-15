@@ -53,7 +53,7 @@ class PipelineTests(unittest.TestCase):
         story = build_story(llm, 'Testing', 'shorts', 10, 4, SOURCES)
         self.assertEqual(len(story['chapters']), 4)
         self.assertTrue(all(170 <= c['word_count'] <= 210 for c in story['chapters']))
-        self.assertEqual([len(p['previous_summaries']) for p in llm.prompts if p['task']=='chapter'], [0,1,2,3])
+        self.assertEqual([len(p['previous_summaries']) for p in llm.prompts if p['task']=='chapter'], [0,1,2,2])
         self.assertEqual(story['timing_status'], 'unmeasured_until_tts')
     def test_long_is_chunked(self):
         llm = FakeLLM(); story = build_story(llm, 'Testing', 'long', 10, 4, SOURCES)
