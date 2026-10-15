@@ -492,7 +492,7 @@ def _smoke_story() -> dict:
                                              {"id": "ruler", "action": "shock", "x": 0.71, "emotion": "shocked"}]},
                     {"at": 0.79, "actions": [{"id": "guard", "action": "hold", "x": 0.50, "emotion": "happy"},
                                              {"id": "ruler", "action": "cheer", "x": 0.71, "emotion": "happy"}]}],
-                 "background": "room", "camera": "push_in", "effects": ["fade"],
+                 "background": "palace", "camera": "push_in", "effects": ["fade"],
                  "props": ["crown", "table"], "emphasis_words": ["missing crown"], "source_ids": [], "uncertainty": "unverified"},
             ],
         }
