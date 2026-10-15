@@ -37,6 +37,55 @@ def identifier(value: Any) -> str:
     return value
 
 
+def normalise_identifier(value: Any, fallback: Any, used: set[str]) -> str:
+    """Keep usable IDs; derive a stable unique ID when model output omits/breaks one."""
+    try:
+        candidate = identifier(value)
+    except (ValueError, TypeError):
+        candidate = ""
+    if candidate and candidate not in used:
+        return candidate
+
+    source = fallback if isinstance(fallback, str) else ""
+    candidate = re.sub(r"[^a-z0-9_-]+", "_", source.strip().lower()).strip("_-")
+    if not candidate or not candidate[0].isalpha():
+        candidate = f"character_{candidate}".rstrip("_-")
+    candidate = candidate[:60].rstrip("_-") or "character"
+    base = candidate
+    suffix = 2
+    while candidate in used:
+        tail = f"_{suffix}"
+        candidate = f"{base[:60 - len(tail)].rstrip('_-')}{tail}"
+        suffix += 1
+    return candidate
+
+
+_ACCESSORY_SYNONYMS = {
+    "headscarf": "headwrap",
+    "scarf": "headwrap",
+    "turban": "headwrap",
+    "tie": "bow_tie",
+    "bowtie": "bow_tie",
+    "helmet": "hat",
+    "cap": "hat",
+    "spectacles": "glasses",
+    "staff": "spear",
+}
+
+
+def normalise_choice(value: Any, choices: set[str], default: str = "none") -> str:
+    """Normalise model labels and common synonyms to one allowed value."""
+    values = value if isinstance(value, list) else [value]
+    for item in values:
+        if not isinstance(item, str):
+            continue
+        label = re.sub(r"\s+", "_", item.strip().lower())
+        label = _ACCESSORY_SYNONYMS.get(label, label)
+        if label in choices:
+            return label
+    return default
+
+
 def words(value: str) -> int:
     return len(re.findall(r"\b[\w]+(?:['’-][\w]+)*\b", value))
 
@@ -72,22 +121,19 @@ def validate_outline(data: dict, count: int) -> dict:
     cast, seen = [], set()
     if not isinstance(data['cast'], list) or not 1 <= len(data['cast']) <= 8:
         raise ValueError('Cast must contain 1–8 characters')
-    for c in data['cast']:
+    for index, c in enumerate(data['cast'], 1):
         if not isinstance(c, dict):
             raise ValueError('Each cast member must be a JSON object')
-        cid = identifier(c.get('id'))
-        accessory, accent = c.get('accessory'), c.get('accent')
-        # Validate types before set membership: list/dict values from model output
-        # must become a clear schema error, not "unhashable type".
-        if not isinstance(accessory, str) or accessory not in ACCESSORIES:
-            raise ValueError(f'Cast accessory must be one of: {", ".join(sorted(ACCESSORIES))}')
+        name = text(c.get('name'), 'cast name', 100)
+        role = text(c.get('role'), 'role', 200)
+        trait = text(c.get('trait'), 'trait', 200)
+        cid = normalise_identifier(c.get('id'), name or f'character_{index}', seen)
+        accessory = normalise_choice(c.get('accessory'), ACCESSORIES, 'none')
+        accent = c.get('accent')
         if not isinstance(accent, str) or accent not in ACCENTS:
             raise ValueError(f'Cast accent must be one of: {", ".join(sorted(ACCENTS))}')
-        if cid in seen:
-            raise ValueError('Duplicate cast identity')
         seen.add(cid)
-        cast.append({'id': cid, 'name': text(c.get('name'), 'cast name', 100),
-                     'role': text(c.get('role'), 'role', 200), 'trait': text(c.get('trait'), 'trait', 200),
+        cast.append({'id': cid, 'name': name, 'role': role, 'trait': trait,
                      'accessory': accessory, 'accent': accent})
     if not isinstance(data['chapters'], list) or len(data['chapters']) != count:
         raise ValueError(f'Outline must contain exactly {count} chapters/parts')
@@ -104,8 +150,12 @@ def validate_outline(data: dict, count: int) -> dict:
             'chapters': chapters, 'ending': text(data['ending'], 'ending', 800)}
 
 
-def validate_chapter(data: dict, cast_ids: set[str], source_ids: set[str],
+def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids: set[str],
                      number: int, minimum: int, maximum: int) -> dict:
+    # A mapping retains cast order and names so missing model IDs can be repaired.
+    cast_map = dict(cast_ids) if isinstance(cast_ids, dict) else {cid: cid for cid in cast_ids}
+    if not cast_map:
+        raise ValueError('Chapter validation requires at least one cast identity')
     scenes = data['scenes']
     if not isinstance(scenes, list) or not 4 <= len(scenes) <= 60:
         raise ValueError('Chapter must have 4–60 scenes')
@@ -119,21 +169,49 @@ def validate_chapter(data: dict, cast_ids: set[str], source_ids: set[str],
             raise ValueError('At most four on-screen characters')
         used, checked = set(), []
         for a in actors:
-            cid = a['id']
-            if cid not in cast_ids or cid in used:
-                raise ValueError('Unknown or duplicate on-screen character')
+            raw_cid = a.get('id')
+            cid = raw_cid if isinstance(raw_cid, str) and raw_cid in cast_map else None
+            actor_name = a.get('name') or a.get('character') or a.get('role')
+            if cid is None or cid in used:
+                if isinstance(actor_name, str):
+                    wanted = actor_name.strip().casefold()
+                    named_match = next((key for key, name in cast_map.items()
+                                        if str(name).strip().casefold() == wanted and key not in used), None)
+                else:
+                    named_match = None
+                if named_match is not None:
+                    cid = named_match
+                else:
+                    cid = next((key for key in cast_map if key not in used), None)
+            if cid is None:
+                raise ValueError('Scene has more character entries than available cast identities')
             used.add(cid)
-            x = a['x']
-            if isinstance(x, bool) or not isinstance(x, (int, float)) or not 0.1 <= x <= 0.9:
-                raise ValueError('Character x must be 0.1–0.9 of frame width')
-            if a['pose'] not in POSES or a['expression'] not in EXPRESSIONS:
+            raw_x = a.get('x', 0.5)
+            try:
+                x = float(raw_x) if not isinstance(raw_x, bool) else 0.5
+            except (TypeError, ValueError):
+                x = 0.5
+            if x != x:  # NaN cannot be clamped meaningfully.
+                x = 0.5
+            x = min(0.9, max(0.1, x))
+            if a.get('pose') not in POSES or a.get('expression') not in EXPRESSIONS:
                 raise ValueError('Unknown pose or expression')
             checked.append({'id': cid, 'x': x, 'pose': a['pose'], 'expression': a['expression']})
         if s['background'] not in BACKGROUNDS or s['camera'] not in CAMERAS:
             raise ValueError('Unknown background or camera')
-        for key, choices in [('effects', EFFECTS), ('props', PROPS)]:
-            if not isinstance(s[key], list) or any(v not in choices for v in s[key]):
-                raise ValueError(f'Invalid {key}')
+        effects = s.get('effects')
+        if not isinstance(effects, list) or any(v not in EFFECTS for v in effects):
+            raise ValueError('Invalid effects')
+        raw_props = s.get('props', [])
+        if isinstance(raw_props, str):
+            raw_props = [raw_props]
+        if not isinstance(raw_props, list):
+            raw_props = []
+        props = []
+        for value in raw_props:
+            prop = normalise_choice(value, PROPS, 'none')
+            if prop != 'none' and prop not in props:
+                props.append(prop)
         refs = s['source_ids']
         if not isinstance(refs, list) or any(r not in source_ids for r in refs):
             raise ValueError('Scene references a source not supplied by the user')
@@ -150,7 +228,7 @@ def validate_chapter(data: dict, cast_ids: set[str], source_ids: set[str],
             raise ValueError('Emphasis must occur in narration')
         clean.append({'id': f'c{number:02d}s{i:03d}', 'narration': narration,
                       'characters_on_screen': checked, 'background': s['background'],
-                      'camera': s['camera'], 'effects': s['effects'], 'props': s['props'],
+                      'camera': s['camera'], 'effects': effects, 'props': props,
                       'emphasis_words': emphasis, 'source_ids': refs, 'uncertainty': uncertainty})
     total = sum(words(s['narration']) for s in clean)
     if not minimum <= total <= maximum:
@@ -198,7 +276,8 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
                        'background': 'palace', 'camera': 'push_in', 'effects': ['cut'], 'props': [],
                        'emphasis_words': [], 'source_ids': [], 'uncertainty': 'unverified'}]}}
         result = llm.generate(SYSTEM, prompt, lambda d: validate_chapter(
-            d, {c['id'] for c in outline['cast']}, {s['id'] for s in sources}, number, minimum, maximum))
+            d, {c['id']: c['name'] for c in outline['cast']},
+            {s['id'] for s in sources}, number, minimum, maximum))
         result['title'] = chapter['title']
         chapters.append(result)
         summaries.append(result['summary'])
@@ -222,7 +301,7 @@ def validate_saved_story(story: dict) -> dict:
     outline = validate_outline(story['outline'], len(chapters))
     scene_ids = set()
     for i, ch in enumerate(chapters, 1):
-        result = validate_chapter(ch, {c['id'] for c in outline['cast']},
+        result = validate_chapter(ch, {c['id']: c['name'] for c in outline['cast']},
                                   {s['id'] for s in sources}, i, 1, 5000)
         if ch['number'] != i:
             raise ValueError('Chapter order changed')
