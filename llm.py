@@ -247,10 +247,11 @@ class JsonLLM:
                     os.environ[provider["env_key"]], float(config.PROVIDER_TIMEOUT_SECONDS))
             except Exception as exc:
                 self._groq_catalogue_unavailable = True
+                status, body = _error_details(exc)
                 log.warning(
-                    "Groq /models catalogue check failed (%s: %s); attempting configured "
-                    "chat model %s via the OpenAI SDK",
-                    type(exc).__name__, _safe(exc), model,
+                    "Groq /models catalogue check failed (%s, HTTP %s, body=%s); "
+                    "attempting configured chat model %s via the OpenAI SDK",
+                    type(exc).__name__, status, body or _safe(exc), model,
                 )
                 return True
         if model not in self._groq_models_cache:
