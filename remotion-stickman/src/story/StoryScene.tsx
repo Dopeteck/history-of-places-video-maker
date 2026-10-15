@@ -334,7 +334,11 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
             const state = beatState(actor.id, f);
             const char = cast.find((member) => member.id === actor.id);
             const isHolding = state.action === "hold" || state.action === "carry";
-            const heldProp = isHolding && scene.props?.length ? scene.props[0] : "";
+            const handProps = ["crown", "coin", "scroll", "torch", "fire", "sword", "spear", "shield", "gold", "money", "chain", "barrel"];
+            const portableProps = (scene.props ?? []).filter((name) => handProps.includes(name));
+            const narratedProp = portableProps.find((name) => narrationLower.includes(name));
+            const heldProp = isHolding ? (narratedProp ?? portableProps[0] ?? "") : "";
+            const heldScale = heldProp === "crown" ? 0.58 : heldProp === "coin" ? 0.34 : 0.45;
             const draw = scene.effects?.includes("fade")
               ? interpolate(f, [0, Math.min(12, duration)], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"})
               : scene.effects?.includes("pop_in") ? interpolate(f, [0, 7], [0,1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"}) : 1;
@@ -350,7 +354,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
                 mod={motion(actor.id)} trails={state.action === "run" || state.action === "fall"}
                 draw={draw}>
                 {(j: Joints) => heldProp ? (
-                  <At x={(j.lHand[0]+j.rHand[0])/2} y={(j.lHand[1]+j.rHand[1])/2} s={scale*0.45}>
+                  <At x={(j.lHand[0]+j.rHand[0])/2} y={(j.lHand[1]+j.rHand[1])/2} s={scale*heldScale}>
                     <SceneProp name={heldProp} scale={1}/>
                   </At>
                 ) : null}
