@@ -176,7 +176,7 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         # Close explicitly so the pinned SDK works and connections are released.
         client = genai.Client(
             api_key=os.environ[provider['env_key']],
-            http_options=types.HttpOptions(timeout=int(timeout * 1000)),
+            http_options=types.HttpOptions(timeout=60000),
         )
         try:
             response = client.models.generate_content(
@@ -238,17 +238,21 @@ class JsonLLM:
         if provider.get("name") != "groq" or not provider.get("verify_models"):
             return True
         if self._groq_catalogue_unavailable:
-            return False
+            # The catalogue is advisory. Once it fails, attempt configured models
+            # through the OpenAI-compatible chat API instead of blocking the provider.
+            return True
         if self._groq_models_cache is None:
             try:
                 self._groq_models_cache = _groq_models(
                     os.environ[provider["env_key"]], float(config.PROVIDER_TIMEOUT_SECONDS))
-            except ProviderHTTPError as exc:
-                # A blocked/forbidden catalogue is an owner-side access problem, not
-                # a transient model failure. Avoid repeating the same doomed request.
-                if exc.status_code in (400, 401, 403, 404):
-                    self._groq_catalogue_unavailable = True
-                raise
+            except Exception as exc:
+                self._groq_catalogue_unavailable = True
+                log.warning(
+                    "Groq /models catalogue check failed (%s: %s); attempting configured "
+                    "chat model %s via the OpenAI SDK",
+                    type(exc).__name__, _safe(exc), model,
+                )
+                return True
         if model not in self._groq_models_cache:
             log.warning("Skipping Groq model %s: absent from live /models catalogue", model)
             return False
