@@ -360,8 +360,10 @@ def _render_icon_card(shot,size,t):
     im=Image.new("RGBA",size,(*color,255));d=ImageDraw.Draw(im);ink=(30,29,27)
     for cx,cy,sx,sy in ((w*.035,h*.08,1,1),(w*.965,h*.08,-1,1),(w*.035,h*.93,1,-1),(w*.965,h*.93,-1,-1)):
         d.line((cx,cy,cx+sx*w*.035,cy+sy*h*.045),fill=ink,width=max(3,w//270))
-        d.ellipse((cx+sx*w*.012,cy+sy*h*.005,cx+sx*w*.030,cy+sy*h*.023),fill=ink)
-        d.ellipse((cx+sx*w*.025,cy+sy*h*.026,cx+sx*w*.043,cy+sy*h*.044),fill=ink)
+        xa,xb=cx+sx*w*.012,cx+sx*w*.030;ya,yb=cy+sy*h*.005,cy+sy*h*.023
+        d.ellipse((min(xa,xb),min(ya,yb),max(xa,xb),max(ya,yb)),fill=ink)
+        xa,xb=cx+sx*w*.025,cx+sx*w*.043;ya,yb=cy+sy*h*.026,cy+sy*h*.044
+        d.ellipse((min(xa,xb),min(ya,yb),max(xa,xb),max(ya,yb)),fill=ink)
     _icon(d,str(shot.get("icon","question")),(w*.5,h*.40),min(w*.15,h*.27))
     caption=str(shot.get("caption","")).strip()
     if caption:
