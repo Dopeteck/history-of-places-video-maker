@@ -204,9 +204,10 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
       /\b(table)\b/.test(narrationLower) &&
       /\b(under|beneath|below)\b/.test(narrationLower)) {
     const hasReveal = /\b(found|finds|discovered|revealed|uncovered|retrieved|lifted)\b/.test(narrationLower);
-    const action: Action = hasReveal && /\b(lifted|retrieved|held|holding)\b/.test(narrationLower)
-      ? "hold" : hasReveal ? "point" : "crouch";
-    moveActorAt(0.79, 0.50, action, hasReveal ? "happy" : "neutral");
+    const isLifted = hasReveal && /\b(lifted|retrieved|held|holding)\b/.test(narrationLower);
+    const action: Action = isLifted ? "hold" : hasReveal ? "point" : "crouch";
+    // After indicating the discovery below the table, step out to its right edge and raise it.
+    moveActorAt(0.79, isLifted ? 0.60 : 0.50, action, hasReveal ? "happy" : "neutral");
   }
   const beatState = (id: string, atFrame: number): ActorState => {
     const fallbackActor = actors.find((actor) => actor.id === id) ?? {id, x: 0.5, pose: "standing", expression: "neutral"};
@@ -297,7 +298,8 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
             const defaultX = width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.18);
             const x = name === "table" ? width * 0.5
               : name === "chest" ? width * 0.86
-              : throneCrown || coinUnderTable || crownUnderTable ? width * 0.5
+              : crownUnderTable ? width * 0.48
+              : throneCrown || coinUnderTable ? width * 0.5
               : defaultX;
             const y = name === "table" ? ground - 100 * scale
               : name === "chest" ? ground - 48 * scale
@@ -314,7 +316,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
               propOpacity = interpolate(f, [duration * 0.32, duration * 0.43], [0, 1],
                 {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
               if (isHeldLater) {
-                propOpacity *= interpolate(f, [duration * 0.62, duration * 0.70], [1, 0],
+                propOpacity *= interpolate(f, [duration * 0.68, duration * 0.78], [1, 0],
                   {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
               }
             }
