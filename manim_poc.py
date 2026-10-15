@@ -59,7 +59,7 @@ PIXELS = (1080, 1920)
 INK = "#282622"
 PAPER = "#F6EED8"
 MUSTARD = "#E8B94F"
-COAT = "#8C5639"
+COAT = "#356B70"
 TINTS = {
     "winter_room": (101, 70, 49),
     "village_street": (113, 83, 59),
