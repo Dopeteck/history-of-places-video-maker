@@ -108,7 +108,10 @@ def _illustration_plate(base: Image.Image, shot: dict[str,Any]) -> Image.Image:
     theme=str(shot.get("theme","generic"));key=(str(shot.get("scene",""))+" "+str(shot.get("id",""))).lower()
     rng=random.Random(e._seed(str(shot.get("id","plate"))))
     if theme=="snow_forest" or "snow" in key or "winter" in key:
-        d.rectangle((0,h*.63,w,h),fill=(225,231,226))
+        # Snow scenes in the reference are pale grey/white with bare inked branches.
+        d.rectangle((0,0,w,h),fill=(216,219,219))
+        d.polygon([(0,h*.68),(w*.17,h*.62),(w*.35,h*.70),(w*.56,h*.63),(w*.81,h*.69),(w,h*.63),(w,h),(0,h)],fill=(241,242,236))
+        d.rectangle((0,h*.72,w,h),fill=(229,232,226))
         for tx,top in ((65,.24),(220,.17),(1020,.21),(1195,.29),(890,.33)):
             base_y=h*.77;top_y=h*top
             _line(d,[(tx,base_y),(tx,top_y)],(89,77,62),max(4,int(w*.005)))
@@ -228,9 +231,17 @@ def _illustration_plate(base: Image.Image, shot: dict[str,Any]) -> Image.Image:
         d.ellipse((w*.68,h*.63,w*.79,h*.69),fill=(208,173,113),outline=INK,width=3)
         d.ellipse((w*.82,h*.64,w*.88,h*.68),fill=(214,192,150),outline=INK,width=3)
         if "sleep" in key or "bed" in key:
-            d.rectangle((w*.48,h*.48,w*.93,h*.58),fill=(110,75,50),outline=INK,width=4)
-            d.polygon([(w*.48,h*.50),(w*.94,h*.50),(w*.90,h*.39),(w*.52,h*.39)],fill=(226,214,185),outline=INK)
-            _person(d,w*.71,h*.58,h*.34,coat=(114,89,68))
+            # Exact key motif from the supplied video: an exhausted cow tucked into a bed by the hearth.
+            bx0,by0,bx1,by1=w*.46,h*.42,w*.94,h*.68
+            d.rectangle((bx0,by0,bx1,by1),fill=(132,87,57),outline=INK,width=6)
+            d.rectangle((bx0+w*.015,by0+h*.02,bx1-w*.015,by0+h*.18),fill=(230,216,186),outline=INK,width=4)
+            d.polygon([(bx0+w*.02,by0+h*.14),(bx1-w*.02,by0+h*.14),(bx1-w*.05,by1-h*.025),(bx0+w*.05,by1-h*.025)],fill=(185,92,94),outline=INK)
+            _cow(d,w*.67,h*.58,h*.31,lying=True)
+            # Pillow and cover overlap the cow body so it reads as tucked-in, not as a pasture animal.
+            d.ellipse((w*.79,h*.45,w*.90,h*.51),fill=(243,235,213),outline=INK,width=3)
+            d.polygon([(w*.56,h*.57),(w*.78,h*.54),(w*.82,h*.64),(w*.57,h*.64)],fill=(186,91,93),outline=INK)
+            d.line((bx0+w*.05,by1,bx0+w*.05,h*.77),fill=INK,width=5)
+            d.line((bx1-w*.05,by1,bx1-w*.05,h*.77),fill=INK,width=5)
         else:
             _person(d,w*.80,h*.90,h*.44,coat=(147,83,53),hood=True)
     else:
@@ -275,7 +286,11 @@ def _icon(d, name, center, r):
         for lx in (x-r*.32,x-r*.03,x+r*.24):d.line((lx,y+r*.28,lx,y+r*.52),fill=ink,width=sw)
     elif name in {"pot","cauldron","pottage"}:
         _cauldron(d,x,y-r*.04,r*.62,False)
-        for off in (-.22,0,.22):d.arc((x+off*r-r*.08,y-r*.84,x+off*r+r*.13,y-r*.42),190,350,fill=paper,width=max(4,sw))
+        # Three separate curling steam wisps, matching the black cauldron pictogram in the reference.
+        for off,phase in ((-.25,0),(.02,1),(.27,2)):
+            cx=x+off*r;top=y-r*.84
+            d.arc((cx-r*.12,top,cx+r*.10,top+r*.31),190,525,fill=(255,250,232),width=max(4,sw))
+            d.arc((cx-r*.04,top+r*.10,cx+r*.15,top+r*.42),15,320,fill=(255,250,232),width=max(4,sw))
     elif name in {"bread","loaf"}:
         d.ellipse((x-r*.61,y+r*.18,x+r*.61,y+r*.48),fill=(128,86,52),outline=ink,width=sw)
         d.rounded_rectangle((x-r*.48,y-r*.20,x+r*.48,y+r*.28),radius=int(r*.23),fill=(214,160,82),outline=ink,width=sw)
@@ -305,11 +320,12 @@ def _icon(d, name, center, r):
         d.line((x-r*.62,y,x+r*.40,y),fill=ink,width=sw*2)
         d.polygon([(x+r*.65,y),(x+r*.30,y-r*.26),(x+r*.30,y+r*.26)],fill=ink)
     elif name=="hand":
-        d.polygon([(x-r*.45,y+r*.50),(x-r*.52,y-r*.02),(x-r*.43,y-r*.28),
-                   (x-r*.32,y-r*.04),(x-r*.22,y-r*.49),(x-r*.10,y-r*.05),
-                   (x+r*.02,y-r*.56),(x+r*.14,y-r*.02),(x+r*.26,y-r*.40),
-                   (x+r*.34,y+r*.04),(x+r*.50,y-r*.08),(x+r*.52,y+r*.18),
-                   (x+r*.25,y+r*.54)],fill=paper,outline=ink)
+        # Palm with five separated fingers so the silhouette reads as an upright hand.
+        d.rounded_rectangle((x-r*.37,y-r*.05,x+r*.37,y+r*.48),radius=int(r*.10),fill=paper,outline=ink,width=sw)
+        for offset,height in ((-.31,.49),(-.15,.61),(0,.66),(.16,.60),(.32,.45)):
+            fx=x+offset*r
+            d.rounded_rectangle((fx-r*.085,y-r*height,fx+r*.085,y+r*.10),radius=int(r*.065),fill=paper,outline=ink,width=max(3,sw-2))
+        d.line((x-r*.31,y+r*.26,x+r*.31,y+r*.26),fill=(219,203,171),width=max(2,sw//2))
     else:
         d.ellipse((x-r*.48,y-r*.48,x+r*.48,y+r*.48),fill=paper,outline=ink,width=sw)
         d.text((x,y),"?",font=e._font(int(r*.85)),fill=ink,anchor="mm")
@@ -425,7 +441,7 @@ def _render_card(shot,plate,t,duration,size):
         d.polygon([(w*.30,h*.06),(w*.70,h*.06),(w*.66,h*.17),(w*.34,h*.17)],fill=(250,238,204),outline=ink)
         e.draw_fitted_text(d,f"METHOD {shot.get('number','5')}",(w*.5,h*.115),int(w*.36),int(h*.06),ink,color,0,1)
         _icon(d,str(shot.get("icon","bread")),(w*.5,h*.47),min(w*.17,h*.28))
-        e.draw_fitted_text(d,str(shot.get("caption","BARK BREAD")),(w*.5,h*.83),int(w*.88),int(h*.12),ink,color,0,2)
+        e.draw_fitted_text(d,str(shot.get("caption","BARK BREAD")),(w*.5,h*.83),int(w*.88),int(h*.12),(255,255,255),ink,max(2,w//180),2)
         e._draw_fx(card,shot,t,str(shot.get("id","shot")));return card
     if kind=="face_card":
         color=e._color(shot.get("card_color"),(225,190,114));card=Image.new("RGBA",size,(*color,255));d=ImageDraw.Draw(card)
