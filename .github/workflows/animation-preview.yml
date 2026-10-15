@@ -29,7 +29,7 @@ jobs:
       - name: Install minimal offline renderer dependency
         run: python -m pip install Pillow==11.1.0
       - name: Run animation regression tests
-        run: python -m unittest tests.test_animation_engine -v
+        run: python -m unittest discover -s tests -p "test_animation_engine.py" -v
       - name: Render 1080x1920 golden preview
         run: python animation_engine.py --render-golden --width 1080 --height 1920 --fps 30 --audio synthetic
       - name: Verify output resolution and frame rate
