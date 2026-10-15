@@ -468,7 +468,10 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
                     beats.append({"at": at, "actions": states})
                     prior_at = at
 
-        if not beats:
+        if len(beats) < 3:
+            # One or two model-selected poses still produce mostly static scenes. Require
+            # a beginning/action/reaction sequence; repair sparse choreography locally.
+            beats = []
             lower_narration = narration.casefold()
             movement_verbs = ("run", "ran", "running", "chase", "flee", "fled", "hurry", "rushed", "escape")
             conflict_verbs = ("fight", "attacked", "attack", "struck", "strike", "battle", "punch")
@@ -499,6 +502,8 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
                             action, emotion = ("shock", "angry") if actor_index == 0 else ("fall", "shocked")
                         elif any(word in lower_narration for word in movement_verbs):
                             action = "point" if actor_index == 0 else "think"
+                            if actor_index == 0:
+                                x += -0.14 if actor["x"] > 0.5 else 0.14
                         else:
                             action = "point" if actor_index == 0 else "shrug"
                     states.append({"id": actor["id"], "action": action,
