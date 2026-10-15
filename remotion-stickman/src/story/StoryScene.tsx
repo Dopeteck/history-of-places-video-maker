@@ -225,7 +225,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
             const coinUnderTable = name === "coin" && hasTable;
             const defaultX = width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.18);
             const x = name === "table" ? width * 0.5
-              : name === "chest" ? width * 0.78
+              : name === "chest" ? width * 0.86
               : throneCrown || coinUnderTable ? width * 0.5
               : defaultX;
             const y = name === "table" ? ground - 100 * scale
