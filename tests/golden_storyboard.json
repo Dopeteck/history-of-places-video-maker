@@ -74,7 +74,7 @@
       "duration": 0.9
     },
     {
-      "id": "pottage_card",
+      "id": "pottage_card_early",
       "type": "icon_card",
       "theme": "market",
       "icon": "pottage",
