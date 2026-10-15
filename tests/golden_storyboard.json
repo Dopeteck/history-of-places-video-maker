@@ -74,12 +74,12 @@
       "duration": 0.9
     },
     {
-      "id": "warmth_hand_card",
+      "id": "pottage_card",
       "type": "icon_card",
       "theme": "market",
-      "icon": "hand",
+      "icon": "pottage",
       "card_color": "#E9C25C",
-      "caption": "KEEP WARM",
+      "caption": "POTTAGE.",
       "overlay": {
         "kind": "tick"
       },
