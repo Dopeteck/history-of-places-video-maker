@@ -1,0 +1,83 @@
+name: Manim hybrid proof of concept
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feat/reference-paced-animation-engine
+    paths:
+      - 'manim_poc.py'
+      - 'reference_art_direction.py'
+      - 'animation_engine.py'
+      - 'tools/render_manim_poc.py'
+      - 'requirements-manim-poc.txt'
+      - 'requirements*.txt'
+      - 'tests/**'
+      - '.github/workflows/manim-poc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-manim-poc:
+    name: Render and inspect Manim proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-manim-poc.txt
+      - name: Install Manim system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ffmpeg fonts-dejavu-core build-essential python3-dev \
+            pkg-config libcairo2-dev libpango1.0-dev libffi-dev
+      - name: Install isolated Manim dependencies
+        run: python -m pip install -r requirements-manim-poc.txt
+      - name: Verify toolchain and syntax
+        run: |
+          python -m manim --version
+          ffmpeg -version | head -n 1
+          python -m py_compile manim_poc.py reference_art_direction.py animation_engine.py tools/render_manim_poc.py
+      - name: Render hybrid proof at 1080x1920 / 30 FPS
+        run: python tools/render_manim_poc.py --output output/manim_poc.mp4 --width 1080 --height 1920 --fps 30 --audio synthetic
+      - name: Print report and compact frame proof
+        run: |
+          cat output/manim_poc.report.json
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          path = Path("output/manim_poc.contact-sheet.jpg")
+          print("CONTACT_SHEET_BASE64=" + base64.b64encode(path.read_bytes()).decode("ascii"))
+          PY
+      - name: Upload rendered proof, report and contact sheet
+        uses: actions/upload-artifact@v4
+        with:
+          name: manim-hybrid-proof-of-concept
+          path: |
+            output/manim_poc.mp4
+            output/manim_poc.report.json
+            output/manim_poc.contact-sheet.jpg
+          if-no-files-found: error
+          retention-days: 14
+
+  repo-regression:
+    name: Existing pipeline regression suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install existing project dependencies (Manim remains isolated)
+        run: python -m pip install -r requirements.txt
+      - name: Run current offline test suite
+        run: python -m unittest discover -s tests -v
