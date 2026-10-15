@@ -30,6 +30,7 @@ from manim import (
     LEFT,
     RIGHT,
     PI,
+    ParametricFunction,
     WHITE,
     BLACK,
     always_redraw,
@@ -280,20 +281,20 @@ def _hook_group() -> VGroup:
     first = Text(
         "CRAZIEST Survival Methods",
         font="DejaVu Sans",
-        font_size=29,
+        font_size=26,
         color=WHITE,
         weight="NORMAL",
     )
-    first.scale_to_fit_width(7.25).move_to(np.array([0, 2.94, 0]))
+    first.scale_to_fit_width(6.05).move_to(np.array([0, 3.12, 0]))
     second = Text(
         "Used By Medieval People",
         font="DejaVu Sans",
-        font_size=29,
+        font_size=26,
         color=WHITE,
         weight="NORMAL",
     )
-    second.scale_to_fit_width(6.35).move_to(np.array([-0.20, 2.51, 0]))
-    face_center = np.array([3.18, 2.51, 0])
+    second.scale_to_fit_width(5.10).move_to(np.array([-0.10, 2.70, 0]))
+    face_center = np.array([2.68, 2.70, 0])
     face = Circle(
         radius=0.16,
         color="#FFE9A0",
@@ -358,7 +359,7 @@ class ManimHybridProof(MovingCameraScene):
         self.camera.background_color = "#080706"
 
         # 1) Storybook hearth: richly drawn art, subtle push-in.
-        plate = self._cut("winter_room", "manim_hearth_establishing")
+        plate = self._cut("winter_room", "manim_sleeping_cow_bed")
         self.add(self.hook)
         self.play(
             self.card_mob.animate.scale(1.055).shift(LEFT * 0.10),
@@ -420,25 +421,21 @@ class ManimHybridProof(MovingCameraScene):
         for index, x_pos in enumerate((-0.10, 0.03, 0.16)):
             phase = index * 0.55
             steam_lines.add(
-                always_redraw(
-                    lambda x_pos=x_pos, phase=phase: Arc(
-                        radius=0.16,
-                        start_angle=PI * (0.18 + 0.05 * math.sin(self.time * 2 + phase)),
-                        angle=PI * 0.76,
-                        color="#F7EED8",
-                        stroke_width=3.0,
-                    ).move_to(
-                        np.array([
-                            0.15 + x_pos + 0.04 * math.sin(self.time * 2 + phase),
-                            -0.18 + 0.08 * math.sin(self.time * 2.5 + phase),
-                            0,
-                        ])
-                    )
+                ParametricFunction(
+                    lambda t, x_pos=x_pos, phase=phase: np.array([
+                        0.15 + x_pos + 0.055 * math.sin(2 * PI * t + phase),
+                        -0.05 + 0.68 * t,
+                        0,
+                    ]),
+                    t_range=[0, 1],
+                    color="#F7EED8",
+                    stroke_width=4.5,
                 )
             )
         self._track(steam_lines)
         self.play(
             self.card_mob.animate.scale(1.06).shift(RIGHT * 0.08),
+            steam_lines.animate.shift(UP * 0.14),
             run_time=1.18,
             rate_func=smooth,
         )
@@ -473,15 +470,19 @@ class ManimHybridProof(MovingCameraScene):
             Line([0.55, -0.66, 0], [0.68, -0.92, 0], color=INK, stroke_width=5),
         )
         steam = VGroup()
-        for xx in (-0.32, 0.0, 0.32):
+        for index, xx in enumerate((-0.32, 0.0, 0.32)):
+            phase = index * 0.65
             steam.add(
-                Arc(
-                    radius=0.19,
-                    start_angle=PI * 0.20,
-                    angle=PI * 0.80,
+                ParametricFunction(
+                    lambda t, xx=xx, phase=phase: np.array([
+                        xx + 0.08 * math.sin(2 * PI * t + phase),
+                        0.47 + 0.56 * t,
+                        0,
+                    ]),
+                    t_range=[0, 1],
                     color=PAPER,
-                    stroke_width=3.8,
-                ).move_to(np.array([xx, 0.98, 0]))
+                    stroke_width=5.0,
+                )
             )
         label = Text("POTTAGE.", font="DejaVu Sans", font_size=32,
                      color=INK, weight="BOLD").move_to(DOWN * 1.48)
