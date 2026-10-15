@@ -285,12 +285,13 @@ def _icon(d, name, center, r):
         d.ellipse((x-r*.13,y-r*.03,x+r*.02,y+r*.07),fill=ink)
         for lx in (x-r*.32,x-r*.03,x+r*.24):d.line((lx,y+r*.28,lx,y+r*.52),fill=ink,width=sw)
     elif name in {"pot","cauldron","pottage"}:
-        _cauldron(d,x,y-r*.04,r*.62,False)
-        # Three separate curling steam wisps, matching the black cauldron pictogram in the reference.
+        pot_r=r*.94
+        _cauldron(d,x,y-r*.02,pot_r,False)
+        # Three separate curling steam wisps rise well above the pot, like the reference pictogram.
         for off,phase in ((-.25,0),(.02,1),(.27,2)):
-            cx=x+off*r;top=y-r*.84
-            d.arc((cx-r*.12,top,cx+r*.10,top+r*.31),190,525,fill=(255,250,232),width=max(4,sw))
-            d.arc((cx-r*.04,top+r*.10,cx+r*.15,top+r*.42),15,320,fill=(255,250,232),width=max(4,sw))
+            cx=x+off*r;top=y-r*.87
+            d.arc((cx-r*.14,top,cx+r*.10,top+r*.32),190,525,fill=(255,250,232),width=max(4,sw))
+            d.arc((cx-r*.04,top+r*.10,cx+r*.16,top+r*.43),15,320,fill=(255,250,232),width=max(4,sw))
     elif name in {"bread","loaf"}:
         d.ellipse((x-r*.61,y+r*.18,x+r*.61,y+r*.48),fill=(128,86,52),outline=ink,width=sw)
         d.rounded_rectangle((x-r*.48,y-r*.20,x+r*.48,y+r*.28),radius=int(r*.23),fill=(214,160,82),outline=ink,width=sw)
