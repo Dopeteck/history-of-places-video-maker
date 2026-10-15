@@ -127,21 +127,21 @@ def articulated_stickman(x_position: ValueTracker, gait: ValueTracker) -> VGroup
         return math.sin(gait.get_value())
 
     def head_center():
-        return np.array([x(), ground + 1.91, 0.0])
+        return np.array([x(), ground + 1.91 * 1.22, 0.0])
 
     def shoulder(side: float):
-        return np.array([x() + side * 0.16, ground + 1.53, 0.0])
+        return np.array([x() + side * 0.16, ground + 1.53 * 1.22, 0.0])
 
     def hip(side: float):
-        return np.array([x() + side * 0.055, ground + 0.76, 0.0])
+        return np.array([x() + side * 0.055, ground + 0.76 * 1.22, 0.0])
 
     # Cloth silhouette provides a little visual mass and a distinct period costume.
     tunic = always_redraw(
         lambda: Polygon(
-            np.array([x() - 0.18, ground + 1.56, 0]),
-            np.array([x() + 0.18, ground + 1.56, 0]),
-            np.array([x() + 0.31, ground + 0.80, 0]),
-            np.array([x() - 0.27, ground + 0.80, 0]),
+            np.array([x() - 0.18, ground + 1.56 * 1.22, 0]),
+            np.array([x() + 0.18, ground + 1.56 * 1.22, 0]),
+            np.array([x() + 0.31, ground + 0.80 * 1.22, 0]),
+            np.array([x() - 0.27, ground + 0.80 * 1.22, 0]),
             color=INK,
             stroke_width=3.1,
             fill_color=COAT,
@@ -149,13 +149,13 @@ def articulated_stickman(x_position: ValueTracker, gait: ValueTracker) -> VGroup
         )
     )
     belt = _line(
-        lambda: np.array([x() - 0.25, ground + 0.98, 0]),
-        lambda: np.array([x() + 0.27, ground + 0.98, 0]),
+        lambda: np.array([x() - 0.25, ground + 0.98 * 1.22, 0]),
+        lambda: np.array([x() + 0.27, ground + 0.98 * 1.22, 0]),
         3.2,
     )
     neck = _line(
-        lambda: np.array([x(), ground + 1.70, 0]),
-        lambda: np.array([x(), ground + 1.51, 0]),
+        lambda: np.array([x(), ground + 1.70 * 1.22, 0]),
+        lambda: np.array([x(), ground + 1.51 * 1.22, 0]),
         3.4,
     )
     head = always_redraw(
@@ -190,7 +190,7 @@ def articulated_stickman(x_position: ValueTracker, gait: ValueTracker) -> VGroup
         )
     )
     torso = _line(
-        lambda: np.array([x(), ground + 1.52, 0]),
+        lambda: np.array([x(), ground + 1.52 * 1.22, 0]),
         lambda: np.array([x(), ground + 0.78, 0]),
         3.2,
     )
@@ -198,57 +198,57 @@ def articulated_stickman(x_position: ValueTracker, gait: ValueTracker) -> VGroup
     # Alternating arms: the elbow/wrist motion derives continuously from the gait tracker.
     left_arm_upper = _line(
         lambda: shoulder(-1),
-        lambda: np.array([x() - 0.35 - 0.10 * swing(), ground + 1.20, 0]),
+        lambda: np.array([x() - 0.35 - 0.10 * swing(), ground + 1.20 * 1.22, 0]),
         4.0,
     )
     left_arm_lower = _line(
-        lambda: np.array([x() - 0.35 - 0.10 * swing(), ground + 1.20, 0]),
-        lambda: np.array([x() - 0.30 - 0.22 * swing(), ground + 1.02, 0]),
+        lambda: np.array([x() - 0.35 - 0.10 * swing(), ground + 1.20 * 1.22, 0]),
+        lambda: np.array([x() - 0.30 - 0.22 * swing(), ground + 1.02 * 1.22, 0]),
         3.5,
     )
     right_arm_upper = _line(
         lambda: shoulder(1),
-        lambda: np.array([x() + 0.35 + 0.10 * swing(), ground + 1.20, 0]),
+        lambda: np.array([x() + 0.35 + 0.10 * swing(), ground + 1.20 * 1.22, 0]),
         4.0,
     )
     right_arm_lower = _line(
-        lambda: np.array([x() + 0.35 + 0.10 * swing(), ground + 1.20, 0]),
-        lambda: np.array([x() + 0.30 + 0.22 * swing(), ground + 1.02, 0]),
+        lambda: np.array([x() + 0.35 + 0.10 * swing(), ground + 1.20 * 1.22, 0]),
+        lambda: np.array([x() + 0.30 + 0.22 * swing(), ground + 1.02 * 1.22, 0]),
         3.5,
     )
 
     left_leg_upper = _line(
         lambda: hip(-1),
-        lambda: np.array([x() - 0.18 + 0.20 * swing(), ground + 0.40, 0]),
+        lambda: np.array([x() - 0.18 + 0.20 * swing(), ground + 0.40 * 1.22, 0]),
         4.2,
     )
     left_leg_lower = _line(
-        lambda: np.array([x() - 0.18 + 0.20 * swing(), ground + 0.40, 0]),
-        lambda: np.array([x() - 0.25 + 0.37 * swing(), ground + 0.08, 0]),
+        lambda: np.array([x() - 0.18 + 0.20 * swing(), ground + 0.40 * 1.22, 0]),
+        lambda: np.array([x() - 0.25 + 0.37 * swing(), ground + 0.08 * 1.22, 0]),
         3.8,
     )
     right_leg_upper = _line(
         lambda: hip(1),
-        lambda: np.array([x() + 0.18 - 0.20 * swing(), ground + 0.40, 0]),
+        lambda: np.array([x() + 0.18 - 0.20 * swing(), ground + 0.40 * 1.22, 0]),
         4.2,
     )
     right_leg_lower = _line(
-        lambda: np.array([x() + 0.18 - 0.20 * swing(), ground + 0.40, 0]),
-        lambda: np.array([x() + 0.25 - 0.37 * swing(), ground + 0.08, 0]),
+        lambda: np.array([x() + 0.18 - 0.20 * swing(), ground + 0.40 * 1.22, 0]),
+        lambda: np.array([x() + 0.25 - 0.37 * swing(), ground + 0.08 * 1.22, 0]),
         3.8,
     )
 
     boots = always_redraw(
         lambda: VGroup(
             Line(
-                [x() - 0.32 + 0.37 * swing(), ground + 0.08, 0],
-                [x() - 0.16 + 0.37 * swing(), ground + 0.08, 0],
+                [x() - 0.32 + 0.37 * swing(), ground + 0.08 * 1.22, 0],
+                [x() - 0.16 + 0.37 * swing(), ground + 0.08 * 1.22, 0],
                 color=INK,
                 stroke_width=5,
             ),
             Line(
-                [x() + 0.18 - 0.37 * swing(), ground + 0.08, 0],
-                [x() + 0.34 - 0.37 * swing(), ground + 0.08, 0],
+                [x() + 0.18 - 0.37 * swing(), ground + 0.08 * 1.22, 0],
+                [x() + 0.34 - 0.37 * swing(), ground + 0.08 * 1.22, 0],
                 color=INK,
                 stroke_width=5,
             ),
