@@ -142,9 +142,11 @@ class ProviderTests(unittest.TestCase):
                     attempts.append(model)
                     raise ProviderHTTPError(status, '{"error":"bad request"}', 'client error')
                 with patch.dict(os.environ,{'TEST_LLM_KEY':'test'}):
-                    with self.assertRaisesRegex(RuntimeError, 'All script providers failed'):
+                    with self.assertRaisesRegex(RuntimeError, 'Non-retryable HTTP'):
                         JsonLLM(call=call,sleep=lambda _:None,providers=PROVIDERS).generate('',{},lambda d:d)
-                self.assertEqual(attempts,['first','second'])
+                # Client errors are configuration/request problems: don't spend quota
+                # or silently switch providers when the request itself must be fixed.
+                self.assertEqual(attempts,['first'])
 
     def test_budget_exhausted_before_provider_call(self):
         attempts=[]
