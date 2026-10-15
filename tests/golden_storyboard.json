@@ -1,32 +1,306 @@
 {
-  "schema_version": 1,
-  "title": "A Strange Winter Village",
-  "hook": "❄ WHY DID THIS VILLAGE DO THAT?",
-  "notes": "Fictional visual-only timing and compositing test. Not a factual story or publication-ready script.",
+  "schema_version": 2,
+  "title": "Craziest Survival Methods Used By Medieval People",
+  "hook": "CRAZIEST Survival Methods\nUsed By Medieval People",
+  "notes": "Fictional visual-only compositing test patterned after the visual grammar of the supplied reference. This is not a fact-checked script.",
   "shots": [
-    {"id":"snow_forest_wide","type":"illustration","theme":"snow_forest","duration":1.25,"camera":"push_in","zoom_end":1.10,"effects":["snow"],"caption":"A village in deep winter"},
-    {"id":"village_street","type":"illustration","theme":"village_street","duration":1.25,"camera":"pan_right","effects":["smoke"],"caption":"The streets never warmed up"},
-    {"id":"chase_entry","type":"illustration","theme":"snow_forest","duration":1.25,"camera":"push_in","effects":["snow","dust"],"actor":{"x":0.55,"scale":420,"pose":"chase","expression":"scared","entrance":"left"}},
-    {"id":"the_knight_runs","type":"illustration","theme":"village_street","duration":1.25,"camera":"pan_left","effects":["dust"],"actor":{"x":0.57,"scale":470,"pose":"knight","expression":"determined","entrance":"right"},"caption":"Someone had a plan"},
-    {"id":"half_the_story","type":"statistic","theme":"generic","duration":1.25,"camera":"static","stat":"50%","subcaption":"OF THE VILLAGE","card_color":"#EAAF27","tint":"#EAAF27"},
-    {"id":"dog_not_pet","type":"icon_card","theme":"market","duration":1.25,"icon":"dog","card_color":"#D9A52F","caption":"NOT PETS","stamp":"NO!","stamp_color":"#CF3F36","overlay":{"kind":"cross"}},
-    {"id":"cow_heat","type":"icon_card","theme":"barn","duration":1.25,"icon":"cow","card_color":"#FFFFFF","caption":"KEEP THEM COOL","effects":["heat_waves"]},
-    {"id":"barn_medium","type":"illustration","theme":"barn","duration":1.25,"camera":"push_in","effects":["fire_flicker","zzz"],"actor":{"x":0.33,"scale":365,"pose":"standing","expression":"tired"},"caption":"But the barn stayed warm"},
-    {"id":"barn_close_fumes","type":"illustration","theme":"barn","duration":1.25,"camera":"push_in","zoom_end":1.12,"effects":["green_fumes","smoke"],"actor":{"x":0.65,"scale":410,"pose":"standing","expression":"shocked"},"overlay":{"kind":"cross","position":[0.85,0.18]},"caption":"The air was the problem"},
-    {"id":"face_tick","type":"face_card","theme":"generic","duration":1.25,"card_color":"#75BDE0","caption":"A BETTER IDEA","overlay":{"kind":"tick"}},
-    {"id":"then_now_stove_radiator","type":"then_now","theme":"kitchen","duration":1.25,"camera":"static","left_icon":"stove","right_icon":"radiator","left_label":"THEN","right_label":"NOW"},
-    {"id":"method_five","type":"method_card","theme":"market","duration":1.25,"number":"5","icon":"bread","caption":"BARK BREAD","card_color":"#FFF9E9","number_color":"#E97531"},
-    {"id":"village_night","type":"illustration","theme":"village_street","duration":1.25,"camera":"push_in","zoom_end":1.06,"effects":["smoke"],"caption":"Night fell again"},
-    {"id":"forest_snow_2","type":"illustration","theme":"snow_forest","duration":1.25,"camera":"pan_left","effects":["snow"],"actor":{"x":0.72,"scale":375,"pose":"standing","expression":"worried"}},
-    {"id":"steam_pot","type":"illustration","theme":"kitchen","duration":1.25,"camera":"push_in","effects":["steam"],"actor":{"x":0.4,"scale":350,"pose":"standing","expression":"neutral"},"caption":"Small changes mattered"},
-    {"id":"green_smell","type":"illustration","theme":"barn","duration":1.25,"camera":"push_in","effects":["green_fumes","smell"],"caption":"Follow the strange smell"},
-    {"id":"stat_three","type":"statistic","theme":"generic","duration":1.25,"camera":"static","stat":"3 STEPS","subcaption":"TO CHANGE THE ROUTINE","card_color":"#71BDE0","tint":"#71BDE0"},
-    {"id":"icon_snow","type":"icon_card","theme":"snow_forest","duration":1.25,"icon":"snowflake","card_color":"#79BFE4","caption":"COLD OUTSIDE"},
-    {"id":"icon_fire","type":"icon_card","theme":"barn","duration":1.25,"icon":"fire","card_color":"#EF7935","caption":"WARM INSIDE","effects":["fire_flicker"]},
-    {"id":"runner_exit","type":"illustration","theme":"village_street","duration":1.25,"camera":"pan_right","effects":["dust"],"actor":{"x":0.7,"scale":410,"pose":"running","expression":"happy","entrance":"slide_left"}},
-    {"id":"method_two","type":"method_card","theme":"kitchen","duration":1.25,"number":"2","icon":"radiator","caption":"CHECK THE AIRFLOW","card_color":"#FFF9E9","number_color":"#D9A52F"},
-    {"id":"tick_closeup","type":"face_card","theme":"generic","duration":1.25,"card_color":"#71BDE0","caption":"THAT WORKED","overlay":{"kind":"tick"}},
-    {"id":"final_then_now","type":"then_now","theme":"kitchen","duration":1.25,"camera":"static","left_icon":"stove","right_icon":"radiator","left_label":"BEFORE","right_label":"AFTER"},
-    {"id":"snow_forest_outro","type":"illustration","theme":"snow_forest","duration":1.25,"camera":"pull_out","zoom_start":1.10,"zoom_end":1.0,"effects":["snow"],"caption":"One village. One surprising fix."}
+    {
+      "id": "hearth_sleep",
+      "type": "illustration",
+      "theme": "winter_room",
+      "camera": "push_in",
+      "zoom_end": 1.08,
+      "effects": [
+        "fire_flicker",
+        "smoke"
+      ],
+      "duration": 0.8
+    },
+    {
+      "id": "village_street",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_right",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1.1
+    },
+    {
+      "id": "snow_traveler",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "push_in",
+      "effects": [
+        "snow"
+      ],
+      "actor": {
+        "x": 0.31,
+        "scale": 270,
+        "pose": "running",
+        "expression": "scared",
+        "entrance": "left",
+        "color": "#6D4932"
+      },
+      "duration": 1.3
+    },
+    {
+      "id": "bare_winter_path",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "pan_left",
+      "effects": [
+        "snow"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "half_the_story",
+      "type": "statistic",
+      "theme": "generic",
+      "camera": "static",
+      "stat": "50%",
+      "subcaption": "OF THE VILLAGE",
+      "card_color": "#E8BA55",
+      "tint": "#E8BA55",
+      "duration": 1.2
+    },
+    {
+      "id": "field_cattle",
+      "type": "illustration",
+      "theme": "generic",
+      "camera": "push_in",
+      "zoom_end": 1.07,
+      "duration": 0.9
+    },
+    {
+      "id": "warmth_hand_card",
+      "type": "icon_card",
+      "theme": "market",
+      "icon": "hand",
+      "card_color": "#E9C25C",
+      "caption": "KEEP WARM",
+      "overlay": {
+        "kind": "tick"
+      },
+      "duration": 1.4
+    },
+    {
+      "id": "sleeping_peasant_room",
+      "type": "illustration",
+      "theme": "winter_room",
+      "camera": "push_in",
+      "effects": [
+        "zzz"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "barn_fumes",
+      "type": "illustration",
+      "theme": "barn",
+      "camera": "push_in",
+      "zoom_end": 1.1,
+      "effects": [
+        "green_fumes",
+        "smoke"
+      ],
+      "overlay": {
+        "kind": "cross",
+        "position": [
+          0.87,
+          0.16
+        ]
+      },
+      "duration": 1.3
+    },
+    {
+      "id": "clothing_face",
+      "type": "face_card",
+      "theme": "generic",
+      "camera": "static",
+      "card_color": "#E9C25C",
+      "caption": "LAYERED CLOTHING",
+      "overlay": {
+        "kind": "tick"
+      },
+      "duration": 0.8
+    },
+    {
+      "id": "pottage_card",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "pottage",
+      "card_color": "#F0C85F",
+      "caption": "POTTAGE.",
+      "duration": 1.1
+    },
+    {
+      "id": "woman_cooking",
+      "type": "illustration",
+      "theme": "kitchen",
+      "camera": "push_in",
+      "zoom_end": 1.08,
+      "effects": [
+        "steam",
+        "fire_flicker"
+      ],
+      "duration": 1.3
+    },
+    {
+      "id": "medieval_village",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_left",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "peasants_layers",
+      "type": "illustration",
+      "theme": "market",
+      "camera": "push_in",
+      "zoom_end": 1.06,
+      "duration": 1.2
+    },
+    {
+      "id": "animals_at_night",
+      "type": "illustration",
+      "theme": "barn",
+      "camera": "push_in",
+      "effects": [
+        "zzz",
+        "fire_flicker"
+      ],
+      "duration": 0.9
+    },
+    {
+      "id": "old_street",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_right",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1.4
+    },
+    {
+      "id": "horse_cart",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_left",
+      "effects": [
+        "dust"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "method_five",
+      "type": "method_card",
+      "theme": "market",
+      "number": "5",
+      "icon": "bread",
+      "caption": "BARK BREAD & BOILED LEATHER",
+      "card_color": "#EFC35B",
+      "number_color": "#E97531",
+      "duration": 1.3
+    },
+    {
+      "id": "mortar_pestle",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "mortar",
+      "card_color": "#EAC15C",
+      "caption": "POUND GRAINS",
+      "duration": 0.8
+    },
+    {
+      "id": "pot_closeup",
+      "type": "illustration",
+      "theme": "kitchen",
+      "camera": "push_in",
+      "zoom_end": 1.11,
+      "effects": [
+        "steam",
+        "fire_flicker"
+      ],
+      "duration": 1.1
+    },
+    {
+      "id": "field_cattle_second",
+      "type": "illustration",
+      "theme": "generic",
+      "camera": "pan_right",
+      "duration": 1.3
+    },
+    {
+      "id": "then_now_stove_radiator",
+      "type": "then_now",
+      "theme": "kitchen",
+      "camera": "static",
+      "left_icon": "stove",
+      "right_icon": "radiator",
+      "left_label": "THEN",
+      "right_label": "NOW",
+      "left_color": "#E8C98F",
+      "right_color": "#B5C89B",
+      "duration": 1
+    },
+    {
+      "id": "snow_walker",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "push_in",
+      "effects": [
+        "snow"
+      ],
+      "duration": 1.2
+    },
+    {
+      "id": "hearth_icon",
+      "type": "icon_card",
+      "theme": "barn",
+      "icon": "fire",
+      "card_color": "#E9A05A",
+      "caption": "HEARTH FIRE",
+      "effects": [
+        "fire_flicker"
+      ],
+      "duration": 0.9
+    },
+    {
+      "id": "method_two",
+      "type": "method_card",
+      "theme": "kitchen",
+      "number": "2",
+      "icon": "cauldron",
+      "caption": "USE WHAT YOU HAVE",
+      "card_color": "#EFC35B",
+      "number_color": "#D9A52F",
+      "duration": 1.4
+    },
+    {
+      "id": "final_village",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pull_out",
+      "zoom_start": 1.08,
+      "zoom_end": 1,
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "pottage_close",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "pottage",
+      "card_color": "#F0C85F",
+      "caption": "POTTAGE.",
+      "duration": 1.3
+    }
   ]
 }
