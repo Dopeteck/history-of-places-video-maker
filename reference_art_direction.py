@@ -147,58 +147,146 @@ def _illustration_plate(base: Image.Image, shot: dict[str,Any]) -> Image.Image:
             x=w*(.30+i*.018);y=h*(.91-i*.026)
             d.ellipse((x,y,x+w*.008,y+h*.016),fill=(170,189,193))
     elif theme in {"village_street","market"} or "street" in key or "village" in key or "cart" in key or "wagon" in key:
-        for bx,bw,top,bottom in ((25,350,.18,.77),(905,350,.12,.78)):
-            x0=bx;y0=h*top;x1=bx+bw;y1=h*bottom
-            d.rectangle((x0,y0,x1,y1),fill=(204,177,139),outline=INK,width=5)
-            d.polygon([(x0-22,y0+14),(x0+bw*.5,y0-h*.18),(x1+22,y0+14)],fill=(93,62,47),outline=INK)
-            for row in range(8):
-                yy=y0+row*(y1-y0)/8;d.line((x0,yy,x1,yy+2),fill=(157,123,90),width=2)
-            for col in (.18,.50,.82):
-                wx=x0+bw*col;wy=y0+(y1-y0)*.24
-                d.rectangle((wx-29,wy-24,wx+29,wy+42),fill=(93,125,132),outline=INK,width=4)
-                d.line((wx,wy-22,wx,wy+40),fill=PAPER,width=4);d.line((wx-27,wy+8,wx+27,wy+8),fill=PAPER,width=4)
-            for bx0,by0,bx1,by1 in ((x0,y0,x1,y0),(x0+bw*.33,y0,x0+bw*.33,y1),
-                                    (x0+bw*.68,y0,x0+bw*.68,y1),(x0,y0+(y1-y0)*.52,x1,y0+(y1-y0)*.52)):
-                _line(d,[(bx0,by0),(bx1,by1)],(83,56,42),max(5,int(w*.006)))
-            for row in range(4):
-                for col in range(7):
-                    xx=x0+col*bw/7+(row%2)*12;yy=y0+(y1-y0)*.58+row*17
-                    d.arc((xx,yy,xx+27,yy+15),180,350,fill=(126,94,69),width=2)
-        d.polygon([(w*.37,h*.54),(w*.62,h*.54),(w*.96,h),(w*.06,h)],fill=(176,157,129))
-        for row in range(6):
-            yy=h*(.60+row*.065)
-            for col in range(10):
-                xx=w*(.05+col*.10+(row%2)*.025)
-                d.arc((xx,yy,xx+w*.085,yy+h*.038),180,350,fill=(126,111,93),width=2)
+        # Narrow, receding medieval lane with dense half-timbered facades.
+        # Far buildings first, then the larger foreground houses to create depth.
+        buildings=[
+            (255,150,.22,.59,(189,164,130),(91,61,46)),
+            (780,150,.22,.59,(187,158,123),(88,59,45)),
+            (65,245,.17,.77,(210,182,142),(91,61,45)),
+            (900,245,.15,.78,(199,169,132),(86,58,43)),
+            (-52,315,.08,.94,(189,155,116),(78,52,41)),
+            (1025,315,.07,.94,(198,164,125),(82,53,42)),
+        ]
+        for bi,(x0,bw,top,bottom,plaster,wood) in enumerate(buildings):
+            y0=h*top;y1=h*bottom;x1=x0+bw
+            roof_h=h*(.08 if bi<2 else .12 if bi<4 else .16)
+            # Projecting roof and layered terracotta tile lines.
+            d.polygon([(x0-20,y0+14),(x0+bw*.48,y0-roof_h),(x1+22,y0+14)],
+                      fill=(98,61,45),outline=INK)
+            for tile in range(1,6):
+                ty=y0-roof_h+(roof_h+18)*tile/6
+                d.line((x0-12,ty,x1+12,ty+3),fill=(130,78,54),width=max(2,int(bw*.008)))
+            d.rectangle((x0,y0,x1,y1),fill=plaster,outline=INK,width=max(3,int(bw*.015)))
+            # Timber frame: floor bands, studs, diagonal braces and visible joinery.
+            for frac in (.08,.34,.59,.83):
+                yy=y0+(y1-y0)*frac
+                _line(d,[(x0,yy),(x1,yy)],wood,max(4,int(bw*.018)))
+            for frac in (.08,.35,.67,.94):
+                xx=x0+bw*frac
+                _line(d,[(xx,y0),(xx,y1)],wood,max(4,int(bw*.020)))
+            for fx in (.08,.35,.67):
+                xa=x0+bw*fx;xb=xa+bw*.27
+                _line(d,[(xa,y0+(y1-y0)*.08),(xb,y0+(y1-y0)*.32)],wood,max(3,int(bw*.012)))
+                _line(d,[(xb,y0+(y1-y0)*.34),(xa,y0+(y1-y0)*.57)],wood,max(3,int(bw*.012)))
+            # Two stories of small leaded windows with wooden shutters.
+            window_w=max(18,int(bw*.115));window_h=max(24,int(bw*.145))
+            for row,frac_y in enumerate((.19,.43)):
+                for frac_x in (.24,.72):
+                    wx=x0+bw*frac_x;wy=y0+(y1-y0)*frac_y
+                    d.rectangle((wx-window_w*.70,wy-window_h*.15,wx+window_w*.70,wy+window_h*1.15),
+                                fill=(94,121,126),outline=INK,width=max(2,int(bw*.012)))
+                    d.rectangle((wx-window_w*.56,wy,wx+window_w*.56,wy+window_h),
+                                fill=(132,158,156),outline=(71,56,45),width=max(2,int(bw*.009)))
+                    d.line((wx,wy,wx,wy+window_h),fill=(236,221,188),width=max(2,int(bw*.009)))
+                    d.line((wx-window_w*.53,wy+window_h*.53,wx+window_w*.53,wy+window_h*.53),
+                           fill=(236,221,188),width=max(2,int(bw*.008)))
+                    # Hinged shutters add warm wood and a hand-built feel.
+                    d.rectangle((wx-window_w*.95,wy,wx-window_w*.58,wy+window_h),
+                                fill=(126,78,51),outline=INK,width=2)
+                    d.rectangle((wx+window_w*.58,wy,wx+window_w*.95,wy+window_h),
+                                fill=(126,78,51),outline=INK,width=2)
+                    d.line((wx-window_w*.94,wy+window_h*.30,wx-window_w*.60,wy+window_h*.30),fill=(190,139,88),width=2)
+                    d.line((wx+window_w*.60,wy+window_h*.30,wx+window_w*.94,wy+window_h*.30),fill=(190,139,88),width=2)
+                    if row==1 and bi>=2:
+                        # Narrow iron rail below the upstairs sill.
+                        rail_y=wy+window_h*1.20
+                        d.line((wx-window_w,rail_y,wx+window_w,rail_y),fill=INK,width=max(2,int(bw*.012)))
+                        for pos in (-.75,-.25,.25,.75):
+                            px=wx+window_w*pos
+                            d.line((px,rail_y-window_h*.19,px,rail_y+window_h*.08),fill=INK,width=max(2,int(bw*.008)))
+            # Stonework on the street level and an inset arched door.
+            lower=y0+(y1-y0)*.62
+            for row in range(5):
+                sy=lower+row*max(9,int(bw*.045))
+                for col in range(max(2,int(bw/38))):
+                    sx=x0+col*(bw/max(2,int(bw/38)))+(row%2)*8
+                    d.arc((sx,sy,sx+max(16,int(bw*.10)),sy+max(8,int(bw*.045))),
+                          180,350,fill=(125,94,71),width=2)
+            door_w=bw*.16;door_x=x0+bw*.49
+            d.rectangle((door_x-door_w/2,y1-door_w*1.45,door_x+door_w/2,y1),
+                        fill=(86,57,43),outline=INK,width=max(3,int(bw*.015)))
+            d.arc((door_x-door_w/2,y1-door_w*1.80,door_x+door_w/2,y1-door_w*.8),
+                  180,360,fill=INK,width=max(3,int(bw*.015)))
+            d.ellipse((door_x+door_w*.22,y1-door_w*.72,door_x+door_w*.29,y1-door_w*.63),
+                      fill=(220,176,82),outline=INK,width=1)
+            # Roof beams and a chimney with smoke on foreground roofs.
+            cx=x0+bw*.78
+            d.rectangle((cx,y0-roof_h*.88,cx+bw*.08,y0-roof_h*.42),fill=(122,77,57),outline=INK,width=2)
+            for smoke_i in range(2):
+                xx=cx+bw*(.04+smoke_i*.07)
+                d.arc((xx,y0-roof_h*1.05-smoke_i*13,xx+bw*.10,y0-roof_h*.74-smoke_i*13),
+                      185,350,fill=(116,108,98),width=2)
+        # Cobblestone road fans out from a clear vanishing point.
+        d.polygon([(w*.43,h*.49),(w*.57,h*.49),(w*1.04,h),(w*-.04,h)],fill=(177,157,128))
+        for row in range(12):
+            t=row/11
+            yy=h*(.52+t*.47)
+            road_width=w*(.17+.87*t)
+            left=w*.5-road_width*.5;right=w*.5+road_width*.5
+            d.line((max(0,left),yy,min(w,right),yy+1),fill=(124,108,89),width=max(2,int(2+t*3)))
+            segment_count=6+int(t*8)
+            offset=(row%2)*road_width/(segment_count*2)
+            for col in range(segment_count+1):
+                xx=left+road_width*col/segment_count+offset
+                if left < xx < right:
+                    hh=h*(.018+.018*t)
+                    d.arc((xx-road_width/segment_count*.48,yy-hh*.5,
+                           xx+road_width/segment_count*.50,yy+hh*.7),180,350,
+                          fill=(132,113,91),width=max(2,int(2+t*2)))
+        # People in layered depth: little silhouettes recede towards the vanishing point.
         if "cart" in key or "wagon" in key:
-            d.polygon([(w*.38,h*.59),(w*.62,h*.59),(w*.68,h*.76),(w*.34,h*.76)],fill=(132,84,49),outline=INK)
-            for i in range(5):
-                xx=w*(.39+i*.045);d.line((xx,h*.60,xx+w*.02,h*.75),fill=(186,135,81),width=4)
+            # A wooden two-wheel handcart with slatted sides and sacks.
+            d.polygon([(w*.38,h*.60),(w*.61,h*.60),(w*.66,h*.75),(w*.34,h*.75)],
+                      fill=(137,88,51),outline=INK)
+            for i in range(7):
+                xx=w*(.37+i*.043)
+                d.line((xx,h*.605,xx+w*.02,h*.742),fill=(194,144,87),width=4)
             for xx in (w*.39,w*.62):
-                d.ellipse((xx-w*.045,h*.71,xx+w*.045,h*.88),fill=(62,50,41),outline=INK,width=6)
-                d.ellipse((xx-w*.018,h*.74,xx+w*.018,h*.85),fill=(164,135,98),outline=INK,width=3)
-            _person(d,w*.74,h*.88,h*.42,coat=(77,96,103),pose="running")
+                d.ellipse((xx-w*.045,h*.70,xx+w*.045,h*.88),fill=(60,49,41),outline=INK,width=6)
+                d.ellipse((xx-w*.018,h*.73,xx+w*.018,h*.85),fill=(164,135,98),outline=INK,width=3)
+            d.ellipse((w*.42,h*.55,w*.52,h*.64),fill=(203,176,139),outline=INK,width=3)
+            d.ellipse((w*.49,h*.54,w*.58,h*.63),fill=(212,181,137),outline=INK,width=3)
+            _person(d,w*.72,h*.88,h*.42,coat=(77,96,103),pose="running")
         else:
-            _person(d,w*.43,h*.89,h*.37,coat=(105,68,49),pose="standing")
-            _person(d,w*.64,h*.90,h*.41,coat=(76,92,71),pose="standing",hood=True)
-            for px,scale,coat in ((.51,.25,(126,83,51)),(.56,.22,(78,96,103)),(.73,.28,(145,91,55))):
-                _person(d,w*px,h*.78,h*scale,coat=coat,pose="standing",hood=True)
+            for px,fy,sc,coat,hood in ((.43,.90,.37,(105,68,49),False),
+                                      (.64,.90,.41,(76,92,71),True),
+                                      (.50,.80,.25,(126,83,51),True),
+                                      (.55,.79,.22,(78,96,103),False),
+                                      (.73,.80,.28,(145,91,55),True)):
+                _person(d,w*px,h*fy,h*sc,coat=coat,pose="standing",hood=hood)
         if theme=="market":
-            for sx in (.18,.80):
-                d.polygon([(w*sx-w*.10,h*.52),(w*sx+w*.10,h*.52),(w*sx+w*.13,h*.63),(w*sx-w*.13,h*.63)],
-                          fill=(180,70,47),outline=INK)
-                for stripe in range(5):
-                    xx=w*(sx-.095+stripe*.047)
-                    d.polygon([(xx,h*.52),(xx+w*.023,h*.52),(xx+w*.03,h*.62),(xx+w*.005,h*.62)],
-                              fill=(245,222,176) if stripe%2 else (190,79,51))
-                d.rectangle((w*sx-w*.13,h*.63,w*sx+w*.13,h*.70),fill=(125,79,47),outline=INK,width=3)
-                for k in range(5):
-                    ex=w*(sx-.09+k*.045)
-                    d.ellipse((ex,h*.61,ex+w*.024,h*.65),fill=((189,67,48) if k%2 else (207,158,57)),outline=INK,width=1)
-        d.line((w*.17,h*.37,w*.17,h*.52),fill=INK,width=5)
-        d.rectangle((w*.145,h*.38,w*.195,h*.45),fill=(233,178,77),outline=INK,width=3)
-        for j in range(3):
-            d.arc((w*.79+j*24,h*.12-j*17,w*.84+j*24,h*.23-j*17),180,350,fill=(108,101,92),width=3)
+            # Canvas awnings, striped counters, baskets and produce crates.
+            for sx,sy in ((.18,.50),(.82,.47)):
+                d.polygon([(w*sx-w*.11,h*sy),(w*sx+w*.11,h*sy),(w*sx+w*.14,h*(sy+.12)),
+                           (w*sx-w*.14,h*(sy+.12))],fill=(174,68,47),outline=INK)
+                for stripe in range(7):
+                    xx=w*(sx-.105+stripe*.03)
+                    col=(245,224,180) if stripe%2 else (192,78,52)
+                    d.polygon([(xx,h*sy),(xx+w*.025,h*sy),(xx+w*.03,h*(sy+.11)),
+                               (xx+w*.006,h*(sy+.11))],fill=col,outline=INK)
+                d.rectangle((w*sx-w*.14,h*(sy+.12),w*sx+w*.14,h*(sy+.19)),
+                            fill=(125,79,47),outline=INK,width=3)
+                for k in range(6):
+                    ex=w*(sx-.10+k*.035);ey=h*(sy+.105)
+                    d.ellipse((ex,ey,ex+w*.029,ey+h*.055),
+                              fill=((189,67,48) if k%2 else (207,158,57)),outline=INK,width=1)
+        # Lanterns hang over the road; a tiny hanging sign adds story context.
+        d.line((w*.17,h*.31,w*.17,h*.48),fill=INK,width=5)
+        d.rectangle((w*.145,h*.34,w*.195,h*.42),fill=(238,184,79),outline=INK,width=3)
+        d.line((w*.12,h*.34,w*.22,h*.34),fill=(240,214,160),width=3)
+        d.line((w*.84,h*.29,w*.84,h*.45),fill=INK,width=4)
+        d.rounded_rectangle((w*.79,h*.30,w*.89,h*.39),radius=5,fill=(184,143,89),outline=INK,width=3)
+        d.line((w*.81,h*.325,w*.87,h*.325),fill=(95,61,43),width=2)
     elif theme=="barn" or "cow" in key or "barn" in key or "animal" in key:
         d.rectangle((0,0,w,h),fill=(157,104,74))
         for y in range(0,h,48):
