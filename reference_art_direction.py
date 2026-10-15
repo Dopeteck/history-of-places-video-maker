@@ -160,6 +160,20 @@ def _illustration_plate(base: Image.Image, shot: dict[str,Any]) -> Image.Image:
         else:
             _person(d,w*.43,h*.89,h*.37,coat=(105,68,49),pose="standing")
             _person(d,w*.64,h*.90,h*.41,coat=(76,92,71),pose="standing",hood=True)
+            for px,scale,coat in ((.51,.25,(126,83,51)),(.56,.22,(78,96,103)),(.73,.28,(145,91,55))):
+                _person(d,w*px,h*.78,h*scale,coat=coat,pose="standing",hood=True)
+        if theme=="market":
+            for sx in (.18,.80):
+                d.polygon([(w*sx-w*.10,h*.52),(w*sx+w*.10,h*.52),(w*sx+w*.13,h*.63),(w*sx-w*.13,h*.63)],
+                          fill=(180,70,47),outline=INK)
+                for stripe in range(5):
+                    xx=w*(sx-.095+stripe*.047)
+                    d.polygon([(xx,h*.52),(xx+w*.023,h*.52),(xx+w*.03,h*.62),(xx+w*.005,h*.62)],
+                              fill=(245,222,176) if stripe%2 else (190,79,51))
+                d.rectangle((w*sx-w*.13,h*.63,w*sx+w*.13,h*.70),fill=(125,79,47),outline=INK,width=3)
+                for k in range(5):
+                    ex=w*(sx-.09+k*.045)
+                    d.ellipse((ex,h*.61,ex+w*.024,h*.65),fill=((189,67,48) if k%2 else (207,158,57)),outline=INK,width=1)
         d.line((w*.17,h*.37,w*.17,h*.52),fill=INK,width=5)
         d.rectangle((w*.145,h*.38,w*.195,h*.45),fill=(233,178,77),outline=INK,width=3)
         for j in range(3):
@@ -290,6 +304,12 @@ def _icon(d, name, center, r):
     elif name=="arrow":
         d.line((x-r*.62,y,x+r*.40,y),fill=ink,width=sw*2)
         d.polygon([(x+r*.65,y),(x+r*.30,y-r*.26),(x+r*.30,y+r*.26)],fill=ink)
+    elif name=="hand":
+        d.polygon([(x-r*.45,y+r*.50),(x-r*.52,y-r*.02),(x-r*.43,y-r*.28),
+                   (x-r*.32,y-r*.04),(x-r*.22,y-r*.49),(x-r*.10,y-r*.05),
+                   (x+r*.02,y-r*.56),(x+r*.14,y-r*.02),(x+r*.26,y-r*.40),
+                   (x+r*.34,y+r*.04),(x+r*.50,y-r*.08),(x+r*.52,y+r*.18),
+                   (x+r*.25,y+r*.54)],fill=paper,outline=ink)
     else:
         d.ellipse((x-r*.48,y-r*.48,x+r*.48,y+r*.48),fill=paper,outline=ink,width=sw)
         d.text((x,y),"?",font=e._font(int(r*.85)),fill=ink,anchor="mm")
@@ -301,11 +321,11 @@ def _draw_hook(background, hook):
     if len(lines)<2:
         words=lines[0].split() if lines else ["A Visual Explainer"]
         split=max(1,len(words)//2);lines=[" ".join(words[:split])," ".join(words[split:])]
-    font_size=int(h*.030);font=e._font(font_size,bold=False)
+    font_size=int(w*.065);font=e._font(font_size,bold=False)
     for line in lines[:2]:
-        while d.textlength(line,font=font)>w*.93 and font_size>40:
+        while d.textlength(line,font=font)>w*.93 and font_size>18:
             font_size-=2;font=e._font(font_size,bold=False)
-    y1,y2=h*.293,h*.326
+    y1,y2=h*.285,h*.321
     d.text((w*.5,y1),lines[0],font=font,fill=(250,250,248),anchor="mm")
     line=lines[1] if len(lines)>1 else ""
     text_w=d.textlength(line,font=font);face=int(font_size*.76);gap=int(font_size*.15)
