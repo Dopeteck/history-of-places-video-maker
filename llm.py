@@ -163,7 +163,7 @@ def _json_schema_for_stage(stage: str) -> dict | None:
                 "hut", "throne", "palace", "river", "market", "battlefield", "street", "room", "map"])},
             "camera": {"type": "string", "enum": sorted(["static", "push_in", "pan_left", "pan_right"])},
             "effects": array({"type": "string", "enum": sorted(["shake", "fade", "cut", "pop_in"])}),
-            "props": array({"type": "string", "enum": sorted(["crown", "scroll", "torch", "fire", "coin", "sword", "spear"])}),
+            "props": array({"type": "string", "enum": sorted(["crown", "scroll", "torch", "fire", "coin", "sword", "spear", "table", "chest"])}),
             "emphasis_words": array(string),
             "source_ids": array(string),
             "uncertainty": {"type": "string", "enum": [
