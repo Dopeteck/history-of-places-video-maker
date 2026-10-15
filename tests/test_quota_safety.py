@@ -130,9 +130,14 @@ class QuotaSafetyTests(unittest.TestCase):
             self.assertTrue(list(cache.rglob("outline.json")))
             self.assertEqual(len(list(cache.rglob("chapter_*.json"))), 4)
 
+            # Simulate a job interruption after chapter 2 persisted. Re-run must
+            # keep outline/chapters 1, 2, and 4 and generate only the missing chapter 3.
+            missing = next(cache.rglob("chapter_03.json"))
+            missing.unlink()
             second_llm = FakeStoryLLM(cache)
             second = build_story(second_llm, "Persistent topic", "long", 8, 4, [])
-            self.assertEqual(second_llm.calls, [])
+            self.assertEqual([x["task"] for x in second_llm.calls], ["chapter"])
+            self.assertEqual(second_llm.calls[0]["prompt"]["chapter"]["number"], 3)
             self.assertEqual(second["word_count"], first["word_count"])
             self.assertEqual([x["title"] for x in second["chapters"]],
                              [x["title"] for x in first["chapters"]])
