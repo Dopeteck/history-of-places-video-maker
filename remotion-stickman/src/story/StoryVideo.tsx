@@ -15,7 +15,7 @@ export const StoryVideo: React.FC = () => {
       <Audio src={staticFile("story/voice.wav")} volume={1} />
       {plan.chapters.map((chapter) => (
         <Sequence
-          key={\`chapter-card-\${chapter.number}\`}
+          key={`chapter-card-${chapter.number}`}
           from={chapter.start_frame}
           durationInFrames={chapter.title_frames}
         >
@@ -42,12 +42,12 @@ export const StoryVideo: React.FC = () => {
         chapter.scenes.flatMap((scene) =>
           (scene.sfx_cues ?? []).map((cue, i) => (
             <Sequence
-              key={\`\${scene.id}-sfx-\${i}\`}
+              key={`${scene.id}-sfx-${i}`}
               from={scene.start_frame + cue.frame}
               durationInFrames={Math.min(48, scene.duration_frames - cue.frame)}
               layout="none"
             >
-              <Audio src={staticFile(\`story/sfx/\${cue.name}.wav\`)} volume={cue.volume} />
+              <Audio src={staticFile(`story/sfx/${cue.name}.wav`)} volume={cue.volume} />
             </Sequence>
           )),
         ),
