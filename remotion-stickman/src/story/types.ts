@@ -37,6 +37,7 @@ export type StoryScene = {
   characters_on_screen: {id: string; x: number; pose: string; expression: string}[];
   action_beats: ActionBeat[];
   sfx_cues?: {frame: number; name: string; volume: number}[];
+  show_character_labels?: boolean;
 };
 
 export type CaptionCue = {startFrame: number; endFrame: number; text: string};
