@@ -485,7 +485,8 @@ def _smoke_story() -> dict:
                  "background": "room", "camera": "push_in", "effects": ["fade"],
                  "props": ["coin"], "emphasis_words": ["golden mark"], "source_ids": [], "uncertainty": "unverified"},
             ],
-        },
+        }
+        ],
     }
 
 
