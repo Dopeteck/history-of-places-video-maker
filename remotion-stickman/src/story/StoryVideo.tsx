@@ -11,6 +11,7 @@ export const StoryVideo: React.FC = () => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{background: "#FAFAF7"}}>
+      <Audio src={staticFile("story/music.wav")} volume={0.16} loop />
       <Audio src={staticFile("story/voice.wav")} volume={1} />
       {plan.chapters.map((chapter) => (
         <Sequence
