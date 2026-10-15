@@ -50,7 +50,8 @@ export const P = {
   punchR: { lean: 14, ra1: 92, ra2: 0, la1: -40, la2: -110, ll1: -30, ll2: 10, rl1: 35, rl2: -5 },
   kickR: { lean: -30, rl1: 105, rl2: 0, ll1: -10, ll2: 5, la1: -100, la2: 20, ra1: -20, ra2: -40 },
   carry: { la1: -160, la2: -30, ra1: 160, ra2: 30, lean: 0, ll1: -15, ll2: 15, rl1: 15, rl2: -10 },
-  hold: { la1: 50, la2: 60, ra1: 70, ra2: 40 },
+  // Arms fold inward so both hands meet around chest height instead of pointing down at a table.
+  hold: { la1: -150, la2: 213, ra1: 150, ra2: -213 },
   facepalm: { ra1: 160, ra2: 120, head: 20, lean: 5 },
   sit: { y: 800, ll1: 80, ll2: -80, rl1: 95, rl2: -85, lean: -5 },
   handshake: { ra1: 70, ra2: 10, la1: -15, la2: 10 },
