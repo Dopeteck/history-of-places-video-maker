@@ -45,7 +45,8 @@ export const P = {
   pointR: { ra1: 95, ra2: 0, la1: -15, la2: 10 },
   pointL: { la1: -95, la2: 0, ra1: 15, ra2: -10 },
   shrug: { la1: -55, la2: -100, ra1: 55, ra2: 100, head: 8 },
-  think: { ra1: 30, ra2: 145, la1: 25, la2: 80, head: 10 },
+  // A clear thinking silhouette: one hand near the temple, the other resting down.
+  think: { ra1: 130, ra2: 100, la1: -15, la2: -10, head: 10 },
   crouch: { y: 790, ll1: -60, ll2: 95, rl1: 50, rl2: 90, lean: 10, la1: -40, la2: -30, ra1: 40, ra2: 30 },
   punchR: { lean: 14, ra1: 92, ra2: 0, la1: -40, la2: -110, ll1: -30, ll2: 10, rl1: 35, rl2: -5 },
   kickR: { lean: -30, rl1: 105, rl2: 0, ll1: -10, ll2: 5, la1: -100, la2: 20, ra1: -20, ra2: -40 },
