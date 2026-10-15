@@ -2,7 +2,7 @@
 
 One narrator tells a researched history story while original stick figures act it out. Supports 3–5 numbered Shorts and chaptered long videos. Runs in GitHub Actions without rendering on your laptop. Scripts require source review before speech or video generation.
 
-**Status:** story generation, review, Kokoro narration, procedural rendering, workflow orchestration, Telegram delivery code and progress persistence are implemented. Scheduling is deliberately paused. See [STAGE3.md](STAGE3.md) for renderer benchmarks. The archived V2 dialogue generator is `legacy_main.py`; the default `main.py` now runs the history pipeline.
+**Status:** story generation, source review/approval, CPU Kokoro narration, and the Remotion choreographed stickman renderer are integrated. The previous Pillow renderer remains selectable as a fallback. Scheduling is deliberately paused. See [STAGE3.md](STAGE3.md) for the legacy renderer's benchmarks. The archived V2 dialogue generator is `legacy_main.py`; the default `main.py` runs the history pipeline.
 
 ## Start in GitHub — no local setup
 
@@ -53,7 +53,7 @@ With a blank topic input, the first enabled, unused topic is selected. The empty
 
 1. Read `script.md` and `fact_check.md` in the saved draft. Check the original sources and the entire narration; model confidence is not verification.
 2. Copy `review.template.json` into `state/reviews/<draft_id>.json`. Fill in `reviewer`, `full_script_reviewed`, `sources_checked`, and every claim's decision, source IDs and note. Claims must be verified or properly qualified. Legends and disputed claims need audible qualifications in the script.
-3. Run **action: render**, enter the exact `draft_id`, set **approve: true**, and enter the completed `review_path`. For Shorts, choose a part from 1 to the series length; for long videos, leave part at 0.
+3. Run **action: render**, enter the exact `draft_id`, set **approve: true**, and enter the completed `review_path`. The **renderer** defaults to `remotion`; `legacy` selects the previous Pillow renderer. For Shorts, choose a part from 1 to the series length; for long videos, leave part at 0.
 4. The workflow validates the review and saves approval hashes before rendering. Later parts use the same draft with **approve: false**. Changed story, review or fact-check files invalidate approval.
 
 If you change the narration, edit `story.json`, run **action: recheck** with its draft ID, and review the new draft. Editing only `script.md` does not change the authoritative narration. The workflow never silently generates replacement narration during rendering.
@@ -80,6 +80,16 @@ Draft runs send `script.md`, `fact_check.md`, and `review.template.json`. Shorts
 ## Schedule
 
 The daily cron is commented out in `.github/workflows/daily_story.yml`. Keep it paused until smoke and a reviewed end-to-end production run succeed. When enabled, `0 7 * * *` means **08:00 Lagos time**. Scheduled runs render the next unfinished approved part first, otherwise draft the next enabled topic for review. They never auto-approve. An empty queue with no approved work exits as idle.
+
+## Choreographed stickman renderer
+
+Approved renders use the vendored MIT-licensed animation engine from [nispa/stickman-video](https://github.com/nispa/stickman-video), adapted from upstream commit `c2ede0f707559bf9e3d207c3902d64bf3affe8ae`. The Remotion subproject is in `remotion-stickman/`; see its README and `UPSTREAM_LICENSE` for attribution.
+
+Unlike the old renderer, this path uses per-scene action beats and keyframed SVG figures. The LLM supplies opening poses, actions, emotions, and horizontal movements; the renderer animates walk/run cycles, gestures, reactions, camera movement, vector props, titles, sound effects, captions, and original synthesized background audio. Action beats are validated and repaired before they reach the renderer.
+
+The animation path does not depend on Claude Code, Gemini Media MCP, paid image generation, or paid TTS. Script generation uses the existing configured provider keys/free quotas; narration is local Kokoro, and the sound effects/music are synthesized locally. Remotion's free license covers individuals and teams of up to three people, including commercial use, subject to its terms: https://www.remotion.dev/docs/license.
+
+A manual **Remotion choreographed animation preview** workflow renders a multi-scene visual fixture without LLM or TTS API calls. This smoke preview uses synthetic tone audio, not narration. Production rendering still requires an approved saved story. Long-video runtime and final visual quality must be judged from the rendered output; the passing smoke test alone is not a quality guarantee.
 
 ## Art and voice
 
