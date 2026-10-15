@@ -355,11 +355,13 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         schema = _json_schema_for_stage(stage)
         if is_groq_gpt_oss:
             # GPT-OSS spends output budget on reasoning before the visible JSON.
+            # Keep requested output reservations comfortably below the 8k TPM ceiling
+            # once the compact prompt's input tokens are included.
             stage_token_limits = {
-                "outline": 3000, "chapter": 6000, "chapter_extend": 4500,
-                "claim_review": 3000, "suggest_topics": 1800,
+                "outline": 2200, "chapter": 3000, "chapter_extend": 2200,
+                "claim_review": 1800, "suggest_topics": 1200,
             }
-            kwargs["max_completion_tokens"] = stage_token_limits.get(stage, 2500)
+            kwargs["max_completion_tokens"] = stage_token_limits.get(stage, 1600)
             kwargs["reasoning_effort"] = "low"
             if schema is not None:
                 kwargs["response_format"] = {
