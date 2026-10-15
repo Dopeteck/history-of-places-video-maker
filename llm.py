@@ -156,6 +156,7 @@ def _json_schema_for_stage(stage: str) -> dict | None:
         })
         scene = obj({
             "narration": string,
+            "visual_title": string,
             "characters_on_screen": array(actor),
             "action_beats": array(action_beat),
             "background": {"type": "string", "enum": sorted([
