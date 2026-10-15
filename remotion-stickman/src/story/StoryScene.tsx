@@ -252,7 +252,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
       }
       html={
         <>
-          <Slam f={f} at={6} out={Math.min(64, duration-10)} x={width/2} y={height*(height>width?.16:.13)}
+          <Slam f={f} at={6} out={Math.min(64, duration-10)} x={width/2} y={height * (height > width ? 0.16 : 0.13)}
             size={height>width?54:72} color="#2B2722" font="'Barlow Condensed'" weight={900} spacing={2}>
             {headline.toUpperCase()}
           </Slam>
