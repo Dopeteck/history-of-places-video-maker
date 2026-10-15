@@ -217,7 +217,7 @@ def _response_content(response: Any, provider_type: str) -> str:
                 part_text = getattr(part, "text", None)
                 if isinstance(part_text, str):
                     parts_text.append(part_text)
-        return "\\n".join(parts_text)
+        return "\n".join(parts_text)
     try:
         if isinstance(response, dict):
             return str(response.get("choices", [{}])[0].get("message", {}).get("content") or "")
