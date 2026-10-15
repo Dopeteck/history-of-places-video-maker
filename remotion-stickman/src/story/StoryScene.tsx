@@ -145,7 +145,7 @@ type Props = {scene: StorySceneData; cast: CastMember[]; title: string};
 export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
   const f = useCurrentFrame();
   const {width, height, fps} = useVideoConfig();
-  const scale = width / 1920;
+  const scale = width > height ? width / 1920 : height / 1080;
   const ground = height * 0.80;
   const hipY = groundY(scale, ground);
   const duration = Math.max(1, scene.duration_frames);
