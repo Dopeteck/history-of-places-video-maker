@@ -184,6 +184,7 @@ def _normalise_story(story: dict) -> dict:
     cast_map = {str(c.get("id")): str(c.get("name", c.get("id"))) for c in cast}
     source_ids = {str(source.get("id")) for source in story.get("sources", [])}
     chapters = []
+    seen_cast_ids: set[str] = set()
     for number, chapter in enumerate(story.get("chapters", []), 1):
         normal = validate_chapter(
             chapter, cast_map, source_ids, number, 1, 10000, minimum_scenes=1
@@ -191,6 +192,14 @@ def _normalise_story(story: dict) -> dict:
         normal["title"] = str(chapter.get("title") or f"Chapter {number}")
         for scene in normal["scenes"]:
             scene["visual_title"] = _scene_headline(scene)
+            visible_ids = {
+                str(actor.get("id")) for actor in scene.get("characters_on_screen", [])
+                if isinstance(actor, dict) and actor.get("id")
+            }
+            # Names appear only when a character is first introduced; repeating floating
+            # labels on every shot made the frame noisy and hid facial acting.
+            scene["show_character_labels"] = bool(visible_ids - seen_cast_ids)
+            seen_cast_ids.update(visible_ids)
             if not scene.get("action_beats"):
                 scene["action_beats"] = _make_fallback_beats(scene)
         chapters.append(normal)
