@@ -63,6 +63,12 @@ class ChoreographyValidationTests(unittest.TestCase):
         self.assertEqual(beats[1]["actions"][0]["action"], "run")
         self.assertIn(beats[2]["actions"][0]["action"], {"point", "cheer"})
 
+    def test_character_labels_are_opt_in_to_reduce_visual_clutter(self):
+        hidden = self._validate(self._base_scene())
+        shown = self._validate(self._base_scene(show_character_labels=True))
+        self.assertFalse(hidden["show_character_labels"])
+        self.assertTrue(shown["show_character_labels"])
+
     def test_chapter_json_schema_requires_scene_titles_and_action_beats(self):
         schema = _json_schema_for_stage("chapter")
         self.assertIsNotNone(schema)
