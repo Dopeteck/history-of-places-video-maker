@@ -58,6 +58,19 @@ def _error_details(exc: Exception) -> tuple[int | None, str]:
     return (int(status) if str(status).isdigit() else None, _safe(body))
 
 
+def _retry_after_seconds(message: str) -> float | None:
+    """Extract a provider's stated retry delay, including decimal seconds."""
+    match = re.search(r"try again in\s+(\d+(?:\.\d+)?)\s*(?:s|sec(?:onds?)?)", message, re.I)
+    if not match:
+        match = re.search(r"retry[- ]after\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:s|sec(?:onds?)?)?", message, re.I)
+    if not match:
+        return None
+    try:
+        return min(20.0, max(0.0, float(match.group(1)) + 1.0))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _log_failure(provider: str, model: str, exc: Exception) -> tuple[int | None, str]:
     status, body = _error_details(exc)
     # Avoid logging exception objects directly: SDK exception strings may contain secrets.
@@ -117,7 +130,7 @@ def _json_schema_for_stage(stage: str) -> dict | None:
             "title": string, "hook": string, "logline": string,
             "cast": array(character), "chapters": array(chapter), "ending": string,
         })
-    if stage == "chapter":
+    if stage in {"chapter", "chapter_extend"}:
         actor = obj({
             "id": string,
             "x": {"type": "number"},
@@ -300,7 +313,7 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         schema = _json_schema_for_stage(stage)
         client = genai.Client(
             api_key=os.environ[provider["env_key"]],
-            http_options=types.HttpOptions(timeout=60000),
+            http_options=types.HttpOptions(timeout=int(float(config.PROVIDER_TIMEOUT_SECONDS) * 1000)),
         )
         try:
             config_args = {
@@ -342,7 +355,11 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         schema = _json_schema_for_stage(stage)
         if is_groq_gpt_oss:
             # GPT-OSS spends output budget on reasoning before the visible JSON.
-            kwargs["max_completion_tokens"] = 8192
+            stage_token_limits = {
+                "outline": 3000, "chapter": 6000, "chapter_extend": 4500,
+                "claim_review": 3000, "suggest_topics": 1800,
+            }
+            kwargs["max_completion_tokens"] = stage_token_limits.get(stage, 2500)
             kwargs["reasoning_effort"] = "low"
             if schema is not None:
                 kwargs["response_format"] = {
@@ -386,13 +403,16 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
 class JsonLLM:
     """Try configured providers in order and capture bounded diagnostics on failures."""
     def __init__(self, call: Callable = provider_call, sleep: Callable = time.sleep,
-                 providers: list[dict] | None = None, min_interval: float = 0.0,
-                 cache_dir: Path | None = None):
+                 providers: list[dict] | None = None, min_interval: float = 10.0,
+                 cache_dir: Path | None = None, draft_cache_dir: Path | None = None):
         self.cache_dir = cache_dir
+        self.draft_cache_dir = draft_cache_dir
         self.call, self.sleep = call, sleep
         self.providers = config.PROVIDERS if providers is None else providers
         self.min_interval = min_interval
         self.last_call: float | None = None
+        self.last_groq_call: float | None = None
+        self.groq_stage_counter = 0
 
     def generate(self, system: str, prompt: dict, validate: Callable[[dict], Any]) -> Any:
         from story import digest
@@ -410,7 +430,12 @@ class JsonLLM:
         errors: list[str] = []
         deadline = time.monotonic() + float(config.PROVIDER_TOTAL_BUDGET_SECONDS)
         for provider in eligible:
-            for model in provider["models"]:
+            models = list(provider["models"])
+            if provider.get("name") == "groq" and len(models) > 1:
+                offset = self.groq_stage_counter % len(models)
+                models = models[offset:] + models[:offset]
+                self.groq_stage_counter += 1
+            for model in models:
                 if time.monotonic() >= deadline:
                     raise RuntimeError("LLM stage exceeded its configured time budget")
                 correction = ""
@@ -419,9 +444,13 @@ class JsonLLM:
                 while attempts <= int(config.MAX_RETRIES_PER_MODEL):
                     if time.monotonic() >= deadline:
                         raise RuntimeError("LLM stage exceeded its configured time budget")
-                    if self.last_call is not None and self.min_interval:
-                        self.sleep(min(self.min_interval, max(0, deadline - time.monotonic())))
+                    if provider.get("name") == "groq" and self.last_groq_call is not None and self.min_interval:
+                        wait_for = self.min_interval - (time.monotonic() - self.last_groq_call)
+                        if wait_for > 0:
+                            self.sleep(min(wait_for, max(0, deadline - time.monotonic())))
                     self.last_call = time.monotonic()
+                    if provider.get("name") == "groq":
+                        self.last_groq_call = self.last_call
                     raw_attempt: Any = None
                     try:
                         raw_attempt = self.call(
@@ -440,6 +469,10 @@ class JsonLLM:
                         if not getattr(exc, "debug_response_saved", False):
                             _write_debug_response(stage, provider["name"], raw_debug)
                         errors.append(f"{provider['name']}/{model}: {type(exc).__name__} HTTP {status}")
+                        if status in {400, 401, 403, 404}:
+                            raise ProviderHTTPError(
+                                status, body,
+                                f"Non-retryable HTTP {status} from {provider['name']}/{model}") from exc
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
                             if not corrected_prompt:
@@ -451,8 +484,12 @@ class JsonLLM:
                             break
                         if attempts >= int(config.MAX_RETRIES_PER_MODEL):
                             break
-                        delay = min(2.0, 0.5 * (attempts + 1) + random.uniform(0, 0.2),
-                                    max(0, deadline - time.monotonic()))
+                        if status == 429:
+                            stated_delay = _retry_after_seconds(body + " " + _safe(exc))
+                            delay = stated_delay if stated_delay is not None else min(2.0, 1.0 + random.uniform(0, 0.2))
+                        else:
+                            delay = min(2.0, 0.5 * (attempts + 1) + random.uniform(0, 0.2))
+                        delay = min(float(delay), max(0.0, deadline - time.monotonic()))
                         if delay <= 0:
                             break
                         self.sleep(delay)
