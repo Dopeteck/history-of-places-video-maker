@@ -1,0 +1,306 @@
+{
+  "schema_version": 2,
+  "title": "Craziest Survival Methods Used By Medieval People",
+  "hook": "CRAZIEST Survival Methods\nUsed By Medieval People",
+  "notes": "Fictional visual-only compositing test patterned after the visual grammar of the supplied reference. This is not a fact-checked script.",
+  "shots": [
+    {
+      "id": "hearth_sleep",
+      "type": "illustration",
+      "theme": "winter_room",
+      "camera": "push_in",
+      "zoom_end": 1.08,
+      "effects": [
+        "fire_flicker",
+        "smoke"
+      ],
+      "duration": 0.8
+    },
+    {
+      "id": "village_street",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_right",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1.1
+    },
+    {
+      "id": "snow_traveler",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "push_in",
+      "effects": [
+        "snow"
+      ],
+      "actor": {
+        "x": 0.31,
+        "scale": 270,
+        "pose": "running",
+        "expression": "scared",
+        "entrance": "left",
+        "color": "#6D4932"
+      },
+      "duration": 1.3
+    },
+    {
+      "id": "bare_winter_path",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "pan_left",
+      "effects": [
+        "snow"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "half_the_story",
+      "type": "statistic",
+      "theme": "generic",
+      "camera": "static",
+      "stat": "50%",
+      "subcaption": "OF THE VILLAGE",
+      "card_color": "#E8BA55",
+      "tint": "#E8BA55",
+      "duration": 1.2
+    },
+    {
+      "id": "field_cattle",
+      "type": "illustration",
+      "theme": "generic",
+      "camera": "push_in",
+      "zoom_end": 1.07,
+      "duration": 0.9
+    },
+    {
+      "id": "pottage_card_early",
+      "type": "icon_card",
+      "theme": "market",
+      "icon": "pottage",
+      "card_color": "#E9C25C",
+      "caption": "POTTAGE.",
+      "overlay": {
+        "kind": "tick"
+      },
+      "duration": 1.4
+    },
+    {
+      "id": "sleeping_peasant_room",
+      "type": "illustration",
+      "theme": "winter_room",
+      "camera": "push_in",
+      "effects": [
+        "zzz"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "barn_fumes",
+      "type": "illustration",
+      "theme": "barn",
+      "camera": "push_in",
+      "zoom_end": 1.1,
+      "effects": [
+        "green_fumes",
+        "smoke"
+      ],
+      "overlay": {
+        "kind": "cross",
+        "position": [
+          0.87,
+          0.16
+        ]
+      },
+      "duration": 1.3
+    },
+    {
+      "id": "clothing_face",
+      "type": "face_card",
+      "theme": "generic",
+      "camera": "static",
+      "card_color": "#E9C25C",
+      "caption": "LAYERED CLOTHING",
+      "overlay": {
+        "kind": "tick"
+      },
+      "duration": 0.8
+    },
+    {
+      "id": "pottage_card",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "pottage",
+      "card_color": "#F0C85F",
+      "caption": "POTTAGE.",
+      "duration": 1.1
+    },
+    {
+      "id": "woman_cooking",
+      "type": "illustration",
+      "theme": "kitchen",
+      "camera": "push_in",
+      "zoom_end": 1.08,
+      "effects": [
+        "steam",
+        "fire_flicker"
+      ],
+      "duration": 1.3
+    },
+    {
+      "id": "medieval_village",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_left",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "peasants_layers",
+      "type": "illustration",
+      "theme": "market",
+      "camera": "push_in",
+      "zoom_end": 1.06,
+      "duration": 1.2
+    },
+    {
+      "id": "animals_at_night",
+      "type": "illustration",
+      "theme": "barn",
+      "camera": "push_in",
+      "effects": [
+        "zzz",
+        "fire_flicker"
+      ],
+      "duration": 0.9
+    },
+    {
+      "id": "old_street",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_right",
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1.4
+    },
+    {
+      "id": "horse_cart",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pan_left",
+      "effects": [
+        "dust"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "method_five",
+      "type": "method_card",
+      "theme": "market",
+      "number": "5",
+      "icon": "bread",
+      "caption": "BARK BREAD & BOILED LEATHER",
+      "card_color": "#EFC35B",
+      "number_color": "#E97531",
+      "duration": 1.3
+    },
+    {
+      "id": "mortar_pestle",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "mortar",
+      "card_color": "#EAC15C",
+      "caption": "POUND GRAINS",
+      "duration": 0.8
+    },
+    {
+      "id": "pot_closeup",
+      "type": "illustration",
+      "theme": "kitchen",
+      "camera": "push_in",
+      "zoom_end": 1.11,
+      "effects": [
+        "steam",
+        "fire_flicker"
+      ],
+      "duration": 1.1
+    },
+    {
+      "id": "field_cattle_second",
+      "type": "illustration",
+      "theme": "generic",
+      "camera": "pan_right",
+      "duration": 1.3
+    },
+    {
+      "id": "then_now_stove_radiator",
+      "type": "then_now",
+      "theme": "kitchen",
+      "camera": "static",
+      "left_icon": "stove",
+      "right_icon": "radiator",
+      "left_label": "THEN",
+      "right_label": "NOW",
+      "left_color": "#E8C98F",
+      "right_color": "#B5C89B",
+      "duration": 1
+    },
+    {
+      "id": "snow_walker",
+      "type": "illustration",
+      "theme": "snow_forest",
+      "camera": "push_in",
+      "effects": [
+        "snow"
+      ],
+      "duration": 1.2
+    },
+    {
+      "id": "hearth_icon",
+      "type": "icon_card",
+      "theme": "barn",
+      "icon": "fire",
+      "card_color": "#E9A05A",
+      "caption": "HEARTH FIRE",
+      "effects": [
+        "fire_flicker"
+      ],
+      "duration": 0.9
+    },
+    {
+      "id": "method_two",
+      "type": "method_card",
+      "theme": "kitchen",
+      "number": "2",
+      "icon": "cauldron",
+      "caption": "USE WHAT YOU HAVE",
+      "card_color": "#EFC35B",
+      "number_color": "#D9A52F",
+      "duration": 1.4
+    },
+    {
+      "id": "final_village",
+      "type": "illustration",
+      "theme": "village_street",
+      "camera": "pull_out",
+      "zoom_start": 1.08,
+      "zoom_end": 1,
+      "effects": [
+        "smoke"
+      ],
+      "duration": 1
+    },
+    {
+      "id": "pottage_close",
+      "type": "icon_card",
+      "theme": "generic",
+      "icon": "pottage",
+      "card_color": "#F0C85F",
+      "caption": "POTTAGE.",
+      "duration": 1.3
+    }
+  ]
+}
