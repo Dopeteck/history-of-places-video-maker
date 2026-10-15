@@ -135,7 +135,7 @@ export const Figure: React.FC<{
   facing?: number;
   accessory?: Accessory;
   opacity?: number;
-  face?: "none" | "eyes" | "angry" | "sad" | "happy";
+  face?: "none" | "eyes" | "angry" | "sad" | "happy" | "shocked" | "sly";
   label?: string;
   labelColor?: string;
   draw?: number; // 0..1: the figure is progressively "drawn" (pencil stroke)
@@ -192,16 +192,48 @@ export const Figure: React.FC<{
       <g transform={`translate(${hx} ${hy}) rotate(${ang}) scale(${facing} 1)`}>
         {face !== "none" && draw >= 1 && (
           <>
-            <ellipse cx={7 * scale} cy={-3 * scale} rx={3.2 * scale} ry={4.6 * scale} fill="#fff" />
-            <ellipse cx={15 * scale} cy={-3 * scale} rx={3.2 * scale} ry={4.6 * scale} fill="#fff" />
+            <ellipse cx={7 * scale} cy={-3 * scale}
+              rx={(face === "shocked" ? 4.2 : 3.2) * scale}
+              ry={(face === "shocked" ? 5.8 : 4.6) * scale} fill="#fff" />
+            <ellipse cx={15 * scale} cy={-3 * scale}
+              rx={(face === "shocked" ? 4.2 : 3.2) * scale}
+              ry={(face === "shocked" ? 5.8 : 4.6) * scale} fill="#fff" />
+            <circle cx={(face === "shocked" ? 7.5 : 8.1) * scale} cy={-2.2 * scale}
+              r={(face === "shocked" ? 2.1 : 1.7) * scale} fill="#2B2722" />
+            <circle cx={(face === "shocked" ? 15.5 : 16.1) * scale} cy={-2.2 * scale}
+              r={(face === "shocked" ? 2.1 : 1.7) * scale} fill="#2B2722" />
             {face === "angry" && (
-              <path d={`M${3 * scale},${-11 * scale} L${19 * scale},${-7 * scale}`} stroke="#fff" strokeWidth={3 * scale} strokeLinecap="round" />
+              <>
+                <path d={`M${2 * scale},${-10 * scale} L${10 * scale},${-6 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.8 * scale} strokeLinecap="round" />
+                <path d={`M${12 * scale},${-6 * scale} L${20 * scale},${-10 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.8 * scale} strokeLinecap="round" />
+              </>
             )}
             {face === "sad" && (
-              <path d={`M${3 * scale},${-8 * scale} L${19 * scale},${-12 * scale}`} stroke="#fff" strokeWidth={3 * scale} strokeLinecap="round" />
+              <>
+                <path d={`M${2 * scale},${-12 * scale} L${10 * scale},${-9 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.5 * scale} strokeLinecap="round" />
+                <path d={`M${12 * scale},${-9 * scale} L${20 * scale},${-12 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.5 * scale} strokeLinecap="round" />
+                <path d={`M${6 * scale},${11 * scale} Q${11 * scale},${5 * scale} ${16 * scale},${11 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.8 * scale} fill="none" strokeLinecap="round" />
+              </>
+            )}
+            {face === "sly" && (
+              <>
+                <path d={`M${3 * scale},${-10 * scale} L${10 * scale},${-12 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.8 * scale} strokeLinecap="round" />
+                <path d={`M${7 * scale},${9 * scale} Q${12 * scale},${13 * scale} ${18 * scale},${6 * scale}`}
+                  stroke="#2B2722" strokeWidth={2.8 * scale} fill="none" strokeLinecap="round" />
+              </>
             )}
             {face === "happy" && (
-              <path d={`M${6 * scale},${7 * scale} Q${11 * scale},${12 * scale} ${16 * scale},${7 * scale}`} stroke="#fff" strokeWidth={2.6 * scale} fill="none" strokeLinecap="round" />
+              <path d={`M${5 * scale},${6 * scale} Q${11 * scale},${14 * scale} ${18 * scale},${6 * scale}`}
+                stroke="#2B2722" strokeWidth={2.8 * scale} fill="none" strokeLinecap="round" />
+            )}
+            {face === "shocked" && (
+              <ellipse cx={11 * scale} cy={9 * scale} rx={4 * scale} ry={5.2 * scale} fill="#2B2722" />
             )}
           </>
         )}
@@ -360,7 +392,7 @@ export const Actor: React.FC<{
   scale?: number;
   facing?: number | ((f: number) => number);
   accessory?: Accessory;
-  face?: "none" | "eyes" | "angry" | "sad" | "happy";
+  face?: "none" | "eyes" | "angry" | "sad" | "happy" | "shocked" | "sly";
   label?: string;
   mod?: (f: number, p: Pose) => Pose;
   trails?: boolean;
