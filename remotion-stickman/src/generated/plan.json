@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "title": "The Missing Crown",
+  "hook": "ONE SMALL MISTAKE CHANGED EVERYTHING",
+  "mode": "long",
+  "width": 1920,
+  "height": 1080,
+  "fps": 24,
+  "total_frames": 504,
+  "cast": [
+    {"id":"ruler","name":"The Ruler","accessory":"crown","accent":"#E0A526"},
+    {"id":"guard","name":"The Guard","accessory":"none","accent":"#1FA2A6"}
+  ],
+  "chapters": [
+    {
+      "number":1,
+      "title":"The Missing Crown",
+      "start_frame":0,
+      "title_frames":60,
+      "scenes":[
+        {
+          "id":"demo-arrival","title":"An Unexpected Arrival","start_frame":60,"duration_frames":144,
+          "narration":"The guard hurried into the room and pointed toward the empty throne.",
+          "background":"throne","camera":"push_in","effects":["pop_in","shake"],"props":["crown"],
+          "emphasis_words":["empty throne"],
+          "characters_on_screen":[
+            {"id":"guard","x":0.28,"pose":"running","expression":"shocked"},
+            {"id":"ruler","x":0.72,"pose":"thinking","expression":"neutral"}
+          ],
+          "action_beats":[
+            {"at":0.0,"actions":[{"id":"guard","action":"run","x":0.12,"emotion":"shocked"},{"id":"ruler","action":"think","x":0.72,"emotion":"neutral"}]},
+            {"at":0.38,"actions":[{"id":"guard","action":"point","x":0.34,"emotion":"shocked"},{"id":"ruler","action":"shock","x":0.72,"emotion":"shocked"}]},
+            {"at":0.72,"actions":[{"id":"guard","action":"point","x":0.34,"emotion":"shocked"},{"id":"ruler","action":"facepalm","x":0.72,"emotion":"sad"}]}
+          ]
+        },
+        {
+          "id":"demo-search","title":"The Search Begins","start_frame":204,"duration_frames":144,
+          "narration":"They searched the chamber, moving the chest and checking behind the pillars.",
+          "background":"palace","camera":"pan_right","effects":["cut"],"props":["scroll","coin"],
+          "emphasis_words":["searched the chamber"],
+          "characters_on_screen":[
+            {"id":"guard","x":0.3,"pose":"thinking","expression":"neutral"},
+            {"id":"ruler","x":0.7,"pose":"pointing","expression":"angry"}
+          ],
+          "action_beats":[
+            {"at":0.0,"actions":[{"id":"guard","action":"walk","x":0.2,"emotion":"neutral"},{"id":"ruler","action":"point","x":0.7,"emotion":"angry"}]},
+            {"at":0.42,"actions":[{"id":"guard","action":"crouch","x":0.36,"emotion":"neutral"},{"id":"ruler","action":"walk","x":0.55,"emotion":"angry"}]},
+            {"at":0.76,"actions":[{"id":"guard","action":"think","x":0.36,"emotion":"shocked"},{"id":"ruler","action":"point","x":0.55,"emotion":"angry"}]}
+          ]
+        },
+        {
+          "id":"demo-discovery","title":"A Clue Appears","start_frame":348,"duration_frames":96,
+          "narration":"At last, the guard found a tiny golden mark beneath the table.",
+          "background":"room","camera":"push_in","effects":["fade"],"props":["coin"],
+          "emphasis_words":["at last","golden mark"],
+          "characters_on_screen":[
+            {"id":"guard","x":0.38,"pose":"kneeling","expression":"happy"},
+            {"id":"ruler","x":0.7,"pose":"shocked","expression":"shocked"}
+          ],
+          "action_beats":[
+            {"at":0.0,"actions":[{"id":"guard","action":"crouch","x":0.38,"emotion":"neutral"},{"id":"ruler","action":"think","x":0.7,"emotion":"neutral"}]},
+            {"at":0.48,"actions":[{"id":"guard","action":"point","x":0.38,"emotion":"happy"},{"id":"ruler","action":"shock","x":0.7,"emotion":"shocked"}]},
+            {"at":0.82,"actions":[{"id":"guard","action":"cheer","x":0.38,"emotion":"happy"},{"id":"ruler","action":"point","x":0.7,"emotion":"happy"}]}
+          ]
+        }
+      ]
+    }
+  ],
+  "captions": []
+}
