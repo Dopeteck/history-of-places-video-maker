@@ -73,13 +73,22 @@ def validate_outline(data: dict, count: int) -> dict:
     if not isinstance(data['cast'], list) or not 1 <= len(data['cast']) <= 8:
         raise ValueError('Cast must contain 1–8 characters')
     for c in data['cast']:
-        cid = identifier(c['id'])
-        if cid in seen or c['accessory'] not in ACCESSORIES or c['accent'] not in ACCENTS:
-            raise ValueError('Invalid/duplicate cast identity, accessory or accent')
+        if not isinstance(c, dict):
+            raise ValueError('Each cast member must be a JSON object')
+        cid = identifier(c.get('id'))
+        accessory, accent = c.get('accessory'), c.get('accent')
+        # Validate types before set membership: list/dict values from model output
+        # must become a clear schema error, not "unhashable type".
+        if not isinstance(accessory, str) or accessory not in ACCESSORIES:
+            raise ValueError(f'Cast accessory must be one of: {", ".join(sorted(ACCESSORIES))}')
+        if not isinstance(accent, str) or accent not in ACCENTS:
+            raise ValueError(f'Cast accent must be one of: {", ".join(sorted(ACCENTS))}')
+        if cid in seen:
+            raise ValueError('Duplicate cast identity')
         seen.add(cid)
-        cast.append({'id': cid, 'name': text(c['name'], 'cast name', 100),
-                     'role': text(c['role'], 'role', 200), 'trait': text(c['trait'], 'trait', 200),
-                     'accessory': c['accessory'], 'accent': c['accent']})
+        cast.append({'id': cid, 'name': text(c.get('name'), 'cast name', 100),
+                     'role': text(c.get('role'), 'role', 200), 'trait': text(c.get('trait'), 'trait', 200),
+                     'accessory': accessory, 'accent': accent})
     if not isinstance(data['chapters'], list) or len(data['chapters']) != count:
         raise ValueError(f'Outline must contain exactly {count} chapters/parts')
     chapters = []
