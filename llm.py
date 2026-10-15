@@ -58,7 +58,7 @@ def _error_details(exc: Exception) -> tuple[int | None, str]:
 def _log_failure(provider: str, model: str, exc: Exception) -> tuple[int | None, str]:
     status, body = _error_details(exc)
     # Avoid logging exception objects directly: SDK exception strings may contain secrets.
-    trace = _safe(traceback.format_exc())
+    trace = _redact(traceback.format_exc())
     log.error("Provider %s model %s failed: type=%s message=%s HTTP status=%s body=%s\n%s",
               provider, model, type(exc).__name__, _safe(exc), status, body or "<empty>", trace)
     return status, body
@@ -246,7 +246,7 @@ class JsonLLM:
         for provider in eligible:
             for model in provider["models"]:
                 if time.monotonic() >= deadline:
-                    raise RuntimeError("LLM stage exceeded its 55-second time budget")
+                    raise RuntimeError("LLM stage exceeded its configured time budget")
                 try:
                     if not self._model_available(provider, model):
                         continue
