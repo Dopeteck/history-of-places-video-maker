@@ -438,6 +438,31 @@ def _icon(d, name, center, r):
         d.text((x,y),"?",font=e._font(int(r*.85)),fill=ink,anchor="mm")
 
 
+
+def _method_object(d,name,center,r):
+    """Dark, high-contrast object silhouette used on numbered yellow method cards."""
+    x,y=center;ink=(31,29,27);gold=(225,174,78);sw=max(4,int(r*.045))
+    if name in {"bread","loaf","bark_bread"}:
+        # Rough oval loaf / piece of bark bread, not the tiny pale icon used in general cards.
+        d.ellipse((x-r*.66,y-r*.02,x+r*.66,y+r*.45),fill=ink,outline=(18,18,17),width=sw)
+        d.polygon([(x-r*.56,y+r*.06),(x-r*.42,y-r*.28),(x-r*.15,y-r*.37),
+                   (x+r*.22,y-r*.33),(x+r*.50,y-r*.16),(x+r*.59,y+r*.08)],
+                  fill=(42,38,33),outline=ink)
+        d.arc((x-r*.50,y-r*.18,x+r*.48,y+r*.31),190,350,fill=(99,78,53),width=max(3,int(r*.025)))
+        for dx in (-.28,0,.25):
+            d.arc((x+r*(dx-.12),y-r*.17,x+r*(dx+.12),y+r*.13),195,340,
+                  fill=gold,width=max(3,int(r*.027)))
+        # A pair of rough crumb chips beneath the loaf adds hand-drawn detail.
+        d.ellipse((x-r*.32,y+r*.42,x-r*.22,y+r*.48),fill=gold)
+        d.ellipse((x+r*.28,y+r*.43,x+r*.38,y+r*.49),fill=gold)
+    elif name in {"cauldron","pottage","pot"}:
+        _cauldron(d,x,y-r*.04,r*.72,False)
+        for off in (-.2,0,.2):
+            d.arc((x+off*r-r*.09,y-r*.82,x+off*r+r*.12,y-r*.44),
+                  190,350,fill=(250,243,220),width=max(4,sw))
+    else:
+        _icon(d,str(name),center,r)
+
 def _draw_hook(background, hook):
     w,h=background.size;d=ImageDraw.Draw(background)
     lines=[x.strip() for x in str(hook).replace("|","\n").splitlines() if x.strip()]
@@ -547,7 +572,7 @@ def _render_card(shot,plate,t,duration,size):
         color=e._color(shot.get("card_color"),MUSTARD);card=Image.new("RGBA",size,(*color,255));d=ImageDraw.Draw(card)
         d.polygon([(w*.30,h*.06),(w*.70,h*.06),(w*.66,h*.17),(w*.34,h*.17)],fill=(250,238,204),outline=ink)
         e.draw_fitted_text(d,f"METHOD {shot.get('number','5')}",(w*.5,h*.115),int(w*.36),int(h*.06),ink,color,0,1)
-        _icon(d,str(shot.get("icon","bread")),(w*.5,h*.47),min(w*.17,h*.28))
+        _method_object(d,str(shot.get("icon","bread")),(w*.5,h*.45),min(w*.21,h*.31))
         e.draw_fitted_text(d,str(shot.get("caption","BARK BREAD")),(w*.5,h*.83),int(w*.88),int(h*.12),(255,255,255),ink,max(2,w//180),2)
         e._draw_fx(card,shot,t,str(shot.get("id","shot")));return card
     if kind=="face_card":
