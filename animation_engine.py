@@ -695,7 +695,7 @@ def main(argv:list[str]|None=None)->int:
         print(json.dumps(render_video(compositor,args.output,args.fps,args.audio),indent=2))
         return 0
     except (OSError,ValueError,KeyError,RuntimeError,json.JSONDecodeError) as exc:
-        LOG.error("Animation render failed: %s",exc);return 2
+        LOG.exception("Animation render failed");return 2
 
 
 # Apply reference-specific visual overrides before the CLI or tests render frames.
