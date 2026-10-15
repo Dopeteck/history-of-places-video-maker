@@ -361,8 +361,8 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
                 mod={motion(actor.id)} trails={state.action === "run" || state.action === "fall"}
                 draw={draw}>
                 {(j: Joints) => heldProp ? (
-                  <At x={(j.lHand[0]+j.rHand[0])/2} y={(j.lHand[1]+j.rHand[1])/2}
-                    s={scale*heldScale}>
+                  <At x={(j.lHand[0]+j.rHand[0])/2}
+                    y={(j.lHand[1]+j.rHand[1])/2 + 22 * scale} s={scale*heldScale}>
                     <SceneProp name={heldProp} scale={1}/>
                   </At>
                 ) : null}
