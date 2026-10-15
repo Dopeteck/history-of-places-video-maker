@@ -25,7 +25,7 @@ class AnimationEngineTests(unittest.TestCase):
     def setUpClass(cls):
         cls.data = storyboard()
 
-    def test_golden_storyboard_is_24_beats_and_30_seconds(self):
+    def test_golden_storyboard_is_27_beats_and_30_seconds(self):
         _, entries = parse_storyboard(self.data)
         self.assertEqual(len(entries), 27)
         self.assertAlmostEqual(sum(item.duration for item in entries), 30.0)
@@ -55,6 +55,21 @@ class AnimationEngineTests(unittest.TestCase):
         a = compositor.frame(0.101)
         b = compositor.frame(0.119)
         self.assertNotEqual(ImageChops.difference(a, b).getbbox(), None)
+
+    def test_all_reference_card_styles_render_and_keep_dark_vignette(self):
+        compositor = AnimationCompositor(self.data, (360, 640))
+        _, entries = parse_storyboard(self.data)
+        kinds = {"icon_card", "statistic", "then_now", "method_card", "face_card"}
+        rendered = set()
+        for entry in entries:
+            if entry.data["type"] in kinds:
+                frame = compositor.frame(entry.start + min(0.1, entry.duration / 2))
+                self.assertEqual(frame.size, (360, 640))
+                rendered.add(entry.data["type"])
+        self.assertEqual(rendered, kinds)
+        first = compositor.frame(0.0)
+        corner_luminance = sum(first.getpixel((0, 5))) / 3
+        self.assertLess(corner_luminance, 15)
 
     def test_invalid_storyboards_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "non-empty"):
