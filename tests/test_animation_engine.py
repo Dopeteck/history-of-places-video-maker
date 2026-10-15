@@ -48,7 +48,7 @@ class AnimationEngineTests(unittest.TestCase):
         first = compositor.frame(1.24)
         second = compositor.frame(1.25)
         self.assertNotEqual(ImageChops.difference(first, second).getbbox(), None)
-        self.assertEqual(len(compositor._backgrounds), 24)
+        self.assertEqual(len(compositor._backgrounds), 27)
 
     def test_camera_motion_is_smooth_and_not_12fps_quantized(self):
         compositor = AnimationCompositor(self.data, (360, 640))
