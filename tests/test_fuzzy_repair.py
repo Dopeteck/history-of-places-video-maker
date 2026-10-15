@@ -5,7 +5,7 @@ import unittest
 from llm import extract_json
 from story import (
     ACCESSORIES, ACCENTS, BACKGROUNDS, CAMERAS, EFFECTS, EXPRESSIONS, POSES, PROPS,
-    validate_chapter, validate_outline,
+    validate_chapter, validate_outline, validate_saved_story,
 )
 
 
@@ -212,6 +212,35 @@ class ChapterFuzzCorpusTests(unittest.TestCase):
             scene["uncertainty"] = "documented"
         with self.assertRaisesRegex(ValueError, "source not supplied"):
             self.run_repair(payload)
+
+    def test_saved_story_scene_alias_does_not_leak_key_error(self):
+        outline = outline_base()
+        outline["chapters"] = [
+            {"title": f"Part {index}", "purpose": "Advance the story",
+             "key_events": ["Continue the journey"]}
+            for index in range(1, 4)
+        ]
+        chapter_rows = []
+        words_per_scene = 6
+        for number in range(1, 4):
+            chapter = chapter_base()
+            chapter["number"] = number
+            chapter["title"] = f"Part {number}"
+            chapter["word_count"] = words_per_scene * len(chapter["scenes"])
+            for scene_index, scene in enumerate(chapter["scenes"], 1):
+                scene["id"] = f"c{number:02d}s{scene_index:03d}"
+            if number == 1:
+                chapter["scene_list"] = chapter.pop("scenes")
+            chapter_rows.append(chapter)
+        saved = {
+            "schema_version": 1, "mode": "long", "sources": [], "outline": outline,
+            "chapters": chapter_rows, "word_count": 3 * words_per_scene * 4,
+        }
+        self.assertIs(validate_saved_story(saved), saved)
+        broken = copy.deepcopy(saved)
+        broken["chapters"][0].pop("scene_list")
+        with self.assertRaisesRegex(ValueError, "scenes/scene_list"):
+            validate_saved_story(broken)
 
 
 class RawJSONFuzzCorpusTests(unittest.TestCase):
