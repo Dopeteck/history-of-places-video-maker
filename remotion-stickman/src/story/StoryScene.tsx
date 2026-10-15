@@ -206,8 +206,8 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
     const hasReveal = /\b(found|finds|discovered|revealed|uncovered|retrieved|lifted)\b/.test(narrationLower);
     const isLifted = hasReveal && /\b(lifted|retrieved|held|holding)\b/.test(narrationLower);
     const action: Action = isLifted ? "hold" : hasReveal ? "point" : "crouch";
-    // After indicating the discovery below the table, step out to its right edge and raise it.
-    moveActorAt(0.79, isLifted ? 0.60 : 0.50, action, hasReveal ? "happy" : "neutral");
+    // Keep the actor at the table's right edge rather than walking through its center.
+    moveActorAt(0.79, 0.60, action, hasReveal ? "happy" : "neutral");
   }
   const beatState = (id: string, atFrame: number): ActorState => {
     const fallbackActor = actors.find((actor) => actor.id === id) ?? {id, x: 0.5, pose: "standing", expression: "neutral"};
@@ -236,6 +236,11 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
   };
   const facingFor = (id: string, t: number): 1 | -1 => {
     const state = beatState(id, t);
+    // During an under-table discovery, pointing should face the object, not the audience or partner.
+    if (state.action === "point" && scene.props?.includes("table") &&
+        /\b(under|beneath|below)\b/.test(narrationLower)) {
+      return state.x > 0.5 ? -1 : 1;
+    }
     if (state.action === "walk" || state.action === "run") {
       const next = beats.map((beat) => ({at: Math.round(beat.at * Math.max(1, duration - 1)), state: beat.actions.find((x) => x.id === id)}))
         .find((item) => item.state && item.at > t)?.state;
