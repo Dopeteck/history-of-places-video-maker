@@ -7,9 +7,8 @@ import os
 import random
 import re
 import time
+import threading
 import traceback
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any, Callable
 
@@ -84,13 +83,156 @@ def extract_json(raw: str) -> dict:
     raise ValueError("Model returned no valid JSON object")
 
 
+def _prompt_object(user: str) -> dict:
+    try:
+        value = extract_json(user)
+        return value if isinstance(value, dict) else {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def _stage_from_user(user: str) -> str:
+    task = _prompt_object(user).get("task", "unknown")
+    stage = re.sub(r"[^a-z0-9_-]+", "_", str(task).lower()).strip("_-")
+    return stage[:40] or "unknown"
+
+
+def _json_schema_for_stage(stage: str) -> dict | None:
+    """Strict JSON Schema for the two narrator-story generation stages."""
+    string = {"type": "string"}
+    def array(item: dict) -> dict:
+        return {"type": "array", "items": item}
+    def obj(properties: dict) -> dict:
+        return {"type": "object", "properties": properties,
+                "required": list(properties), "additionalProperties": False}
+    if stage == "outline":
+        character = obj({
+            "id": string, "name": string, "role": string, "trait": string,
+            "accessory": {"type": "string", "enum": [
+                "crown", "glasses", "beard", "headwrap", "spear", "bow_tie", "sash", "hat", "none"]},
+            "accent": {"type": "string", "enum": ["#1FA2A6", "#E0A526", "#C0392B", "#2B2B2B"]},
+        })
+        chapter = obj({"title": string, "purpose": string, "key_events": array(string)})
+        return obj({
+            "title": string, "hook": string, "logline": string,
+            "cast": array(character), "chapters": array(chapter), "ending": string,
+        })
+    if stage == "chapter":
+        actor = obj({
+            "id": string,
+            "x": {"type": "number"},
+            "pose": {"type": "string", "enum": sorted([
+                "standing", "talking", "pointing", "shocked", "running", "kneeling",
+                "fighting", "falling", "dead", "laughing", "thinking", "praying"])},
+            "expression": {"type": "string", "enum": sorted([
+                "neutral", "happy", "angry", "shocked", "sad", "sly", "dead"])},
+        })
+        scene = obj({
+            "narration": string,
+            "characters_on_screen": array(actor),
+            "background": {"type": "string", "enum": sorted([
+                "hut", "throne", "palace", "river", "market", "battlefield", "street", "room", "map"])},
+            "camera": {"type": "string", "enum": sorted(["static", "push_in", "pan_left", "pan_right"])},
+            "effects": array({"type": "string", "enum": sorted(["shake", "fade", "cut", "pop_in"])}),
+            "props": array({"type": "string", "enum": sorted(["crown", "scroll", "torch", "fire", "coin", "sword", "spear"])}),
+            "emphasis_words": array(string),
+            "source_ids": array(string),
+            "uncertainty": {"type": "string", "enum": [
+                "documented", "disputed", "legend", "unverified", "medium"]},
+        })
+        return obj({"summary": string, "scenes": array(scene)})
+    return None
+
+
+def _to_gemini_schema(schema: dict) -> dict:
+    """Convert conventional JSON Schema type names to google-genai Schema type names."""
+    result: dict = {}
+    for key, value in schema.items():
+        if key == "type" and isinstance(value, str):
+            result[key] = value.upper()
+        elif key == "properties" and isinstance(value, dict):
+            result[key] = {name: _to_gemini_schema(child) for name, child in value.items()}
+        elif key == "items" and isinstance(value, dict):
+            result[key] = _to_gemini_schema(value)
+        elif key in {"enum", "required", "description", "format", "nullable"}:
+            result[key] = value
+        # Gemini's schema endpoint does not need JSON Schema's additionalProperties.
+    return result
+
+
+def _redacted_debug_text(value: Any, limit: int = 12000) -> str:
+    result = _redact(value)
+    result = re.sub(
+        r"(?i)([\"']?(?:api[_ -]?key|authorization|access[_ -]?token|refresh[_ -]?token|secret)[\"']?\\s*[:=]\\s*[\"']?)([^\\s,\"'}\\]]+)",
+        r"\\1[REDACTED]", result)
+    result = re.sub(
+        r"(?i)\\b(?:gsk_[A-Za-z0-9_-]{12,}|sk-or-v1-[A-Za-z0-9_-]{12,}|sk-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{25,})\\b",
+        "[REDACTED]", result)
+    return result[:limit] + ("\\n[TRUNCATED]" if len(result) > limit else "")
+
+
+_DEBUG_LOCK = threading.Lock()
+
+
+def _write_debug_response(stage: str, provider: str, content: Any) -> str | None:
+    """Persist a bounded, redacted failed response; debug write failures never mask the cause."""
+    safe_stage = re.sub(r"[^a-z0-9_-]+", "_", str(stage).lower()).strip("_-")[:40] or "unknown"
+    safe_provider = re.sub(r"[^a-z0-9_-]+", "_", str(provider).lower()).strip("_-")[:40] or "provider"
+    if content is None or content == "":
+        content = "<empty model response / provider error body>"
+    if not isinstance(content, str):
+        try:
+            content = json.dumps(content, ensure_ascii=False, default=str)
+        except Exception:
+            content = str(content)
+    payload = _redacted_debug_text(content)
+    try:
+        debug_dir = Path("debug")
+        with _DEBUG_LOCK:
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            index = 1
+            while True:
+                path = debug_dir / f"{safe_stage}_{safe_provider}_{index}.txt"
+                try:
+                    with path.open("x", encoding="utf-8") as handle:
+                        handle.write(payload)
+                    return str(path)
+                except FileExistsError:
+                    index += 1
+    except Exception as exc:
+        log.warning("Could not write redacted model debug response: %s", _safe(exc))
+        return None
+
+
+def _response_content(response: Any, provider_type: str) -> str:
+    if provider_type == "gemini":
+        text = getattr(response, "text", None)
+        if isinstance(text, str):
+            return text
+        candidates = getattr(response, "candidates", None) or []
+        parts_text = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            for part in getattr(content, "parts", []) or []:
+                part_text = getattr(part, "text", None)
+                if isinstance(part_text, str):
+                    parts_text.append(part_text)
+        return "\\n".join(parts_text)
+    try:
+        if isinstance(response, dict):
+            return str(response.get("choices", [{}])[0].get("message", {}).get("content") or "")
+        choices = getattr(response, "choices", None) or []
+        return str(getattr(getattr(choices[0], "message", None), "content", "") or "") if choices else ""
+    except (IndexError, AttributeError, TypeError):
+        return ""
+
+
 def parse_gemini_response(response: Any) -> str:
     """Safely extract Gemini text; SDK responses may have no text/candidates."""
     if response is None:
         raise ValueError("Gemini returned no response")
     text = getattr(response, "text", None)
     if isinstance(text, str) and text.strip():
-        # A JSON error envelope with status 200 is not a successful generation.
         if text.lstrip().startswith("{"):
             try:
                 obj = json.loads(text)
@@ -117,7 +259,6 @@ def parse_openai_response(response: Any) -> str:
     """Safely extract OpenAI-compatible choices/content and detect error envelopes."""
     if response is None:
         raise ValueError("OpenAI-compatible provider returned no response")
-    # Accommodate raw HTTP-style JSON dictionaries in tests and some adapters.
     if isinstance(response, dict):
         if response.get("error") is not None:
             raise ValueError("Provider returned an error object")
@@ -149,42 +290,40 @@ def parse_openai_response(response: Any) -> str:
     return content
 
 
-def _groq_models(api_key: str, timeout: float) -> set[str]:
-    """Check Groq's live model catalogue before trying a configured model."""
-    request = urllib.request.Request(
-        "https://api.groq.com/openai/v1/models",
-        headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
-        method="GET",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=min(timeout, 6.0)) as response:
-            payload = json.loads(response.read(_BODY_LIMIT * 8).decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = _safe(exc.read(_BODY_LIMIT).decode("utf-8", errors="replace"))
-        raise ProviderHTTPError(exc.code, body, "Groq model catalogue request failed") from None
-    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
-        raise ValueError("Groq model catalogue response is malformed")
-    return {item["id"] for item in payload["data"] if isinstance(item, dict) and isinstance(item.get("id"), str)}
-
-
 def provider_call(provider: dict, model: str, system: str, user: str) -> str:
     timeout = float(config.PROVIDER_TIMEOUT_SECONDS)
-    if provider['type'] == 'gemini':
+    stage = _stage_from_user(user)
+    provider_name = str(provider.get("name", "provider"))
+    if provider.get("type") == "gemini":
         from google import genai
         from google.genai import types
-        # google-genai 1.26.0 does not implement Client's context-manager protocol.
-        # Close explicitly so the pinned SDK works and connections are released.
+        schema = _json_schema_for_stage(stage)
         client = genai.Client(
-            api_key=os.environ[provider['env_key']],
+            api_key=os.environ[provider["env_key"]],
             http_options=types.HttpOptions(timeout=60000),
         )
         try:
+            config_args = {
+                "system_instruction": system,
+                "response_mime_type": "application/json",
+                "temperature": 0.8,
+            }
+            if schema is not None:
+                config_args["response_schema"] = _to_gemini_schema(schema)
             response = client.models.generate_content(
                 model=model, contents=user,
-                config=types.GenerateContentConfig(
-                    system_instruction=system, response_mime_type='application/json',
-                    temperature=0.8))
-            return parse_gemini_response(response)
+                config=types.GenerateContentConfig(**config_args))
+            try:
+                return parse_gemini_response(response)
+            except Exception as exc:
+                setattr(exc, "raw_model_response", _response_content(response, "gemini"))
+                raise
+        except Exception as exc:
+            if not getattr(exc, "raw_model_response", None):
+                status, body = _error_details(exc)
+                _write_debug_response(stage, provider_name, body or _safe(exc))
+                setattr(exc, "debug_response_saved", True)
+            raise
         finally:
             close = getattr(client, "close", None)
             if callable(close):
@@ -194,35 +333,58 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
                     log.warning("Gemini client cleanup failed", exc_info=True)
 
     from openai import OpenAI
-    with OpenAI(base_url=provider['base_url'], api_key=os.environ[provider['env_key']],
+    with OpenAI(base_url=provider["base_url"], api_key=os.environ[provider["env_key"]],
                 timeout=timeout, max_retries=0) as client:
-        kwargs = dict(model=model, messages=[{'role':'system','content':system},
-                      {'role':'user','content':user}], temperature=0.8)
-        if provider.get('json_mode'):
-            kwargs['response_format'] = {'type':'json_object'}
+        kwargs = dict(model=model, messages=[{"role": "system", "content": system},
+                      {"role": "user", "content": user}], temperature=0.8)
+        is_groq_gpt_oss = provider_name == "groq" and model in {
+            "openai/gpt-oss-120b", "openai/gpt-oss-20b"}
+        schema = _json_schema_for_stage(stage)
+        if is_groq_gpt_oss:
+            # GPT-OSS spends output budget on reasoning before the visible JSON.
+            kwargs["max_completion_tokens"] = 8192
+            kwargs["reasoning_effort"] = "low"
+            if schema is not None:
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {"name": f"story_{stage}", "strict": True, "schema": schema},
+                }
+            else:
+                kwargs["response_format"] = {"type": "json_object"}
+        elif provider.get("json_mode"):
+            kwargs["response_format"] = {"type": "json_object"}
+
         try:
             response = client.chat.completions.create(**kwargs)
         except Exception as exc:
-            status, _ = _error_details(exc)
-            # gpt-oss may reject OpenAI JSON mode. This one narrowly-scoped 400 retry
-            # disables response_format and makes the JSON-only instruction explicit.
-            message = _safe(exc).lower()
-            if (provider.get('json_mode') and status == 400 and
-                    ('response_format' in message or 'json mode' in message or 'json_object' in message)):
+            status, body = _error_details(exc)
+            message = (_safe(exc) + " " + body).lower()
+            json_validation_failed = is_groq_gpt_oss and status == 400 and (
+                "json_validate_failed" in message or "failed_generation" in message)
+            unsupported_format = status == 400 and (
+                "response_format" in message or "json mode" in message or "json_object" in message)
+            if json_validation_failed:
+                _write_debug_response(stage, provider_name, body or _safe(exc))
+            if json_validation_failed or (provider.get("json_mode") and unsupported_format):
                 fallback = dict(kwargs)
-                fallback.pop('response_format', None)
-                fallback['messages'] = [
-                    {'role':'system','content':system + "\nReturn only one valid JSON object; no markdown."},
-                    {'role':'user','content':user + "\nReturn only one valid JSON object; no markdown."},
+                fallback.pop("response_format", None)
+                fallback["messages"] = [
+                    {"role": "system", "content": system + "\nReturn exactly one valid JSON object. No markdown."},
+                    {"role": "user", "content": user + "\nReturn exactly one valid JSON object. No markdown."},
                 ]
                 response = client.chat.completions.create(**fallback)
             else:
                 raise
-        return parse_openai_response(response)
+        try:
+            return parse_openai_response(response)
+        except Exception as exc:
+            raw_response = _response_content(response, "openai")
+            setattr(exc, "raw_model_response", raw_response)
+            raise
 
 
 class JsonLLM:
-    """Validate responses; retry only rate limits/transient server errors."""
+    """Try configured providers in order and capture bounded diagnostics on failures."""
     def __init__(self, call: Callable = provider_call, sleep: Callable = time.sleep,
                  providers: list[dict] | None = None, min_interval: float = 0.0,
                  cache_dir: Path | None = None):
@@ -231,80 +393,52 @@ class JsonLLM:
         self.providers = config.PROVIDERS if providers is None else providers
         self.min_interval = min_interval
         self.last_call: float | None = None
-        self._groq_models_cache: set[str] | None = None
-        self._groq_catalogue_unavailable = False
-
-    def _model_available(self, provider: dict, model: str) -> bool:
-        if provider.get("name") != "groq" or not provider.get("verify_models"):
-            return True
-        if self._groq_catalogue_unavailable:
-            # The catalogue is advisory. Once it fails, attempt configured models
-            # through the OpenAI-compatible chat API instead of blocking the provider.
-            return True
-        if self._groq_models_cache is None:
-            try:
-                self._groq_models_cache = _groq_models(
-                    os.environ[provider["env_key"]], float(config.PROVIDER_TIMEOUT_SECONDS))
-            except Exception as exc:
-                self._groq_catalogue_unavailable = True
-                status, body = _error_details(exc)
-                log.warning(
-                    "Groq /models catalogue check failed (%s, HTTP %s, body=%s); "
-                    "attempting configured chat model %s via the OpenAI SDK",
-                    type(exc).__name__, status, body or _safe(exc), model,
-                )
-                return True
-        if model not in self._groq_models_cache:
-            log.warning("Skipping Groq model %s: absent from live /models catalogue", model)
-            return False
-        return True
 
     def generate(self, system: str, prompt: dict, validate: Callable[[dict], Any]) -> Any:
         from story import digest
         from story_store import read_json, write_json
-        cache = self.cache_dir / (digest({'system': system, 'prompt': prompt}) + '.json') if self.cache_dir else None
+        cache = self.cache_dir / (digest({"system": system, "prompt": prompt}) + ".json") if self.cache_dir else None
         if cache and cache.exists():
             try:
                 return validate(read_json(cache))
             except (ValueError, KeyError, TypeError):
-                log.warning('Ignoring invalid cached model response')
+                log.warning("Ignoring invalid cached model response")
         eligible = [p for p in self.providers if os.getenv(p["env_key"])]
         if not eligible:
             raise RuntimeError("No script API key: set GROQ_API_KEY, GEMINI_API_KEY or OPENROUTER_API_KEY")
+        stage = str(prompt.get("task", "unknown")) if isinstance(prompt, dict) else "unknown"
         errors: list[str] = []
         deadline = time.monotonic() + float(config.PROVIDER_TOTAL_BUDGET_SECONDS)
         for provider in eligible:
             for model in provider["models"]:
                 if time.monotonic() >= deadline:
                     raise RuntimeError("LLM stage exceeded its configured time budget")
-                try:
-                    if not self._model_available(provider, model):
-                        continue
-                except Exception as exc:
-                    status, body = _log_failure(provider["name"], "model-catalogue", exc)
-                    errors.append(f"{provider['name']}/model-catalogue: {type(exc).__name__} HTTP {status}")
-                    if status not in (429, 500, 502, 503, 504):
-                        continue
-                    continue
                 correction = ""
                 corrected_prompt = False
                 attempts = 0
                 while attempts <= int(config.MAX_RETRIES_PER_MODEL):
                     if time.monotonic() >= deadline:
-                        raise RuntimeError("LLM stage exceeded its 55-second time budget")
+                        raise RuntimeError("LLM stage exceeded its configured time budget")
                     if self.last_call is not None and self.min_interval:
                         self.sleep(min(self.min_interval, max(0, deadline - time.monotonic())))
                     self.last_call = time.monotonic()
+                    raw_attempt: Any = None
                     try:
-                        raw = self.call(provider, model, system,
-                                        json.dumps(prompt, ensure_ascii=False) + correction)
-                        data = extract_json(raw)
+                        raw_attempt = self.call(
+                            provider, model, system,
+                            json.dumps(prompt, ensure_ascii=False) + correction)
+                        data = extract_json(raw_attempt)
                         result = validate(data)
                         if cache:
                             write_json(cache, data)
                         return result
                     except Exception as exc:
                         status, body = _log_failure(provider["name"], model, exc)
+                        raw_debug = getattr(exc, "raw_model_response", None)
+                        if not raw_debug:
+                            raw_debug = raw_attempt if raw_attempt is not None else (body or _safe(exc))
+                        if not getattr(exc, "debug_response_saved", False):
+                            _write_debug_response(stage, provider["name"], raw_debug)
                         errors.append(f"{provider['name']}/{model}: {type(exc).__name__} HTTP {status}")
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
@@ -324,3 +458,4 @@ class JsonLLM:
                         self.sleep(delay)
                         attempts += 1
         raise RuntimeError("All script providers failed: " + "; ".join(errors))
+
