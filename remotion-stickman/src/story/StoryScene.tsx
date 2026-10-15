@@ -69,10 +69,12 @@ const actionAt = (beats: ActionBeat[], id: string, frame: number, fallback: Acto
   return current;
 };
 
-const faceOf = (emotion: Emotion): "none" | "eyes" | "angry" | "sad" | "happy" => {
+const faceOf = (emotion: Emotion): "none" | "eyes" | "angry" | "sad" | "happy" | "shocked" | "sly" => {
   if (emotion === "happy") return "happy";
   if (emotion === "angry") return "angry";
   if (emotion === "sad" || emotion === "dead") return "sad";
+  if (emotion === "shocked") return "shocked";
+  if (emotion === "sly") return "sly";
   return "eyes";
 };
 
@@ -105,7 +107,19 @@ const Backdrop: React.FC<{kind: string}> = ({kind}) => {
         {(kind === "palace" || kind === "throne") && <>
           <rect x={width*.06} y={height*.18} width={width*.88} height={ground-height*.18} fill="#E5D0A5" stroke={ink} strokeWidth={Math.max(2,width*.003)}/>
           {[.12,.31,.69,.88].map((x) => <g key={x}><rect x={width*x} y={height*.19} width={width*.035} height={ground-height*.19} fill="#FAEAC9" stroke={ink} strokeWidth={Math.max(2,width*.002)}/><path d={`M${width*(x-.015)} ${height*.19} q${width*.032} -${height*.07} ${width*.065} 0`} fill="#F5E3BC" stroke={ink} strokeWidth={Math.max(2,width*.002)}/></g>)}
-          {kind === "throne" && <g><rect x={width*.44} y={ground-height*.30} width={width*.12} height={height*.25} rx={8} fill="#A96835" stroke={ink} strokeWidth={5}/><rect x={width*.415} y={ground-height*.37} width={width*.17} height={height*.12} rx={12} fill="#BE854A" stroke={ink} strokeWidth={5}/><rect x={width*.46} y={ground-height*.45} width={width*.08} height={height*.035} rx={8} fill="#BE854A" stroke={ink} strokeWidth={5}/></g>}
+          {kind === "throne" && <g>
+            {/* A readable empty royal chair: tall back, seat, armrests, legs and a broad foot. */}
+            <rect x={width*.414} y={ground-height*.49} width={width*.172} height={height*.34} rx={24} fill="#8E4F2E" stroke={ink} strokeWidth={6}/>
+            <rect x={width*.433} y={ground-height*.465} width={width*.134} height={height*.285} rx={18} fill="#A96835" stroke="#D9AD66" strokeWidth={5}/>
+            <path d={`M${width*.45} ${ground-height*.43} Q${width*.5} ${ground-height*.49} ${width*.55} ${ground-height*.43}`} fill="none" stroke="#E0A526" strokeWidth={6}/>
+            <rect x={width*.39} y={ground-height*.285} width={width*.22} height={height*.075} rx={12} fill="#8E4F2E" stroke={ink} strokeWidth={6}/>
+            <rect x={width*.405} y={ground-height*.278} width={width*.19} height={height*.055} rx={10} fill="#D0A05D" stroke="#F0CE8D" strokeWidth={4}/>
+            <rect x={width*.372} y={ground-height*.345} width={width*.036} height={height*.105} rx={10} fill="#8E4F2E" stroke={ink} strokeWidth={6}/>
+            <rect x={width*.592} y={ground-height*.345} width={width*.036} height={height*.105} rx={10} fill="#8E4F2E" stroke={ink} strokeWidth={6}/>
+            <rect x={width*.425} y={ground-height*.22} width={width*.026} height={height*.18} fill="#6F3F29" stroke={ink} strokeWidth={5}/>
+            <rect x={width*.549} y={ground-height*.22} width={width*.026} height={height*.18} fill="#6F3F29" stroke={ink} strokeWidth={5}/>
+            <rect x={width*.397} y={ground-height*.045} width={width*.206} height={height*.035} rx={8} fill="#8E4F2E" stroke={ink} strokeWidth={5}/>
+          </g>}
         </>}
         {(kind === "hut" || kind === "market" || kind === "street") && <>
           {[.06,.68].map((x) => <g key={x}><rect x={width*x} y={ground-height*.28} width={width*.24} height={height*.27} fill="#B88D5B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><path d={`M${width*(x-.02)} ${ground-height*.28} L${width*(x+.12)} ${ground-height*.43} L${width*(x+.26)} ${ground-height*.28} Z`} fill="#915E3B" stroke={ink} strokeWidth={Math.max(2,width*.003)}/><rect x={width*(x+.09)} y={ground-height*.18} width={width*.06} height={height*.17} fill="#4A3425"/></g>)}
@@ -157,11 +171,43 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
   const camX = camera === "pan_left" ? -width * 0.05 * progress :
                camera === "pan_right" ? width * 0.05 * progress : 0;
   const actors = scene.characters_on_screen ?? [];
-  const beats = scene.action_beats ?? [];
+  const beats: ActionBeat[] = (scene.action_beats ?? []).map((beat) => ({
+    ...beat,
+    actions: beat.actions.map((action) => ({...action})),
+  }));
   const fallbackState = (actor: typeof actors[number]): ActorState => ({
     id: actor.id, action: actionOfPose(actor.pose), x: actor.x,
     emotion: (actor.expression as Emotion) ?? "neutral",
   });
+  // Scene-specific blocking keeps the action physically connected to the visible prop.
+  // Tables are staged at x=.50 and chests at x=.86 in this renderer.
+  const primaryId = actors[0]?.id;
+  const narrationLower = (scene.narration ?? "").toLowerCase();
+  const moveActorAt = (targetAt: number, x: number, action: Action, emotion: Emotion) => {
+    if (!primaryId || beats.length === 0) return;
+    const beat = beats.reduce((best, item) =>
+      Math.abs(item.at - targetAt) < Math.abs(best.at - targetAt) ? item : best, beats[0]);
+    const actor = actors.find((item) => item.id === primaryId);
+    const state = beat.actions.find((item) => item.id === primaryId);
+    const replacement: ActorState = state ?? {
+      id: primaryId, action, x: actor?.x ?? x, emotion,
+    };
+    Object.assign(replacement, {action, x, emotion});
+    if (!state) beat.actions.push(replacement);
+  };
+  if (scene.props?.includes("chest") &&
+      /\b(chest)\b/.test(narrationLower) &&
+      /\b(beside|near|approach|approached|crouch|crouched|inspect|inspected|search|searched|check|checked)\b/.test(narrationLower)) {
+    moveActorAt(0.42, 0.76, "crouch", "neutral");
+  }
+  if (scene.props?.includes("table") &&
+      /\b(table)\b/.test(narrationLower) &&
+      /\b(under|beneath|below)\b/.test(narrationLower)) {
+    const hasReveal = /\b(found|finds|discovered|revealed|uncovered|retrieved|lifted)\b/.test(narrationLower);
+    const action: Action = hasReveal && /\b(lifted|retrieved|held|holding)\b/.test(narrationLower)
+      ? "hold" : hasReveal ? "point" : "crouch";
+    moveActorAt(0.79, 0.50, action, hasReveal ? "happy" : "neutral");
+  }
   const beatState = (id: string, atFrame: number): ActorState => {
     const fallbackActor = actors.find((actor) => actor.id === id) ?? {id, x: 0.5, pose: "standing", expression: "neutral"};
     const fallback = fallbackState(fallbackActor);
@@ -223,23 +269,40 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
             const hasTable = scene.props.includes("table");
             const throneCrown = name === "crown" && scene.background === "throne";
             const coinUnderTable = name === "coin" && hasTable;
+            const crownUnderTable = name === "crown" && hasTable &&
+              /\b(under|beneath|below)\b.*\btable\b/.test(narrationLower);
             const defaultX = width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.18);
             const x = name === "table" ? width * 0.5
               : name === "chest" ? width * 0.86
-              : throneCrown || coinUnderTable ? width * 0.5
+              : throneCrown || coinUnderTable || crownUnderTable ? width * 0.5
               : defaultX;
             const y = name === "table" ? ground - 100 * scale
               : name === "chest" ? ground - 48 * scale
               : throneCrown ? ground - height * 0.37
+              : crownUnderTable ? ground - 34 * scale
               : coinUnderTable ? ground - 8 * scale
               : ground - 64 * scale;
+            let propOpacity = 1;
+            const revealable = ["crown", "coin", "scroll", "gold", "money"].includes(name);
+            const hasDiscovery = /\b(found|finds|discovered|revealed|uncovered|retrieved|lifted)\b/.test(narrationLower);
+            const isHeldLater = beats.some((beat) => beat.actions.some((item) =>
+              item.action === "hold" || item.action === "carry"));
+            if (revealable && hasDiscovery) {
+              propOpacity = interpolate(f, [duration * 0.32, duration * 0.43], [0, 1],
+                {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
+              if (isHeldLater) {
+                propOpacity *= interpolate(f, [duration * 0.62, duration * 0.70], [1, 0],
+                  {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
+              }
+            }
             const propScale = name === "table" ? scale
               : name === "chest" ? scale * 0.9
               : throneCrown ? scale * 0.8
+              : crownUnderTable ? scale * 0.65
               : coinUnderTable ? scale * 0.55
               : scale * 0.8;
             return (
-              <At key={`${scene.id}-prop-${name}-${i}`} x={x} y={y} s={propScale}>
+              <At key={`${scene.id}-prop-${name}-${i}`} x={x} y={y} s={propScale} o={propOpacity}>
                 <SceneProp name={name} scale={1}/>
               </At>
             );
@@ -257,7 +320,10 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
                 base={{x: actor.x*width, y: hipY}} scale={scale}
                 facing={(t) => facingFor(actor.id, t)}
                 accessory={accessoryOf(char?.accessory ?? "none")}
-                face={faceOf(state.emotion)} label={actors.length <= 2 ? char?.name : undefined}
+                face={faceOf(state.emotion)}
+                behind={() => <ellipse cx={state.x * width} cy={ground - 2 * scale}
+                  rx={28 * scale} ry={5 * scale} fill="#2B2722" opacity={0.14}/>}
+                label={scene.show_character_labels && actors.length <= 2 ? char?.name : undefined}
                 mod={motion(actor.id)} trails={state.action === "run" || state.action === "fall"}
                 draw={draw}>
                 {(j: Joints) => heldProp ? (
