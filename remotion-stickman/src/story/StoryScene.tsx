@@ -207,7 +207,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
     const isLifted = hasReveal && /\b(lifted|retrieved|held|holding)\b/.test(narrationLower);
     const action: Action = isLifted ? "hold" : hasReveal ? "point" : "crouch";
     // Keep the actor at the table's right edge rather than walking through its center.
-    moveActorAt(0.79, 0.60, action, hasReveal ? "happy" : "neutral");
+    moveActorAt(0.79, isLifted ? 0.65 : 0.62, action, hasReveal ? "happy" : "neutral");
   }
   const beatState = (id: string, atFrame: number): ActorState => {
     const fallbackActor = actors.find((actor) => actor.id === id) ?? {id, x: 0.5, pose: "standing", expression: "neutral"};
@@ -325,7 +325,7 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
                   {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
               }
             }
-            const propScale = name === "table" ? scale
+            const propScale = name === "table" ? scale * 0.75
               : name === "chest" ? scale * 0.9
               : throneCrown ? scale * 0.8
               : crownUnderTable ? scale * 0.65
@@ -361,8 +361,8 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
                 mod={motion(actor.id)} trails={state.action === "run" || state.action === "fall"}
                 draw={draw}>
                 {(j: Joints) => heldProp ? (
-                  <At x={(j.lHand[0]+j.rHand[0])/2}
-                    y={(j.lHand[1]+j.rHand[1])/2 + 22 * scale} s={scale*heldScale}>
+                  <At x={(j.lHand[0]+j.rHand[0])/2} y={(j.lHand[1]+j.rHand[1])/2}
+                    s={scale*heldScale}>
                     <SceneProp name={heldProp} scale={1}/>
                   </At>
                 ) : null}
