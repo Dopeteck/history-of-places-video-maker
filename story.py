@@ -338,11 +338,11 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
 
             raw_x = first_value(actor, ("x", "position", "horizontal_position"), 0.3 if actor_index == 1 else 0.7)
             try:
-                x = float(raw_x) if not isinstance(raw_x, bool) else (0.3 if actor_index == 1 else 0.7)
+                x = float(raw_x) if not isinstance(raw_x, bool) else 0.5
             except (TypeError, ValueError, OverflowError):
-                x = 0.3 if actor_index == 1 else 0.7
+                x = 0.5
             if not math.isfinite(x):
-                x = 0.3 if actor_index == 1 else 0.7
+                x = 0.5
             x = round(min(0.9, max(0.1, x)), 4)
 
             pose = normalise_enum(first_value(actor, ("pose", "action", "posture"), "standing"),
@@ -385,7 +385,9 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
             refs = [refs]
         if not isinstance(refs, list):
             refs = []
-        refs = [ref for ref in refs if isinstance(ref, str) and ref in source_ids]
+        if any(not isinstance(ref, str) or ref not in source_ids for ref in refs):
+            raise ValueError("Scene references a source not supplied by the user")
+        refs = list(dict.fromkeys(refs))
 
         uncertainty_value = first_value(
             scene, ("uncertainty", "uncertainty_level", "confidence", "certainty"), "medium")
