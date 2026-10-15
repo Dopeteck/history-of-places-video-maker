@@ -514,6 +514,8 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
         clean.append({
             "id": f"c{number:02d}s{index:03d}",
             "narration": narration,
+            "visual_title": safe_text(first_value(scene, ("visual_title", "scene_title", "heading"), ""),
+                                       " ".join(narration.split()[:5]), 60),
             "characters_on_screen": checked,
             "action_beats": beats,
             "background": background,
@@ -607,7 +609,8 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
                'backgrounds': sorted(BACKGROUNDS), 'camera': sorted(CAMERAS),
                'effects': sorted(EFFECTS), 'props': sorted(PROPS)}
     chapter_schema = {'summary': 'brief continuity summary', 'scenes': [
-        {'narration': 'spoken text', 'characters_on_screen': [
+        {'narration': 'spoken text', 'visual_title': 'short 2–6 word on-screen title',
+         'characters_on_screen': [
             {'id': 'cast id', 'x': 0.3, 'pose': 'standing', 'expression': 'neutral'}],
          'action_beats': [
              {'at': 0.0, 'actions': [{'id': 'cast id', 'action': 'idle', 'x': 0.3, 'emotion': 'neutral'}]},
