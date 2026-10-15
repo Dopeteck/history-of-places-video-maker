@@ -145,7 +145,7 @@ class ChapterFuzzCorpusTests(unittest.TestCase):
                                                                "pose": "talkng", "expression": "surprisd"},
                 "background": "palacc", "camera": "push-in", "effects": "fadz",
                 "props": ["Staff", {"prop": "unknown"}, "coin"],
-                "source_ids": "unknown-source", "emphasis_words": 7,
+                "source_ids": [], "emphasis_words": 7,
                 "extra": "ignored",
             })
         cases.append(wrong_types)
@@ -204,6 +204,14 @@ class ChapterFuzzCorpusTests(unittest.TestCase):
         result = self.run_repair(payload)
         self.assertEqual(result["scenes"][0]["uncertainty"], "medium")
         self.assertEqual(result["scenes"][0]["characters_on_screen"][0]["pose"], "talking")
+
+    def test_unknown_source_reference_is_a_clear_value_error(self):
+        payload = chapter_base()
+        for scene in payload["scenes"]:
+            scene["source_ids"] = ["invented_source_id"]
+            scene["uncertainty"] = "documented"
+        with self.assertRaisesRegex(ValueError, "source not supplied"):
+            self.run_repair(payload)
 
 
 class RawJSONFuzzCorpusTests(unittest.TestCase):
