@@ -502,10 +502,17 @@ def validate_saved_story(story: dict) -> dict:
         if not isinstance(ch, dict) or ch.get('number', i) != i:
             raise ValueError('Chapter order changed')
         safe_text(ch.get('title'), f'Part {i}', 70)
-        for saved, normal in zip(ch['scenes'], result['scenes']):
-            if saved.get('id') != normal['id'] or saved['id'] in scene_ids:
+        saved_scenes = first_value(
+            ch, ("scenes", "scene_list", "sceneList", "items", "sequence"), None)
+        if not isinstance(saved_scenes, list) or len(saved_scenes) != len(result['scenes']):
+            raise ValueError('Saved chapter must contain a scene list matching its validated scenes')
+        for saved, normal in zip(saved_scenes, result['scenes']):
+            if not isinstance(saved, dict):
+                raise ValueError('Saved scene must be a JSON object')
+            saved_id = saved.get('id')
+            if not isinstance(saved_id, str) or saved_id != normal['id'] or saved_id in scene_ids:
                 raise ValueError('Scene IDs/order changed; use sequential chapter/scene IDs')
-            scene_ids.add(saved['id'])
+            scene_ids.add(saved_id)
         if ch.get('word_count') != result['word_count']:
             raise ValueError('Word count stale after edit')
     if story.get('word_count') != sum(c.get('word_count', -1) for c in chapters if isinstance(c, dict)):
