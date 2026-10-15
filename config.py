@@ -46,28 +46,38 @@ SHOW_TITLE = True
 TITLE_FONT_SIZE = 64
 TITLE_MARGIN_V = 230
 
-MAX_RETRIES_PER_MODEL = 2
+# Model order is configurable without code changes. Comma-separated IDs.
+import os as _os
+
+def _model_list(env_name: str, defaults: list[str]) -> list[str]:
+    value = _os.getenv(env_name, "").strip()
+    return [item.strip() for item in value.split(",") if item.strip()] if value else defaults
+
+MAX_RETRIES_PER_MODEL = 1  # one short retry, only for 429/5xx
+PROVIDER_TIMEOUT_SECONDS = 12
+PROVIDER_TOTAL_BUDGET_SECONDS = 55
 PROVIDERS = [
     {
         "name": "groq",
         "type": "openai",
         "env_key": "GROQ_API_KEY",
         "base_url": "https://api.groq.com/openai/v1",
-        "models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+        "models": _model_list("GROQ_MODELS", ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]),
+        "verify_models": True,
         "json_mode": True,
     },
     {
         "name": "gemini",
         "type": "gemini",
         "env_key": "GEMINI_API_KEY",
-        "models": ["gemini-2.5-flash"],
+        "models": _model_list("GEMINI_MODELS", ["gemini-2.5-flash"]),
     },
     {
         "name": "openrouter",
         "type": "openai",
         "env_key": "OPENROUTER_API_KEY",
         "base_url": "https://openrouter.ai/api/v1",
-        "models": ["openrouter/free"],
+        "models": _model_list("OPENROUTER_MODELS", ["openrouter/free"]),
         "json_mode": False,
     },
 ]
