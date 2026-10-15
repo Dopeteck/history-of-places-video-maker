@@ -454,7 +454,7 @@ def _smoke_story() -> dict:
                     {"at": 0.78, "actions": [{"id": "guard", "action": "point", "x": 0.32, "emotion": "shocked"},
                                              {"id": "ruler", "action": "facepalm", "x": 0.73, "emotion": "sad"}]}],
                  "background": "throne", "camera": "push_in", "effects": ["pop_in", "shake"],
-                 "props": ["crown"], "emphasis_words": ["empty chair"], "source_ids": [], "uncertainty": "unverified"},
+                 "props": [], "emphasis_words": ["empty chair"], "source_ids": [], "uncertainty": "unverified"},
                 {"narration": "Together they searched the chamber, crouched beside the chest, and checked beneath the table.",
                  "visual_title": "Search Every Corner",
                  "characters_on_screen": [
@@ -468,7 +468,7 @@ def _smoke_story() -> dict:
                     {"at": 0.80, "actions": [{"id": "guard", "action": "think", "x": 0.34, "emotion": "shocked"},
                                              {"id": "ruler", "action": "point", "x": 0.56, "emotion": "angry"}]}],
                  "background": "palace", "camera": "pan_right", "effects": ["cut"],
-                 "props": ["scroll", "coin"], "emphasis_words": ["searched the chamber"],
+                 "props": ["table", "chest"], "emphasis_words": ["searched the chamber"],
                  "source_ids": [], "uncertainty": "unverified"},
                 {"narration": "At last, the guard found a golden mark beneath the table, and the ruler cheered.",
                  "visual_title": "A Clue At Last",
@@ -483,7 +483,7 @@ def _smoke_story() -> dict:
                     {"at": 0.79, "actions": [{"id": "guard", "action": "cheer", "x": 0.36, "emotion": "happy"},
                                              {"id": "ruler", "action": "cheer", "x": 0.71, "emotion": "happy"}]}],
                  "background": "room", "camera": "push_in", "effects": ["fade"],
-                 "props": ["coin"], "emphasis_words": ["golden mark"], "source_ids": [], "uncertainty": "unverified"},
+                 "props": ["coin", "table"], "emphasis_words": ["golden mark"], "source_ids": [], "uncertainty": "unverified"},
             ],
         }
         ],
