@@ -433,7 +433,7 @@ def _smoke_story() -> dict:
             "hook": "ONE SMALL MISTAKE CHANGED EVERYTHING",
             "cast": [
                 {"id": "ruler", "name": "The Ruler", "role": "ruler", "trait": "proud",
-                 "accessory": "crown", "accent": "#E0A526"},
+                 "accessory": "none", "accent": "#E0A526"},
                 {"id": "guard", "name": "The Guard", "role": "guard", "trait": "alert",
                  "accessory": "none", "accent": "#1FA2A6"},
             ],
@@ -459,14 +459,14 @@ def _smoke_story() -> dict:
                  "visual_title": "Search Every Corner",
                  "characters_on_screen": [
                     {"id": "guard", "x": 0.35, "pose": "thinking", "expression": "neutral"},
-                    {"id": "ruler", "x": 0.68, "pose": "pointing", "expression": "angry"}],
+                    {"id": "ruler", "x": 0.72, "pose": "pointing", "expression": "angry"}],
                  "action_beats": [
                     {"at": 0.0, "actions": [{"id": "guard", "action": "walk", "x": 0.22, "emotion": "neutral"},
-                                            {"id": "ruler", "action": "point", "x": 0.68, "emotion": "angry"}]},
+                                            {"id": "ruler", "action": "point", "x": 0.72, "emotion": "angry"}]},
                     {"at": 0.46, "actions": [{"id": "guard", "action": "crouch", "x": 0.34, "emotion": "neutral"},
-                                             {"id": "ruler", "action": "walk", "x": 0.56, "emotion": "angry"}]},
+                                             {"id": "ruler", "action": "walk", "x": 0.72, "emotion": "angry"}]},
                     {"at": 0.80, "actions": [{"id": "guard", "action": "think", "x": 0.34, "emotion": "shocked"},
-                                             {"id": "ruler", "action": "point", "x": 0.56, "emotion": "angry"}]}],
+                                             {"id": "ruler", "action": "point", "x": 0.72, "emotion": "angry"}]}],
                  "background": "palace", "camera": "pan_right", "effects": ["cut"],
                  "props": ["table", "chest"], "emphasis_words": ["searched the chamber"],
                  "source_ids": [], "uncertainty": "unverified"},
