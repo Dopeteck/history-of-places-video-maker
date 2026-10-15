@@ -163,12 +163,12 @@ def _to_gemini_schema(schema: dict) -> dict:
 def _redacted_debug_text(value: Any, limit: int = 12000) -> str:
     result = _redact(value)
     result = re.sub(
-        r"(?i)([\"']?(?:api[_ -]?key|authorization|access[_ -]?token|refresh[_ -]?token|secret)[\"']?\\s*[:=]\\s*[\"']?)([^\\s,\"'}\\]]+)",
-        r"\\1[REDACTED]", result)
+        r"(?i)([\"']?(?:api[_ -]?key|authorization|access[_ -]?token|refresh[_ -]?token|secret)[\"']?\s*[:=]\s*[\"']?)([^\s,\"'}\]]+)",
+        r"\1[REDACTED]", result)
     result = re.sub(
-        r"(?i)\\b(?:gsk_[A-Za-z0-9_-]{12,}|sk-or-v1-[A-Za-z0-9_-]{12,}|sk-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{25,})\\b",
+        r"(?i)\b(?:gsk_[A-Za-z0-9_-]{12,}|sk-or-v1-[A-Za-z0-9_-]{12,}|sk-[A-Za-z0-9_-]{20,}|AIza[A-Za-z0-9_-]{25,})\b",
         "[REDACTED]", result)
-    return result[:limit] + ("\\n[TRUNCATED]" if len(result) > limit else "")
+    return result[:limit] + ("\n[TRUNCATED]" if len(result) > limit else "")
 
 
 _DEBUG_LOCK = threading.Lock()
