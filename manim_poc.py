@@ -475,13 +475,13 @@ class ManimHybridProof(MovingCameraScene):
             steam.add(
                 ParametricFunction(
                     lambda t, xx=xx, phase=phase: np.array([
-                        xx + 0.08 * math.sin(2 * PI * t + phase),
-                        0.47 + 0.56 * t,
+                        xx + 0.10 * math.sin(2 * PI * t + phase),
+                        0.53 + 0.68 * t,
                         0,
                     ]),
                     t_range=[0, 1],
-                    color=PAPER,
-                    stroke_width=5.0,
+                    color=INK,
+                    stroke_width=5.5,
                 )
             )
         label = Text("POTTAGE.", font="DejaVu Sans", font_size=32,
