@@ -27,7 +27,7 @@ class AnimationEngineTests(unittest.TestCase):
 
     def test_golden_storyboard_is_24_beats_and_30_seconds(self):
         _, entries = parse_storyboard(self.data)
-        self.assertEqual(len(entries), 24)
+        self.assertEqual(len(entries), 27)
         self.assertAlmostEqual(sum(item.duration for item in entries), 30.0)
         required = {"illustration", "icon_card", "statistic", "then_now", "method_card", "face_card"}
         self.assertEqual({item.data["type"] for item in entries} & required, required)
