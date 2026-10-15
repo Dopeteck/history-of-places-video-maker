@@ -238,7 +238,7 @@ def _illustration_plate(base: Image.Image, shot: dict[str,Any]) -> Image.Image:
 
 
 def _icon(d, name, center, r):
-    x,y,r=center; ink=(31,29,27); paper=(249,241,216); sw=max(4,int(r*.055))
+    x,y=center; ink=(31,29,27); paper=(249,241,216); sw=max(4,int(r*.055))
     if name in {"cow","cattle"}:
         d.ellipse((x-r*.62,y-r*.24,x+r*.42,y+r*.35),fill=paper,outline=ink,width=sw)
         d.ellipse((x-r*.17,y-r*.17,x+r*.04,y+r*.10),fill=(78,70,62))
