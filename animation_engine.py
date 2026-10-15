@@ -698,5 +698,8 @@ def main(argv:list[str]|None=None)->int:
         LOG.error("Animation render failed: %s",exc);return 2
 
 
+# Apply reference-specific visual overrides before the CLI or tests render frames.
+import reference_art_direction  # noqa: F401,E402
+
 if __name__=="__main__":
     raise SystemExit(main())
