@@ -257,6 +257,7 @@ class JsonLLM:
                         continue
                     continue
                 correction = ""
+                corrected_prompt = False
                 attempts = 0
                 while attempts <= int(config.MAX_RETRIES_PER_MODEL):
                     if time.monotonic() >= deadline:
@@ -277,9 +278,10 @@ class JsonLLM:
                         errors.append(f"{provider['name']}/{model}: {type(exc).__name__} HTTP {status}")
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
-                            if not correction:
+                            if not corrected_prompt:
                                 correction = "\\nReturn only a valid JSON object matching the requested schema. Correct the prior response."
-                                break
+                                corrected_prompt = True
+                                continue
                             break
                         if status not in (429, 500, 502, 503, 504):
                             break
