@@ -33,7 +33,7 @@ def _safe(value: Any) -> str:
         secret = os.getenv(key_name)
         if secret:
             result = result.replace(secret, "[REDACTED]")
-    result = re.sub(r"(?i)(bearer\\s+)[A-Za-z0-9._-]+", r"\\1[REDACTED]", result)
+    result = re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._-]+", r"\1[REDACTED]", result)
     return result[:_BODY_LIMIT]
 
 
@@ -59,7 +59,7 @@ def _log_failure(provider: str, model: str, exc: Exception) -> tuple[int | None,
     status, body = _error_details(exc)
     # Avoid logging exception objects directly: SDK exception strings may contain secrets.
     trace = _safe(traceback.format_exc())
-    log.error("Provider %s model %s failed: type=%s message=%s HTTP status=%s body=%s\\n%s",
+    log.error("Provider %s model %s failed: type=%s message=%s HTTP status=%s body=%s\n%s",
               provider, model, type(exc).__name__, _safe(exc), status, body or "<empty>", trace)
     return status, body
 
@@ -68,7 +68,7 @@ def extract_json(raw: str) -> dict:
     """Extract a JSON object and reject provider error envelopes even on HTTP 200."""
     raw = re.sub(r"<think>.*?</think>", "", raw or "", flags=re.S | re.I)
     decoder = json.JSONDecoder()
-    for match in re.finditer(r"\\{", raw):
+    for match in re.finditer(r"\{", raw):
         try:
             value, _ = decoder.raw_decode(raw[match.start():])
         except json.JSONDecodeError:
@@ -197,8 +197,8 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
                 fallback = dict(kwargs)
                 fallback.pop('response_format', None)
                 fallback['messages'] = [
-                    {'role':'system','content':system + "\\nReturn only one valid JSON object; no markdown."},
-                    {'role':'user','content':user + "\\nReturn only one valid JSON object; no markdown."},
+                    {'role':'system','content':system + "\nReturn only one valid JSON object; no markdown."},
+                    {'role':'user','content':user + "\nReturn only one valid JSON object; no markdown."},
                 ]
                 response = client.chat.completions.create(**fallback)
             else:
@@ -279,7 +279,7 @@ class JsonLLM:
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
                             if not corrected_prompt:
-                                correction = "\\nReturn only a valid JSON object matching the requested schema. Correct the prior response."
+                                correction = "\nReturn only a valid JSON object matching the requested schema. Correct the prior response."
                                 corrected_prompt = True
                                 continue
                             break
