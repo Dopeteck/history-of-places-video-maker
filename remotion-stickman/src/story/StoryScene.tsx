@@ -129,6 +129,8 @@ const SceneProp: React.FC<{name: string; scale: number}> = ({name, scale}) => {
   const ink = "#2B2722";
   if (name === "coin") return <Coin sym="$" r={34*scale}/>;
   if (name === "crown") return <g><polygon points="-42,28 -42,-20 -18,0 0,-34 18,0 42,-20 42,28" fill="#E0A526" stroke={ink} strokeWidth={4}/><rect x="-42" y="28" width="84" height="15" fill="#E0A526" stroke={ink} strokeWidth={4}/></g>;
+  if (name === "table") return <g><rect x="-155" y="-38" width="310" height="28" rx="5" fill="#9A683C" stroke={ink} strokeWidth={6}/><rect x="-130" y="-10" width="24" height="92" fill="#80542F" stroke={ink} strokeWidth={5}/><rect x="106" y="-10" width="24" height="92" fill="#80542F" stroke={ink} strokeWidth={5}/><line x1="-150" y1="-22" x2="150" y2="-22" stroke="#C18B55" strokeWidth={5}/></g>;
+  if (name === "chest") return <g><rect x="-82" y="-34" width="164" height="84" rx="8" fill="#A96835" stroke={ink} strokeWidth={6}/><path d="M-82 -34 Q0 -96 82 -34" fill="#C78B4B" stroke={ink} strokeWidth={6}/><rect x="-10" y="-20" width="20" height="35" rx="3" fill="#E0A526" stroke={ink} strokeWidth={4}/><circle cx="0" cy="-3" r="5" fill={ink}/></g>;
   if (name === "scroll") return <Box label="SCROLL" color="#F6EAD0"/>;
   if (name === "fire" || name === "torch") return <g><path d="M-22,40 L0,-34 L22,40 Z" fill="#C0392B" stroke={ink} strokeWidth={4}/><path d="M-10,25 L0,-15 L10,25 Z" fill="#E0A526"/><line x1="0" y1="35" x2="0" y2="72" stroke={ink} strokeWidth={8}/></g>;
   if (name === "sword" || name === "spear") return <g><line x1="-26" y1="42" x2="26" y2="-54" stroke={ink} strokeWidth={8} strokeLinecap="round"/><path d="M12,-30 L42,-77 L6,-52 Z" fill="#BCC5C8" stroke={ink} strokeWidth={3}/><line x1="-35" y1="24" x2="-8" y2="38" stroke="#E0A526" strokeWidth={8}/></g>;
@@ -145,7 +147,7 @@ type Props = {scene: StorySceneData; cast: CastMember[]; title: string};
 export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
   const f = useCurrentFrame();
   const {width, height, fps} = useVideoConfig();
-  const scale = width > height ? width / 1920 : height / 1080;
+  const scale = width > height ? Math.max(width / 1920, height / 600) : height / 1080;
   const ground = height * 0.80;
   const hipY = groundY(scale, ground);
   const duration = Math.max(1, scene.duration_frames);
@@ -217,13 +219,31 @@ export const StoryScene: React.FC<Props> = ({scene, cast, title}) => {
       cam={{x: camX, y: 0, z: camZ}}
       svg={
         <>
-          {scene.props?.map((name, i) => (
-            <At key={`${scene.id}-prop-${name}-${i}`}
-              x={width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.105)}
-              y={ground - 82*scale} s={scale*0.8}>
-              <SceneProp name={name} scale={1}/>
-            </At>
-          ))}
+          {scene.props?.map((name, i) => {
+            const hasTable = scene.props.includes("table");
+            const throneCrown = name === "crown" && scene.background === "throne";
+            const coinUnderTable = name === "coin" && hasTable;
+            const defaultX = width * (0.5 + (i - (scene.props.length - 1) / 2) * 0.18);
+            const x = name === "table" ? width * 0.5
+              : name === "chest" ? width * 0.61
+              : throneCrown || coinUnderTable ? width * 0.5
+              : defaultX;
+            const y = name === "table" ? ground - 100 * scale
+              : name === "chest" ? ground - 48 * scale
+              : throneCrown ? ground - height * 0.37
+              : coinUnderTable ? ground - 8 * scale
+              : ground - 64 * scale;
+            const propScale = name === "table" ? scale
+              : name === "chest" ? scale * 0.9
+              : throneCrown ? scale * 0.8
+              : coinUnderTable ? scale * 0.55
+              : scale * 0.8;
+            return (
+              <At key={`${scene.id}-prop-${name}-${i}`} x={x} y={y} s={propScale}>
+                <SceneProp name={name} scale={1}/>
+              </At>
+            );
+          })}
           {actors.map((actor) => {
             const state = beatState(actor.id, f);
             const char = cast.find((member) => member.id === actor.id);
