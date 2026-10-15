@@ -56,8 +56,8 @@ jobs:
 
           video = "output/animation_stage2.mp4"
           times = [0.3, 1.4, 4.5, 6.6, 19.0, 23.5]
-          thumb_w, thumb_h = 120, 213
-          cell_w, cell_h = 128, 238
+          thumb_w, thumb_h = 180, 320
+          cell_w, cell_h = 190, 344
           sheet = Image.new("RGB", (cell_w * 3, cell_h * 2), (235, 232, 224))
           draw = ImageDraw.Draw(sheet)
           font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
