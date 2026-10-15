@@ -59,30 +59,48 @@ def _person(d, x, foot, scale, coat=(111, 75, 49), pose="standing", hood=False):
 
 
 def _cow(d, x, ground, s, lying=False):
-    cream=(246,239,219); dark=(75,68,60)
+    cream=(247,240,221); dark=(75,68,60); pink=(221,162,147)
+    sw=max(3,int(s*.023))
     if lying:
-        d.ellipse((x-s*.5,ground-s*.42,x+s*.37,ground-s*.08),fill=cream,outline=INK,width=max(3,int(s*.025)))
-        d.ellipse((x-s*.28,ground-s*.39,x-s*.10,ground-s*.20),fill=dark)
-        d.ellipse((x+s*.05,ground-s*.36,x+s*.24,ground-s*.18),fill=dark)
+        # Round belly, two distinct hide patches, tucked legs and a relaxed face.
+        d.ellipse((x-s*.51,ground-s*.43,x+s*.36,ground-s*.08),fill=cream,outline=INK,width=sw)
+        d.ellipse((x-s*.30,ground-s*.39,x-s*.10,ground-s*.20),fill=dark)
+        d.ellipse((x+s*.04,ground-s*.36,x+s*.24,ground-s*.18),fill=dark)
+        d.ellipse((x-s*.02,ground-s*.42,x+s*.11,ground-s*.28),fill=(232,227,207),outline=(133,122,103),width=max(1,sw//3))
+        # Far ear and horn behind the head.
         hx=x+s*.39;hy=ground-s*.32
-        d.ellipse((hx-s*.13,hy-s*.14,hx+s*.12,hy+s*.08),fill=cream,outline=INK,width=max(3,int(s*.02)))
-        d.ellipse((hx+s*.035,hy-s*.025,hx+s*.065,hy+.005*s),fill=INK)
-        _line(d,[(x-s*.26,ground-s*.12),(x-s*.23,ground)],INK,max(3,int(s*.025)))
-        _line(d,[(x+s*.13,ground-s*.12),(x+s*.17,ground)],INK,max(3,int(s*.025)))
+        d.polygon([(hx-s*.055,hy-s*.09),(hx-s*.17,hy-s*.17),(hx-s*.10,hy+s*.005)],fill=cream,outline=INK)
+        d.polygon([(hx-s*.02,hy-s*.11),(hx+s*.015,hy-s*.23),(hx+s*.055,hy-s*.10)],fill=(221,206,175),outline=INK)
+        d.ellipse((hx-s*.13,hy-s*.15,hx+s*.13,hy+s*.085),fill=cream,outline=INK,width=sw)
+        d.polygon([(hx+s*.04,hy-s*.12),(hx+s*.095,hy-s*.22),(hx+s*.12,hy-s*.105)],fill=(221,206,175),outline=INK)
+        # Closed sleepy eye, pink muzzle, nostrils and a small contented mouth.
+        d.arc((hx-s*.035,hy-s*.02,hx+s*.06,hy+s*.045),8,168,fill=INK,width=max(2,sw//2))
+        d.ellipse((hx+s*.015,hy+s*.025,hx+s*.12,hy+s*.095),fill=pink,outline=INK,width=max(2,sw//2))
+        for nx in (hx+s*.045,hx+s*.085):
+            d.ellipse((nx,hy+s*.046,nx+s*.012,hy+s*.060),fill=(111,72,65))
+        _line(d,[(hx+s*.055,hy+s*.075),(hx+s*.085,hy+s*.080)],INK,max(1,sw//3))
+        # Forelegs rest along the bed edge.
+        _line(d,[(x-s*.26,ground-s*.14),(x-s*.23,ground-s*.015)],INK,sw)
+        _line(d,[(x+s*.13,ground-s*.12),(x+s*.18,ground-s*.015)],INK,sw)
+        d.ellipse((x-s*.29,ground-s*.04,x-s*.18,ground+s*.005),fill=(67,57,48))
+        d.ellipse((x+s*.13,ground-s*.04,x+s*.23,ground+s*.005),fill=(67,57,48))
+        _line(d,[(x-s*.47,ground-s*.30),(x-s*.57,ground-s*.22),(x-s*.53,ground-s*.16)],INK,max(2,sw//2))
     else:
-        d.ellipse((x-s*.42,ground-s*.65,x+s*.33,ground-s*.12),fill=cream,outline=INK,width=max(3,int(s*.023)))
+        d.ellipse((x-s*.42,ground-s*.65,x+s*.33,ground-s*.12),fill=cream,outline=INK,width=sw)
         d.ellipse((x-s*.20,ground-s*.57,x+s*.02,ground-s*.34),fill=dark)
         d.ellipse((x+s*.08,ground-s*.53,x+s*.28,ground-s*.33),fill=dark)
+        d.ellipse((x-s*.03,ground-s*.49,x+s*.12,ground-s*.31),fill=(234,228,209),outline=(140,128,109),width=max(1,sw//3))
         hx=x+s*.39;hy=ground-s*.47
-        d.ellipse((hx-s*.11,hy-s*.17,hx+s*.16,hy+s*.08),fill=cream,outline=INK,width=max(3,int(s*.022)))
+        d.polygon([(hx-s*.025,hy-s*.13),(hx-s*.13,hy-s*.22),(hx-s*.08,hy-s*.045)],fill=cream,outline=INK)
+        d.ellipse((hx-s*.11,hy-s*.17,hx+s*.16,hy+s*.08),fill=cream,outline=INK,width=sw)
         d.polygon([(hx-s*.03,hy-s*.13),(hx-s*.11,hy-s*.26),(hx+s*.005,hy-s*.15)],fill=cream,outline=INK)
         d.polygon([(hx+s*.10,hy-s*.13),(hx+s*.18,hy-s*.25),(hx+s*.17,hy-s*.10)],fill=cream,outline=INK)
         d.ellipse((hx+s*.045,hy-s*.035,hx+s*.075,hy-.005*s),fill=INK)
-        d.ellipse((hx+s*.06,hy+s*.015,hx+s*.14,hy+s*.06),fill=(220,164,145),outline=INK,width=2)
+        d.ellipse((hx+s*.06,hy+s*.015,hx+s*.14,hy+s*.06),fill=pink,outline=INK,width=max(2,sw//2))
         for lx in (x-s*.28,x-s*.02,x+s*.20):
-            _line(d,[(lx,ground-s*.18),(lx-s*.01,ground-s*.015)],INK,max(3,int(s*.025)))
-            d.line((lx-s*.035,ground,lx+s*.025,ground),fill=INK,width=max(3,int(s*.025)))
-        _line(d,[(x-s*.38,ground-s*.45),(x-s*.51,ground-s*.28),(x-s*.48,ground-s*.20)],INK,max(2,int(s*.018)))
+            _line(d,[(lx,ground-s*.18),(lx-s*.01,ground-s*.015)],INK,sw)
+            d.line((lx-s*.035,ground,lx+s*.025,ground),fill=INK,width=sw)
+        _line(d,[(x-s*.38,ground-s*.45),(x-s*.51,ground-s*.28),(x-s*.48,ground-s*.20)],INK,max(2,sw//2))
 
 
 def _cauldron(d, cx, cy, r, fire=False):
