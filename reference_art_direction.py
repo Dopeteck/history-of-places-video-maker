@@ -6,11 +6,16 @@ from __future__ import annotations
 
 import math
 import random
+import sys
 from typing import Any
 
 from PIL import Image, ImageDraw, ImageFilter
 
-import animation_engine as e
+# The same file is also executed directly by the CI preview CLI. In that case
+# patch __main__, not a second independently imported animation_engine module.
+e = sys.modules.get("__main__")
+if e is None or not hasattr(e, "AnimationCompositor"):
+    import animation_engine as e
 
 INK = (43, 39, 35)
 PAPER = (246, 238, 216)
