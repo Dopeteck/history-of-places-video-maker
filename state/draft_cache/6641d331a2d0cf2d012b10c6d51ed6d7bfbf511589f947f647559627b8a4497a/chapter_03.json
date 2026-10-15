@@ -1,0 +1,185 @@
+{
+  "number": 3,
+  "summary": "The chapter now shows how Mansa Musa’s gold‑laden caravan not only rattled Cairo’s markets but also left a diplomatic echo in the vizier’s halls, prompting the ruler to act, and how the ripple reached Mali’s own court, hinting at the empire’s future cultural zenith.",
+  "scenes": [
+    {
+      "id": "c03s001",
+      "narration": "In the spring of 1324‑25 the emperor‑pilgrim Mansa Musa rolled into Cairo, his caravan a river of camels spilling sackfuls of gold onto the desert streets.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.2,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "caravan_master",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "market",
+      "camera": "pan_right",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [
+        "gold",
+        "caravan"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c03s002",
+      "narration": "Merchants gasped as the sudden influx drove the value of gold down, turning everyday wares into luxuries and sending local prices soaring.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "shocked"
+        }
+      ],
+      "background": "market",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "prices"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c03s003",
+      "narration": "Ibn al‑Khalil, a court official, scribbled frantic notes about the soaring costs and begged the vizier to temper the flow, fearing a market crash.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        },
+        {
+          "id": "musa",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "market"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c03s004",
+      "narration": "By the time the caravan slipped onward, Cairo's traders whispered of a new empire whose name glittered on every ledger, and the Mediterranean could no longer ignore Mali's wealth.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_left",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "Mali",
+        "wealth"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c03s005",
+      "narration": "The vizier, Ibn al‑Khalil, paced the marble floor of his office, a scroll in hand, his brows furrowed as he weighed the implications of the gold flood. He could feel the weight of the empire’s future on his shoulders, and he drafted a decree to limit the flow of bullion into the city’s treasury.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "decree",
+        "gold"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c03s006",
+      "narration": "Back in the capital of Mali, the royal court heard whispers of the gold that had shaken Cairo. The court’s scribes, eager for knowledge, began drafting letters to scholars in Timbuktu, inviting them to discuss the empire’s newfound prestige and to bring books of the Qur’an and astronomy.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "Timbuktu",
+        "prestige"
+      ],
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 207,
+  "title": "Gold Floods Cairo"
+}

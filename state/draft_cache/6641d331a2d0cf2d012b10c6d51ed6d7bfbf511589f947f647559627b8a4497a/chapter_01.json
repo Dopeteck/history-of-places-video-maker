@@ -1,0 +1,228 @@
+{
+  "number": 1,
+  "summary": "Mansa Musa’s caravan amplifies Cairo’s market frenzy, fuels scholarly influx to Timbuktu, and tightens Mali’s grip on trans‑Saharan trade, enriching the empire’s treasury and cultural legacy.",
+  "scenes": [
+    {
+      "id": "c01s001",
+      "narration": "In the heart of the Sahel, gold flowed from Bambuk and Bure, the lifeblood of Mali’s prosperity.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s002",
+      "narration": "The desert caravan set off, its camels laden with bars of gold that gleamed like sunrise over dunes.",
+      "characters_on_screen": [
+        {
+          "id": "caravan_master",
+          "x": 0.4,
+          "pose": "running",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "gold",
+        "caravan"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s003",
+      "narration": "Musa’s arrival in Cairo shocked merchants; the sudden influx of gold rattled markets and left coins in abundance for a time.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.6,
+          "pose": "thinking",
+          "expression": "shocked"
+        }
+      ],
+      "background": "market",
+      "camera": "static",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "Cairo",
+        "gold"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c01s004",
+      "narration": "The pilgrimage forged new links between Mali and the Islamic world, inviting scholars to return home with knowledge and ink.",
+      "characters_on_screen": [
+        {
+          "id": "scholar",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_left",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "scholars",
+        "ink"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s005",
+      "narration": "Back in Timbuktu, Musa’s gifts sparked a flowering of learning, turning the city into a beacon of Islamic study for centuries to come.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.5,
+          "pose": "praying",
+          "expression": "happy"
+        }
+      ],
+      "background": "room",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "crown"
+      ],
+      "emphasis_words": [
+        "Timbuktu",
+        "learning"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s006",
+      "narration": "In Cairo's bustling bazaars, Musa’s entourage scattered gold dust, buying provisions and funding public works, a spectacle that left merchants scrambling to price the sudden wealth.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.5,
+          "pose": "thinking",
+          "expression": "shocked"
+        }
+      ],
+      "background": "market",
+      "camera": "static",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "Cairo",
+        "gold"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c01s007",
+      "narration": "Back in Mali, the pilgrimage’s fame attracted scholars from Fez and Baghdad, who established libraries in Timbuktu, sowing the seeds of a centuries‑long intellectual golden age.",
+      "characters_on_screen": [
+        {
+          "id": "scholar",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "scholars",
+        "Timbuktu"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s008",
+      "narration": "The glittering caravan also reinforced Mali’s control over the trans‑Saharan routes, prompting new caravan licenses and tighter tax collection, which poured additional revenue into the empire’s coffers and funded monumental architecture.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "spear"
+      ],
+      "emphasis_words": [
+        "revenue"
+      ],
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "uncertainty": "documented"
+    }
+  ],
+  "word_count": 184,
+  "title": "The Wealth of the Sahel"
+}

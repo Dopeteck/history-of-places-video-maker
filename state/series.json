@@ -1,1 +1,14 @@
-{"schema_version": 1, "stories": {}}
+{
+  "schema_version": 1,
+  "stories": {
+    "1c9371414bcc9f4e-431888a6": {
+      "topic": "Mansa Musa's 1324 pilgrimage and how it shaped the Mali Empire's reputation",
+      "mode": "long",
+      "sha256": "1c9371414bcc9f4ef4ca8b46356533f17a2d45a5e61d1a37121bdb173f0cf694",
+      "status": "awaiting_review",
+      "parts": 1,
+      "rendered_parts": [],
+      "updated_at": "2026-10-15T12:09:31.685366+00:00"
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "title": "Mansa Musa’s Golden Pilgrimage: How a 1324 Hajj Redefined Mali",
+  "hook": "When the richest man of his age trekked across the Sahara with a caravan of gold, the world took notice—and the Mali Empire never looked back.",
+  "logline": "Mansa Musa’s 1324 pilgrimage to Mecca dazzled the Mediterranean, reshaped trans‑Saharan trade, and set the stage for Mali’s cultural flowering.",
+  "cast": [
+    {
+      "id": "musa",
+      "name": "Mansa Musa",
+      "role": "the emperor‑pilgrim",
+      "trait": "lavish generosity",
+      "accessory": "crown",
+      "accent": "#C0392B"
+    },
+    {
+      "id": "vizier",
+      "name": "Ibn al‑Khalil",
+      "role": "Cairo’s court official",
+      "trait": "sharp‑eyed economist",
+      "accessory": "glasses",
+      "accent": "#2B2B2B"
+    },
+    {
+      "id": "scholar",
+      "name": "Al‑Bukhari",
+      "role": "Timbuktu’s nascent scholar",
+      "trait": "ink‑stained curiosity",
+      "accessory": "headwrap",
+      "accent": "#1FA2A6"
+    },
+    {
+      "id": "caravan_master",
+      "name": "Seydou",
+      "role": "leader of the gold‑laden caravan",
+      "trait": "unflappable logistics",
+      "accessory": "spear",
+      "accent": "#E0A526"
+    }
+  ],
+  "chapters": [
+    {
+      "number": 1,
+      "title": "The Wealth of the Sahel",
+      "purpose": "Establish Mali’s economic base and its role in the trans‑Saharan gold trade.",
+      "key_events": [
+        "Mali controls gold mines of Bambuk and Bure, feeding the Sahara’s caravan routes.",
+        "National Geographic notes Mali’s prosperity tied to African trade networks."
+      ]
+    },
+    {
+      "number": 2,
+      "title": "The Pilgrimage Begins",
+      "purpose": "Show the planning and departure of the 1324 hajj, linking political ambition with religious duty.",
+      "key_events": [
+        "Mansa Musa assembles a massive caravan, escorted by Seydou.",
+        "The journey routes through the desert toward Cairo, as described by the Met Museum’s Sahel exhibition."
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Gold Floods Cairo",
+      "purpose": "Illustrate the immediate economic shock in the Mediterranean and its diplomatic reverberations.",
+      "key_events": [
+        "Musa’s arrival in Cairo (1324‑25) with a “very large quantity of gold” disrupts local markets (Metropolitan Museum, gold‑trade essay).",
+        "Ibn al‑Khalil records soaring prices and the need for the vizier to intervene."
+      ]
+    },
+    {
+      "number": 4,
+      "title": "From Pilgrimage to Patrimony",
+      "purpose": "Connect the pilgrimage’s fame to Mali’s cultural legacy, especially Timbuktu’s rise as a scholarly hub.",
+      "key_events": [
+        "Musa’s return spurs diplomatic gifts and builds prestige across the Islamic world.",
+        "Metropolitan Museum notes his patronage helps seed Timbuktu’s development as an Islamic learning center (while cautioning that no single ruler created it).",
+        "Al‑Bukhari’s manuscript collection begins to attract scholars, cementing Mali’s reputation."
+      ]
+    }
+  ],
+  "ending": "The gold‑laden caravan may have emptied the Egyptian market, but it filled Mali’s name into every merchant’s ledger, turning the empire into a beacon of wealth and learning for generations."
+}

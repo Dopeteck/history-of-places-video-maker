@@ -1,0 +1,212 @@
+{
+  "number": 4,
+  "summary": "The new scenes trace how Musa’s lavish gifts spurred intellectual patronage, drawing scholars to Timbuktu and cementing Mali’s reputation as a cultural hub, while noting the cautious nature of the evidence.",
+  "scenes": [
+    {
+      "id": "c04s001",
+      "narration": "When Musa stepped off his caravan in Cairo, he scattered gold like confetti, causing the city's markets to gasp and the Egyptian dinar to wobble for months.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.2,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "vizier",
+          "x": 0.8,
+          "pose": "thinking",
+          "expression": "shocked"
+        }
+      ],
+      "background": "market",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [
+        "gold",
+        "Cairo",
+        "market"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s002",
+      "narration": "Impressed, the Egyptian vizier recorded the spectacle, and Musa replied with diplomatic gifts that traveled back to West Africa, turning every court into a whispering gallery of his generosity.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.5,
+          "pose": "pointing",
+          "expression": "happy"
+        },
+        {
+          "id": "caravan_master",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll",
+        "spear"
+      ],
+      "emphasis_words": [
+        "diplomatic",
+        "gifts"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s003",
+      "narration": "Back in Mali, Musa directed a share of the treasure toward building mosques and libraries, laying the first stones of what would become Timbuktu’s famed Sankore complex.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "sly"
+        },
+        {
+          "id": "scholar",
+          "x": 0.6,
+          "pose": "thinking",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "scroll",
+        "crown"
+      ],
+      "emphasis_words": [
+        "Timbuktu",
+        "libraries"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c04s004",
+      "narration": "Al‑Bukhari’s modest manuscript collection soon attracted scholars from across the Sahara, and the empire’s name glittered on every merchant’s ledger, securing Mali’s reputation as a beacon of wealth and learning for generations.",
+      "characters_on_screen": [
+        {
+          "id": "scholar",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll",
+        "torch"
+      ],
+      "emphasis_words": [
+        "scholars",
+        "reputation"
+      ],
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s005",
+      "narration": "Back in Bamako, Musa convened a council of scholars, offering them stipends and new manuscripts.  The gesture, though modest in scale, sparked a quiet revolution in learning that would ripple across the Sahel.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.2,
+          "pose": "standing",
+          "expression": "sly"
+        },
+        {
+          "id": "scholar",
+          "x": 0.6,
+          "pose": "thinking",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll",
+        "crown"
+      ],
+      "emphasis_words": [
+        "stipends",
+        "manuscripts"
+      ],
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c04s006",
+      "narration": "Word of Mali’s generosity spread to Cairo’s scholars, who began to send their own students to the West.  The exchange of texts and ideas was a quiet but potent testament to Musa’s vision beyond mere gold.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.4,
+          "pose": "thinking",
+          "expression": "neutral"
+        },
+        {
+          "id": "scholar",
+          "x": 0.6,
+          "pose": "talking",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "students",
+        "exchange"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 185,
+  "title": "From Pilgrimage to Patrimony"
+}

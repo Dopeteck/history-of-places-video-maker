@@ -1,0 +1,170 @@
+{
+  "number": 2,
+  "summary": "Mansa Musa’s 1324 pilgrimage set the stage for a golden era, but its full impact remains debated.",
+  "scenes": [
+    {
+      "id": "c02s001",
+      "narration": "In the heart of the Mali palace, Mansa Musa, crown gleaming, convenes his council. He declares a pilgrimage to Mecca, a duty that will also showcase Mali’s wealth to the world.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "crown"
+      ],
+      "emphasis_words": [
+        "Mansa Musa",
+        "palace",
+        "pilgrimage"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s002",
+      "narration": "Seydou, the seasoned caravan master, maps the route through the Sahel. He points to a map, noting that the desert’s trade lanes will carry gold to Cairo and beyond.",
+      "characters_on_screen": [
+        {
+          "id": "caravan_master",
+          "x": 0.3,
+          "pose": "pointing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "Sahel",
+        "gold",
+        "Cairo"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s003",
+      "narration": "The caravan assembles: camels laden with gold, soldiers, scholars, and servants. The weight of the treasure threatens the market, a fact noted by later chroniclers who caution against overstating the scale of price effects.",
+      "characters_on_screen": [
+        {
+          "id": "caravan_master",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "market",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "gold",
+        "market",
+        "price"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c02s004",
+      "narration": "As the caravan crosses the Sahara, the desert’s silence is punctuated by the rhythmic clack of hooves and the distant call to prayer. Mansa Musa’s presence is a silent sermon, his journey a statement of faith and power.",
+      "characters_on_screen": [
+        {
+          "id": "musa",
+          "x": 0.3,
+          "pose": "praying",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "pan_left",
+      "effects": [
+        "shake"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "silence"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s005",
+      "narration": "In Cairo, scholars and merchants alike are astonished. The gold’s arrival causes a temporary market frenzy, yet the empire’s reputation for wealth and learning begins to spread through trade routes and tales.",
+      "characters_on_screen": [
+        {
+          "id": "vizier",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "Cairo",
+        "gold",
+        "reputation"
+      ],
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c02s006",
+      "narration": "Back at Mali, the pilgrimage’s legacy lingers. Scholars from Timbuktu, inspired by the emperor’s devotion, begin to gather, sowing seeds for a future center of Islamic knowledge.",
+      "characters_on_screen": [
+        {
+          "id": "scholar",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "Timbuktu",
+        "scholars"
+      ],
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 191,
+  "title": "The Pilgrimage Begins"
+}

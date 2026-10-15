@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "story_sha256": "1c9371414bcc9f4ef4ca8b46356533f17a2d45a5e61d1a37121bdb173f0cf694",
+  "claims": [
+    {
+      "id": "c01s001q01",
+      "scene_id": "c01s001",
+      "claim": "Gold flowed from Bambuk and Bure in the Sahel and was a major source of Mali’s prosperity.",
+      "confidence": 0.7,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Historical records of gold production in the Bambuk and Bure regions and their economic impact on the Mali Empire.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s002q01",
+      "scene_id": "c01s002",
+      "claim": "A desert caravan set off from Mali carrying bars of gold.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Contemporary accounts of the composition of Mansa Musa’s pilgrimage caravan and the transport of gold.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s003q01",
+      "scene_id": "c01s003",
+      "claim": "Mansa Musa arrived in Cairo in 1324–1325, bringing a large quantity of gold that disrupted local markets.",
+      "confidence": 0.9,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Chronicles describing Mansa Musa’s arrival in Cairo and the economic effects on the gold market.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s004q01",
+      "scene_id": "c01s004",
+      "claim": "Mansa Musa’s pilgrimage forged new links between Mali and the Islamic world, leading scholars to return to Mali with knowledge.",
+      "confidence": 0.8,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Evidence of increased scholarly exchange and transmission of Islamic learning to Mali after the 1324 pilgrimage.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s005q01",
+      "scene_id": "c01s005",
+      "claim": "Musa’s gifts sparked a flowering of learning in Timbuktu, turning the city into a beacon of Islamic study for centuries.",
+      "confidence": 0.7,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Historical development of Timbuktu’s madrasas and libraries in the 14th–16th centuries and attribution to Musa’s patronage.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s006q01",
+      "scene_id": "c01s006",
+      "claim": "Musa’s entourage scattered gold dust in Cairo’s bazaars, buying provisions and funding public works.",
+      "confidence": 0.5,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Contemporary descriptions of Musa’s spending in Cairo and any public works financed by his gifts.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s007q01",
+      "scene_id": "c01s007",
+      "claim": "The pilgrimage’s fame attracted scholars from Fez and Baghdad who established libraries in Timbuktu, beginning a centuries‑long intellectual golden age.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Records of scholars from North Africa and the Middle East traveling to Timbuktu and founding libraries after 1324.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s008q01",
+      "scene_id": "c01s008",
+      "claim": "The caravan reinforced Mali’s control over trans‑Saharan routes, leading to new caravan licenses, tighter tax collection, and increased imperial revenue for monumental architecture.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_gold_trade",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Administrative reforms in Mali post‑pilgrimage, tax policies on trans‑Saharan trade, and architectural projects funded by increased revenue.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s001q01",
+      "scene_id": "c02s001",
+      "claim": "Mansa Musa declared a pilgrimage to Mecca in 1324–25.",
+      "confidence": 0.8,
+      "source_ids": [
+        "met_gold_trade",
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Confirm date and that the declaration was made in Mali palace",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s001q02",
+      "scene_id": "c02s001",
+      "claim": "The pilgrimage was intended to showcase Mali’s wealth to the world.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_sahel_exhibition"
+      ],
+      "what_to_verify": "Verify source mentions showcasing wealth",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s001q03",
+      "scene_id": "c02s001",
+      "claim": "Mansa Musa was a ruler of the Mali Empire.",
+      "confidence": 0.9,
+      "source_ids": [
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Confirm his title",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s002q01",
+      "scene_id": "c02s002",
+      "claim": "Seydou was a seasoned caravan master mapping the Sahel route.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Verify existence of Seydou and his role",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s002q02",
+      "scene_id": "c02s002",
+      "claim": "The Sahel trade lanes carried gold to Cairo and beyond.",
+      "confidence": 0.8,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Confirm gold movement via Sahel to Cairo",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s003q01",
+      "scene_id": "c02s003",
+      "claim": "The caravan included camels laden with gold, soldiers, scholars, and servants.",
+      "confidence": 0.7,
+      "source_ids": [],
+      "what_to_verify": "Verify caravan composition",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s003q02",
+      "scene_id": "c02s003",
+      "claim": "The gold weight threatened the market, a fact noted by later chroniclers who caution against overstating the scale of price effects.",
+      "confidence": 0.8,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Confirm chroniclers' caution about market effects",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s004q01",
+      "scene_id": "c02s004",
+      "claim": "The caravan crossed the Sahara, with rhythmic clack of hooves and distant call to prayer.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify sensory description",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s005q01",
+      "scene_id": "c02s005",
+      "claim": "In Cairo, scholars and merchants were astonished by the gold arrival.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Confirm astonishment reported",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s006q01",
+      "scene_id": "c02s006",
+      "claim": "After the pilgrimage, scholars from Timbuktu were inspired to gather, sowing seeds for a future center of Islamic knowledge.",
+      "confidence": 0.7,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Confirm link between pilgrimage and Timbuktu’s scholarly growth",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s001q01",
+      "scene_id": "c03s001",
+      "claim": "Mansa Musa arrived in Cairo in the spring of 1324‑25 with a caravan of camels carrying large amounts of gold.",
+      "confidence": 0.9,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "date of arrival, presence of caravan, quantity of gold",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s002q01",
+      "scene_id": "c03s002",
+      "claim": "The sudden influx of gold from Mansa Musa's caravan drove the value of gold down in Cairo, causing everyday wares to become luxuries and local prices to soar.",
+      "confidence": 0.7,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "impact of Musa's gold on Cairo's gold price and local market prices",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s003q01",
+      "scene_id": "c03s003",
+      "claim": "Ibn al‑Khalil, a court official, wrote notes about soaring costs and urged the vizier to limit the gold flow to prevent a market crash.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "existence of Ibn al‑Khalil, his role, and his actions regarding Musa's gold",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s004q01",
+      "scene_id": "c03s004",
+      "claim": "Cairo traders became aware of the Mali Empire's wealth after Mansa Musa's visit, influencing Mediterranean awareness of Mali.",
+      "confidence": 0.6,
+      "source_ids": [
+        "met_gold_trade",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "contemporary reactions in Cairo to Musa's wealth and subsequent Mediterranean awareness",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s005q01",
+      "scene_id": "c03s005",
+      "claim": "The vizier, named Ibn al‑Khalil, drafted a decree to limit the flow of bullion into Cairo's treasury after Musa's visit.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "identity of the vizier, existence of such a decree",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s006q01",
+      "scene_id": "c03s006",
+      "claim": "Mali's royal court sent letters to scholars in Timbuktu inviting them to discuss the empire’s prestige and to bring books of the Qur’an and astronomy after Musa's pilgrimage.",
+      "confidence": 0.4,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "post‑pilgrimage correspondence between Mali's court and Timbuktu scholars",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s001q01",
+      "scene_id": "c04s001",
+      "claim": "Mansa Musa stepped off his caravan in Cairo in 1324‑25.",
+      "confidence": 0.8,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Confirm year and departure from Cairo",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s001q02",
+      "scene_id": "c04s001",
+      "claim": "He scattered gold like confetti, causing the Egyptian dinar to wobble for months.",
+      "confidence": 0.4,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Verify extent of market disruption and duration",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s001q03",
+      "scene_id": "c04s001",
+      "claim": "The city's markets gasped at the spectacle.",
+      "confidence": 0.3,
+      "source_ids": [
+        "met_gold_trade"
+      ],
+      "what_to_verify": "Assess contemporary descriptions of market reaction",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s002q01",
+      "scene_id": "c04s002",
+      "claim": "The Egyptian vizier recorded the spectacle.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Locate primary source of vizier’s record",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s002q02",
+      "scene_id": "c04s002",
+      "claim": "Musa replied with diplomatic gifts that traveled back to West Africa.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Identify nature and destination of gifts",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s003q01",
+      "scene_id": "c04s003",
+      "claim": "Musa directed a share of the treasure toward building mosques and libraries in Mali.",
+      "confidence": 0.4,
+      "source_ids": [
+        "met_sahel_exhibition",
+        "national_geographic_mali"
+      ],
+      "what_to_verify": "Document allocation of gold to construction projects",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s004q01",
+      "scene_id": "c04s004",
+      "claim": "Al‑Bukhari’s modest manuscript collection attracted scholars from across the Sahara.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Verify existence of manuscript collection and scholarly migration",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s005q01",
+      "scene_id": "c04s005",
+      "claim": "Musa convened a council of scholars in Bamako and offered stipends and new manuscripts.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Locate records of council and stipends",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s006q01",
+      "scene_id": "c04s006",
+      "claim": "Cairo scholars began sending students to the West following Mali’s generosity.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Trace student exchange records",
+      "status": "needs_human_review"
+    }
+  ],
+  "warning": "LLM claim extraction can miss errors. Review the full narration against real sources.",
+  "status": "needs_human_review"
+}
