@@ -3,7 +3,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# When invoked as `python scripts/render_kokoro_preview.py`, Python puts the
+# scripts directory (not the repository root) on sys.path. Add the root so the
+# repository modules can be imported reliably in CI and local runs.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from scene_cards_render import render_scene_cards
 from scene_planner import make_review_template
