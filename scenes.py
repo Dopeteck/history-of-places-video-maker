@@ -52,6 +52,14 @@ def prop_icon(im,kind,x,y,s):
     elif kind in {'fire','torch'}:
         if kind=='torch':d.line((x,y,x,y+s*2),fill=INK,width=5)
         d.polygon([(x-s,y),(x,y-s*2),(x+s,y),(x,y+s)],fill='#C0392B');d.ellipse((x-s/2,y-s/2,x+s/2,y+s/2),fill=GOLD)
+    elif kind=='table':
+        d.rectangle((x-3*s,y-s,x+3*s,y-s/2),fill='#9A683C',outline=INK,width=2)
+        d.rectangle((x-2*s,y-s/2,x-s,y+s),fill='#80542F',outline=INK,width=2)
+        d.rectangle((x+s,y-s/2,x+2*s,y+s),fill='#80542F',outline=INK,width=2)
+    elif kind=='chest':
+        d.rectangle((x-2*s,y-s,x+2*s,y+s),fill='#A96835',outline=INK,width=2)
+        d.arc((x-2*s,y-2*s,x+2*s,y),180,360,fill=INK,width=2)
+        d.rectangle((x-s/3,y-s/2,x+s/3,y+s/3),fill=GOLD,outline=INK,width=2)
     else:
         d.line((x,y+s*2,x,y-s),fill=INK,width=5);d.polygon([(x-s/2,y-s),(x,y-s*2),(x+s/2,y-s)],fill=TEAL)
         if kind=='sword':d.line((x-s,y+s/2,x+s,y+s/2),fill=GOLD,width=5)
