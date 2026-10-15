@@ -83,7 +83,7 @@ def run(root: Path=ROOT, env=None) -> dict:
             approve(draft,review,state)
         story=load_approved(draft,part)
         if story['mode']=='shorts' and part is None:raise ValueError('Select a Shorts part (1–5)')
-        renderer=env.get('STORY_RENDERER','remotion').strip().lower()
+        renderer=env.get('STORY_RENDERER','legacy').strip().lower()
         if renderer == 'remotion':
             from remotion_renderer import render_story
         elif renderer == 'legacy':
