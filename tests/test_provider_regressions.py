@@ -169,21 +169,21 @@ class StoryPayloadNormalisationTests(unittest.TestCase):
         self.assertEqual(result["cast"][0]["accessory"], "crown")
 
     def test_accessory_synonyms_case_spaces_and_unknown_fallback(self):
-        cases = {
-            "Headscarf": "headwrap",
-            "scarf": "headwrap",
-            "turban": "headwrap",
-            "tie": "bow_tie",
-            "BowTie": "bow_tie",
-            "Bow Tie": "bow_tie",
-            "helmet": "hat",
-            "Cap": "hat",
-            "spectacles": "glasses",
-            "staff": "spear",
-            "Not An Accessory": "none",
-            ["crown"]: "crown",
-        }
-        for raw, expected in cases.items():
+        cases = [
+            ("Headscarf", "headwrap"),
+            ("scarf", "headwrap"),
+            ("turban", "headwrap"),
+            ("tie", "bow_tie"),
+            ("BowTie", "bow_tie"),
+            ("Bow Tie", "bow_tie"),
+            ("helmet", "hat"),
+            ("Cap", "hat"),
+            ("spectacles", "glasses"),
+            ("staff", "spear"),
+            ("Not An Accessory", "none"),
+            (["crown"], "crown"),
+        ]
+        for raw, expected in cases:
             with self.subTest(raw=raw):
                 result = validate_outline(outline_payload(raw), 1)
                 self.assertEqual(result["cast"][0]["accessory"], expected)
