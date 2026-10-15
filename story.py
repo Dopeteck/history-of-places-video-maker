@@ -453,7 +453,7 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
     # Keep a range for the prompt, but word-count miss itself is never fatal.
     minimum, maximum = ((170, 210) if mode == 'shorts' else
                         (int(minutes * 130 / count), int(minutes * 150 / count)))
-    target_minimum = max(180, minimum)
+    target_minimum = 180  # The acceptance floor is the soft 180-word minimum, not the requested target.
 
     from story_store import read_json, write_json
     progress_root = getattr(llm, "draft_cache_dir", None)
