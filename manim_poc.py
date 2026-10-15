@@ -285,7 +285,7 @@ def _hook_group() -> VGroup:
         color=WHITE,
         weight="NORMAL",
     )
-    first.scale_to_fit_width(6.05).move_to(np.array([0, 3.12, 0]))
+    first.scale_to_fit_width(6.05).move_to(np.array([0, 3.27, 0]))
     second = Text(
         "Used By Medieval People",
         font="DejaVu Sans",
@@ -293,8 +293,8 @@ def _hook_group() -> VGroup:
         color=WHITE,
         weight="NORMAL",
     )
-    second.scale_to_fit_width(5.10).move_to(np.array([-0.10, 2.70, 0]))
-    face_center = np.array([2.68, 2.70, 0])
+    second.scale_to_fit_width(5.10).move_to(np.array([-0.10, 2.85, 0]))
+    face_center = np.array([2.68, 2.85, 0])
     face = Circle(
         radius=0.16,
         color="#FFE9A0",
@@ -359,7 +359,7 @@ class ManimHybridProof(MovingCameraScene):
         self.camera.background_color = "#080706"
 
         # 1) Storybook hearth: richly drawn art, subtle push-in.
-        plate = self._cut("winter_room", "manim_sleeping_cow_bed")
+        plate = self._cut("winter_room", "manim_sleeping_bed")
         self.add(self.hook)
         self.play(
             self.card_mob.animate.scale(1.055).shift(LEFT * 0.10),
