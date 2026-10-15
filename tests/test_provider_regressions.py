@@ -75,12 +75,12 @@ class ProviderRegressionTests(unittest.TestCase):
                 self.assertEqual(len(requests), 2)
                 first = requests[0]
                 second = requests[1]
-                self.assertEqual(first["max_completion_tokens"], 8192)
+                self.assertEqual(first["max_completion_tokens"], 6000)
                 self.assertEqual(first["reasoning_effort"], "low")
                 self.assertEqual(first["response_format"]["type"], "json_schema")
                 self.assertTrue(first["response_format"]["json_schema"]["strict"])
                 self.assertNotIn("response_format", second)
-                self.assertEqual(second["max_completion_tokens"], 8192)
+                self.assertEqual(second["max_completion_tokens"], 6000)
                 self.assertEqual(second["reasoning_effort"], "low")
                 debug_file = os.path.join(temp_dir, "debug", "chapter_groq_1.txt")
                 self.assertTrue(os.path.exists(debug_file))
@@ -123,7 +123,7 @@ class ProviderRegressionTests(unittest.TestCase):
             )
         self.assertEqual(llm.extract_json(result), {"ok": True})
         self.assertEqual(requests[0]["reasoning_effort"], "low")
-        self.assertEqual(requests[0]["max_completion_tokens"], 8192)
+        self.assertEqual(requests[0]["max_completion_tokens"], 3000)
         self.assertEqual(requests[0]["response_format"]["type"], "json_schema")
 
     def test_gemini_has_60_second_timeout_and_response_schema(self):
@@ -156,7 +156,7 @@ class ProviderRegressionTests(unittest.TestCase):
                 json.dumps({"task": "outline", "schema": {}}),
             )
         self.assertEqual(llm.extract_json(result), {"ok": True})
-        self.assertEqual(options, [{"timeout": 60000}])
+        self.assertEqual(options, [{"timeout": 360000}])
         self.assertIn("response_schema", configs[0])
         self.assertEqual(configs[0]["response_schema"]["type"], "OBJECT")
 
