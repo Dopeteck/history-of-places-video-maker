@@ -94,6 +94,7 @@ def parse_gemini_response(response: Any) -> str:
                     raise ValueError("Gemini returned an error object")
             except json.JSONDecodeError:
                 pass
+        extract_json(text)
         return text
     candidates = getattr(response, "candidates", None)
     if candidates:
@@ -103,6 +104,7 @@ def parse_gemini_response(response: Any) -> str:
             if parts:
                 joined = "".join(str(getattr(part, "text", "") or "") for part in parts)
                 if joined.strip():
+                    extract_json(joined)
                     return joined
     raise ValueError("Gemini response had no text content")
 
@@ -139,6 +141,7 @@ def parse_openai_response(response: Any) -> str:
                 raise ValueError("Provider returned an error object")
         except json.JSONDecodeError:
             pass
+    extract_json(content)
     return content
 
 
@@ -169,9 +172,10 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         with genai.Client(api_key=os.environ[provider['env_key']],
                           http_options=types.HttpOptions(timeout=int(timeout * 1000))) as client:
             response = client.models.generate_content(
-                model=model, contents=system + "\\n\\n" + user,
+                model=model, contents=user,
                 config=types.GenerateContentConfig(
-                    response_mime_type='application/json', temperature=0.8))
+                    system_instruction=system, response_mime_type='application/json',
+                    temperature=0.8))
             return parse_gemini_response(response)
 
     from openai import OpenAI
