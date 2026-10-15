@@ -3,7 +3,7 @@ run-name: Story ${{ inputs.action || 'smoke' }} · ${{ inputs.mode || 'long' }}
 
 on:
   push:
-    branches: [main]
+    branches: [main, '**']
     paths:
       - '*.py'
       - 'tests/**'
@@ -67,7 +67,7 @@ concurrency:
 
 jobs:
   pr-tests:
-    if: github.event_name == 'pull_request'
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
