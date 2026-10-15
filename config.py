@@ -54,8 +54,8 @@ def _model_list(env_name: str, defaults: list[str]) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()] if value else defaults
 
 MAX_RETRIES_PER_MODEL = 1  # one short retry, only for 429/5xx
-PROVIDER_TIMEOUT_SECONDS = 8
-PROVIDER_TOTAL_BUDGET_SECONDS = 48
+PROVIDER_TIMEOUT_SECONDS = 360
+PROVIDER_TOTAL_BUDGET_SECONDS = 360
 PROVIDERS = [
     {
         "name": "groq",

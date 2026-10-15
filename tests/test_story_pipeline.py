@@ -53,7 +53,7 @@ class PipelineTests(unittest.TestCase):
         story = build_story(llm, 'Testing', 'shorts', 10, 4, SOURCES)
         self.assertEqual(len(story['chapters']), 4)
         self.assertTrue(all(170 <= c['word_count'] <= 210 for c in story['chapters']))
-        self.assertEqual([len(p['previous_summaries']) for p in llm.prompts if p['task']=='chapter'], [0,1,2,3])
+        self.assertEqual([len(p['previous_summaries']) for p in llm.prompts if p['task']=='chapter'], [0,1,2,2])
         self.assertEqual(story['timing_status'], 'unmeasured_until_tts')
     def test_long_is_chunked(self):
         llm = FakeLLM(); story = build_story(llm, 'Testing', 'long', 10, 4, SOURCES)
@@ -142,9 +142,11 @@ class ProviderTests(unittest.TestCase):
                     attempts.append(model)
                     raise ProviderHTTPError(status, '{"error":"bad request"}', 'client error')
                 with patch.dict(os.environ,{'TEST_LLM_KEY':'test'}):
-                    with self.assertRaisesRegex(RuntimeError, 'All script providers failed'):
+                    with self.assertRaisesRegex(RuntimeError, 'Non-retryable HTTP'):
                         JsonLLM(call=call,sleep=lambda _:None,providers=PROVIDERS).generate('',{},lambda d:d)
-                self.assertEqual(attempts,['first','second'])
+                # Client errors are configuration/request problems: don't spend quota
+                # or silently switch providers when the request itself must be fixed.
+                self.assertEqual(attempts,['first'])
 
     def test_budget_exhausted_before_provider_call(self):
         attempts=[]

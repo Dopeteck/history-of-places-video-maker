@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 from factcheck import review_story
-from llm import JsonLLM
+from llm import DryRunLLM, JsonLLM
 from story import SYSTEM, build_story, text, validate_sources, validate_saved_story, words
 from story_store import (approve, load_approved, next_topic, read_json, save_draft,
                          write_json, digest)
@@ -20,6 +20,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--prefetch-assets', action='store_true', help='Warm procedural art cache in work/, never overwrite assets')
     parser.add_argument('--render', action='store_true', help='Render an approved saved draft')
     parser.add_argument('--smoke-test', action='store_true', help='Offline 20-second renderer test; no speech')
+    parser.add_argument('--dry-run', action='store_true', help='Generate and review a canned draft with zero API calls')
     parser.add_argument('--preview', action='store_true', help='Half-size preview')
     parser.add_argument('--captions', action='store_true', help='Enable captions in long mode')
     parser.add_argument('--voice', choices=['bm_george','bm_fable','am_michael'], default='bm_george')
@@ -43,6 +44,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--suggest-topics', type=int, metavar='COUNT')
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')
+    if args.dry_run and (args.render or args.approve or args.recheck or args.draft):
+        parser.error('--dry-run is an offline draft-generation path; do not combine it with render/review/approval inputs')
     try:
         if args.prefetch_assets:
             from characters import character
@@ -76,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
                 chapter['word_count'] = sum(words(s['narration']) for s in chapter['scenes'])
             story['word_count'] = sum(c['word_count'] for c in story['chapters'])
             validate_saved_story(story)
-            report = review_story(JsonLLM(cache_dir=ROOT / 'work' / 'story-cache'), story)
+            report = review_story(JsonLLM(cache_dir=ROOT / 'work' / 'story-cache', draft_cache_dir=args.state_dir / 'draft_cache'), story)
             print('New review draft: ' + str(save_draft(args.output, args.state_dir, story, report)))
             return 0
         if args.approve:
@@ -93,7 +96,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.review or args.series_part is not None:
             parser.error('--review requires --approve; --series-part requires --draft')
-        llm = JsonLLM(cache_dir=ROOT / 'work' / 'story-cache')
+        llm = (DryRunLLM(draft_cache_dir=args.state_dir / 'draft_cache') if args.dry_run else
+               JsonLLM(cache_dir=ROOT / 'work' / 'story-cache', draft_cache_dir=args.state_dir / 'draft_cache'))
         if args.suggest_topics is not None:
             if not 1 <= args.suggest_topics <= 10:
                 parser.error('--suggest-topics must be 1–10')
@@ -125,6 +129,8 @@ def main(argv: list[str] | None = None) -> int:
         report = review_story(llm, story)
         draft = save_draft(args.output, args.state_dir, story, report)
         print(f'Draft saved: {draft}\nReview script.md and fact_check.md; complete review.template.json.')
+        if args.dry_run:
+            print('Dry run complete: canned replies only; no API calls, audio, rendering, or publishing.')
         print('Stopped before audio/rendering. Duration remains unmeasured.')
         return 0
     except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:

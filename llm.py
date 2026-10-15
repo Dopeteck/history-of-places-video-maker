@@ -58,6 +58,19 @@ def _error_details(exc: Exception) -> tuple[int | None, str]:
     return (int(status) if str(status).isdigit() else None, _safe(body))
 
 
+def _retry_after_seconds(message: str) -> float | None:
+    """Extract a provider's stated retry delay, including decimal seconds."""
+    match = re.search(r"try again in\s+(\d+(?:\.\d+)?)\s*(?:s|sec(?:onds?)?)", message, re.I)
+    if not match:
+        match = re.search(r"retry[- ]after\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:s|sec(?:onds?)?)?", message, re.I)
+    if not match:
+        return None
+    try:
+        return min(20.0, max(0.0, float(match.group(1)) + 1.0))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _log_failure(provider: str, model: str, exc: Exception) -> tuple[int | None, str]:
     status, body = _error_details(exc)
     # Avoid logging exception objects directly: SDK exception strings may contain secrets.
@@ -117,7 +130,7 @@ def _json_schema_for_stage(stage: str) -> dict | None:
             "title": string, "hook": string, "logline": string,
             "cast": array(character), "chapters": array(chapter), "ending": string,
         })
-    if stage == "chapter":
+    if stage in {"chapter", "chapter_extend"}:
         actor = obj({
             "id": string,
             "x": {"type": "number"},
@@ -300,7 +313,7 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         schema = _json_schema_for_stage(stage)
         client = genai.Client(
             api_key=os.environ[provider["env_key"]],
-            http_options=types.HttpOptions(timeout=60000),
+            http_options=types.HttpOptions(timeout=int(float(config.PROVIDER_TIMEOUT_SECONDS) * 1000)),
         )
         try:
             config_args = {
@@ -342,7 +355,13 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
         schema = _json_schema_for_stage(stage)
         if is_groq_gpt_oss:
             # GPT-OSS spends output budget on reasoning before the visible JSON.
-            kwargs["max_completion_tokens"] = 8192
+            # Keep requested output reservations comfortably below the 8k TPM ceiling
+            # once the compact prompt's input tokens are included.
+            stage_token_limits = {
+                "outline": 2200, "chapter": 3000, "chapter_extend": 2200,
+                "claim_review": 1800, "suggest_topics": 1200,
+            }
+            kwargs["max_completion_tokens"] = stage_token_limits.get(stage, 1600)
             kwargs["reasoning_effort"] = "low"
             if schema is not None:
                 kwargs["response_format"] = {
@@ -386,13 +405,16 @@ def provider_call(provider: dict, model: str, system: str, user: str) -> str:
 class JsonLLM:
     """Try configured providers in order and capture bounded diagnostics on failures."""
     def __init__(self, call: Callable = provider_call, sleep: Callable = time.sleep,
-                 providers: list[dict] | None = None, min_interval: float = 0.0,
-                 cache_dir: Path | None = None):
+                 providers: list[dict] | None = None, min_interval: float = 10.0,
+                 cache_dir: Path | None = None, draft_cache_dir: Path | None = None):
         self.cache_dir = cache_dir
+        self.draft_cache_dir = draft_cache_dir
         self.call, self.sleep = call, sleep
         self.providers = config.PROVIDERS if providers is None else providers
         self.min_interval = min_interval
         self.last_call: float | None = None
+        self.last_groq_call: float | None = None
+        self.groq_stage_counter = 0
 
     def generate(self, system: str, prompt: dict, validate: Callable[[dict], Any]) -> Any:
         from story import digest
@@ -410,7 +432,12 @@ class JsonLLM:
         errors: list[str] = []
         deadline = time.monotonic() + float(config.PROVIDER_TOTAL_BUDGET_SECONDS)
         for provider in eligible:
-            for model in provider["models"]:
+            models = list(provider["models"])
+            if provider.get("name") == "groq" and len(models) > 1:
+                offset = self.groq_stage_counter % len(models)
+                models = models[offset:] + models[:offset]
+                self.groq_stage_counter += 1
+            for model in models:
                 if time.monotonic() >= deadline:
                     raise RuntimeError("LLM stage exceeded its configured time budget")
                 correction = ""
@@ -419,9 +446,13 @@ class JsonLLM:
                 while attempts <= int(config.MAX_RETRIES_PER_MODEL):
                     if time.monotonic() >= deadline:
                         raise RuntimeError("LLM stage exceeded its configured time budget")
-                    if self.last_call is not None and self.min_interval:
-                        self.sleep(min(self.min_interval, max(0, deadline - time.monotonic())))
+                    if provider.get("name") == "groq" and self.last_groq_call is not None and self.min_interval:
+                        wait_for = self.min_interval - (time.monotonic() - self.last_groq_call)
+                        if wait_for > 0:
+                            self.sleep(min(wait_for, max(0, deadline - time.monotonic())))
                     self.last_call = time.monotonic()
+                    if provider.get("name") == "groq":
+                        self.last_groq_call = self.last_call
                     raw_attempt: Any = None
                     try:
                         raw_attempt = self.call(
@@ -440,6 +471,10 @@ class JsonLLM:
                         if not getattr(exc, "debug_response_saved", False):
                             _write_debug_response(stage, provider["name"], raw_debug)
                         errors.append(f"{provider['name']}/{model}: {type(exc).__name__} HTTP {status}")
+                        if status in {400, 401, 403, 404}:
+                            raise ProviderHTTPError(
+                                status, body,
+                                f"Non-retryable HTTP {status} from {provider['name']}/{model}; All script providers failed fast") from exc
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
                             if not corrected_prompt:
@@ -451,11 +486,91 @@ class JsonLLM:
                             break
                         if attempts >= int(config.MAX_RETRIES_PER_MODEL):
                             break
-                        delay = min(2.0, 0.5 * (attempts + 1) + random.uniform(0, 0.2),
-                                    max(0, deadline - time.monotonic()))
+                        if status == 429:
+                            stated_delay = _retry_after_seconds(body + " " + _safe(exc))
+                            delay = stated_delay if stated_delay is not None else min(2.0, 1.0 + random.uniform(0, 0.2))
+                        else:
+                            delay = min(2.0, 0.5 * (attempts + 1) + random.uniform(0, 0.2))
+                        delay = min(float(delay), max(0.0, deadline - time.monotonic()))
                         if delay <= 0:
                             break
                         self.sleep(delay)
                         attempts += 1
         raise RuntimeError("All script providers failed: " + "; ".join(errors))
 
+
+class DryRunLLM:
+    """Deterministic, deliberately imperfect model substitute for offline end-to-end tests."""
+    def __init__(self, draft_cache_dir: Path | None = None):
+        self.draft_cache_dir = draft_cache_dir
+        self.calls: list[dict] = []
+
+    @staticmethod
+    def _scene(narration: str) -> dict:
+        return {
+            "text": narration,
+            "characters": {"character": "dry_narrator", "x": 0.5,
+                           "pose": "talkng", "expression": "neutral"},
+            "background": "palacc",
+            "camera": "static",
+            "effects": ["cut"],
+            "props": [],
+            "source_ids": [],
+        }
+
+    def generate(self, system: str, prompt: dict, validate: Callable[[dict], Any]) -> Any:
+        task = str(prompt.get("task", "unknown"))
+        self.calls.append({"task": task, "prompt": prompt})
+        if task == "outline":
+            count = int(prompt.get("count", 4))
+            raw = {
+                "title": "Offline Test: A Turning Point",
+                "logline": "A compact, fictionalized dry-run demonstration of story structure.",
+                "ending": "The lesson is to separate a memorable tale from verified history.",
+                "characters": [{
+                    "character_id": "dry_narrator", "character_name": "Test Narrator",
+                    "function": "narrator", "personality": "curious",
+                    "wearing": "headscarf", "colour": "teal",
+                }],
+                "chapter_list": [
+                    {"heading": f"Offline chapter {number}",
+                     "summary": "Follow one decision and its consequences.",
+                     "events": ["A choice is made", "The consequences become visible"]}
+                    for number in range(1, count + 1)
+                ],
+            }
+        elif task == "chapter":
+            raw = {
+                "summary": "A choice creates consequences.",
+                "scene_list": [
+                    self._scene("The archive opens on a turning point, where ordinary people face a choice that gradually changes their community."),
+                    self._scene("At first, the decision seems small, but its effects spread through the market and reach people far beyond it."),
+                    self._scene("Witnesses remember different details, reminding the narrator that a confident story is not automatically a verified account."),
+                    self._scene("The final scene pauses at the consequence, leaving room for the next chapter to explain what changed."),
+                ],
+            }
+        elif task == "chapter_extend":
+            # These are new scenes only; existing content remains untouched by the production code.
+            raw = {
+                "summary": "The decision's effects become clearer as the story widens.",
+                "scenes": [
+                    {"narration": "A messenger carries the news through crowded streets, while neighbors compare what they heard and begin to question the easy explanation offered at first. Small disagreements reveal how memory, interest, and incomplete evidence can shape a public account of the same event.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "thinking"}], "background": "street", "camera": "pan_left", "effects": ["cut"], "props": ["scroll"], "source_ids": [], "uncertainty": "medium"},
+                    {"narration": "The next morning brings practical consequences: work is delayed, an agreement must be reconsidered, and people who were distant observers now have a reason to care about the outcome. The story advances through these visible changes rather than repeating the opening claim.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "neutral"}], "background": "market", "camera": "push_in", "effects": ["cut"], "props": ["coin"], "source_ids": [], "uncertainty": "medium"},
+                    {"narration": "Later accounts preserve useful clues, but they do not settle every detail. A careful narrator names what is known, marks what remains uncertain, and resists adding invented dialogue simply to make the scene sound more dramatic.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "thinking", "expression": "neutral"}], "background": "room", "camera": "static", "effects": ["fade"], "props": ["scroll"], "source_ids": [], "uncertainty": "unverified"},
+                    {"narration": "By the end, the added scenes connect the first decision to the wider consequences. The point is not that every question has an answer, but that a strong account can remain compelling while being honest about its limits.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "happy"}], "background": "map", "camera": "push_in", "effects": ["cut"], "props": [], "source_ids": [], "uncertainty": "medium"},
+                ],
+            }
+        elif task == "claim_review":
+            raw = {"scenes": [
+                {"scene_id": scene["scene_id"], "claims": []}
+                for scene in prompt.get("scenes", [])
+            ]}
+        elif task == "suggest_topics":
+            count = int(prompt.get("count", 1))
+            raw = {"topics": [
+                {"topic": f"Offline sample topic {index}", "research_question": "Which primary sources support this topic?"}
+                for index in range(1, count + 1)
+            ]}
+        else:
+            raise ValueError(f"Dry-run has no canned reply for stage: {task}")
+        return validate(raw)
