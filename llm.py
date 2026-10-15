@@ -33,12 +33,14 @@ def _redact(value: Any) -> str:
         secret = os.getenv(key_name)
         if secret:
             result = result.replace(secret, "[REDACTED]")
-    return re.sub(r"(?i)(bearer\\s+)[A-Za-z0-9._-]+", r"\\1[REDACTED]", result)
+    return re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._-]+", r"\1[REDACTED]", result)
 
 
 def _safe(value: Any) -> str:
     """Redact and bound provider response bodies and messages."""
     return _redact(value)[:_BODY_LIMIT]
+
+
 def _error_details(exc: Exception) -> tuple[int | None, str]:
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
     response = getattr(exc, "response", None)
