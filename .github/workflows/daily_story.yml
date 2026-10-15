@@ -58,6 +58,11 @@ on:
         description: 'Shorts series length, 3–5 parts'
         type: number
         default: 4
+      renderer:
+        description: 'remotion = choreographed stickman animation; legacy = older Pillow renderer'
+        type: choice
+        options: [remotion, legacy]
+        default: remotion
 
 permissions:
   contents: read
@@ -100,6 +105,7 @@ jobs:
       STORY_SOURCES: ${{ inputs.sources || '' }}
       STORY_MINUTES: ${{ inputs.minutes || 10 }}
       STORY_PARTS: ${{ inputs.parts || 4 }}
+      STORY_RENDERER: ${{ inputs.renderer || 'remotion' }}
       OMP_NUM_THREADS: '2'
       MKL_NUM_THREADS: '2'
       HF_HUB_DOWNLOAD_TIMEOUT: '60'
@@ -133,6 +139,17 @@ jobs:
           python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -r requirements-voice.txt
           python -m pip check
+      - name: Set up Node.js for Remotion
+        if: (inputs.action == 'render' || github.event_name == 'schedule') && inputs.renderer != 'legacy'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: remotion-stickman/package.json
+      - name: Install Remotion renderer
+        if: (inputs.action == 'render' || github.event_name == 'schedule') && inputs.renderer != 'legacy'
+        working-directory: remotion-stickman
+        run: npm install --no-audit --no-fund
       - name: Restore and persist accepted draft progress
         if: inputs.action == 'draft' || github.event_name == 'schedule'
         uses: actions/cache@v4

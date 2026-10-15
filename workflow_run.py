@@ -83,7 +83,13 @@ def run(root: Path=ROOT, env=None) -> dict:
             approve(draft,review,state)
         story=load_approved(draft,part)
         if story['mode']=='shorts' and part is None:raise ValueError('Select a Shorts part (1–5)')
-        from render import render_story
+        renderer=env.get('STORY_RENDERER','legacy').strip().lower()
+        if renderer == 'remotion':
+            from remotion_renderer import render_story
+        elif renderer == 'legacy':
+            from render import render_story
+        else:
+            raise ValueError('STORY_RENDERER must be remotion or legacy')
         destination=out/('render-'+sid+(f'-part-{part}' if part else ''))
         video=render_story(story,destination,config.STORY_VOICE,config.STORY_SPEED)
         metadata=read_json(destination/'render-metadata.json')

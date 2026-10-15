@@ -9,3 +9,8 @@ __pycache__/
 *.pyc
 state/.series.lock
 debug/
+
+# Remotion build products and generated narration assets
+remotion-stickman/node_modules/
+remotion-stickman/out/
+remotion-stickman/public/story/

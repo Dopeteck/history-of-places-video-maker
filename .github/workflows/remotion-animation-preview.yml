@@ -1,0 +1,75 @@
+name: Remotion choreographed animation preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'remotion-stickman/**'
+      - 'remotion_renderer.py'
+      - 'story.py'
+      - 'llm.py'
+      - 'tests/**'
+      - 'requirements*.txt'
+      - '.github/workflows/remotion-animation-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-preview:
+    name: Render choreographed stickman sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: remotion-stickman/package.json
+      - name: Install system renderer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Install pinned Remotion dependencies
+        working-directory: remotion-stickman
+        run: npm install --no-audit --no-fund
+      - name: Type-check the animation engine and story adapter
+        working-directory: remotion-stickman
+        run: npm run typecheck
+      - name: Render a multi-scene choreography sample without API keys
+        run: python remotion_renderer.py --smoke-test --out output/remotion-preview
+      - name: Upload preview and render report
+        uses: actions/upload-artifact@v4
+        with:
+          name: remotion-choreographed-stickman-preview
+          path: |
+            output/remotion-preview/video.mp4
+            output/remotion-preview/render-metadata.json
+            output/remotion-preview/description.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  python-regressions:
+    name: Existing story and approval regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run all Python tests
+        run: python -m unittest discover -s tests -v

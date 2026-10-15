@@ -140,14 +140,30 @@ def _json_schema_for_stage(stage: str) -> dict | None:
             "expression": {"type": "string", "enum": sorted([
                 "neutral", "happy", "angry", "shocked", "sad", "sly", "dead"])},
         })
+        action_state = obj({
+            "id": string,
+            "action": {"type": "string", "enum": sorted([
+                "idle", "talk", "walk", "run", "point", "cheer", "shrug", "think",
+                "crouch", "punch", "kick", "carry", "hold", "facepalm", "sit",
+                "handshake", "sad", "shock", "fall", "kneel", "laugh", "dead"])},
+            "x": {"type": "number", "minimum": 0.1, "maximum": 0.9},
+            "emotion": {"type": "string", "enum": sorted([
+                "neutral", "happy", "angry", "shocked", "sad", "sly", "dead"])},
+        })
+        action_beat = obj({
+            "at": {"type": "number", "minimum": 0, "maximum": 1},
+            "actions": array(action_state),
+        })
         scene = obj({
             "narration": string,
+            "visual_title": string,
             "characters_on_screen": array(actor),
+            "action_beats": array(action_beat),
             "background": {"type": "string", "enum": sorted([
                 "hut", "throne", "palace", "river", "market", "battlefield", "street", "room", "map"])},
             "camera": {"type": "string", "enum": sorted(["static", "push_in", "pan_left", "pan_right"])},
             "effects": array({"type": "string", "enum": sorted(["shake", "fade", "cut", "pop_in"])}),
-            "props": array({"type": "string", "enum": sorted(["crown", "scroll", "torch", "fire", "coin", "sword", "spear"])}),
+            "props": array({"type": "string", "enum": sorted(["crown", "scroll", "torch", "fire", "coin", "sword", "spear", "table", "chest"])}),
             "emphasis_words": array(string),
             "source_ids": array(string),
             "uncertainty": {"type": "string", "enum": [

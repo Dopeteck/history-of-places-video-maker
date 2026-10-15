@@ -1,0 +1,22 @@
+{
+  "name": "stickman-remotion-renderer",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Free local Remotion renderer using the MIT-licensed nispa stickman animation engine",
+  "type": "module",
+  "scripts": {
+    "render": "remotion render src/index.ts ChoreographedStory",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "@remotion/google-fonts": "4.0.534",
+    "remotion": "4.0.534",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.8",
+    "typescript": "5.8.3"
+  }
+}
