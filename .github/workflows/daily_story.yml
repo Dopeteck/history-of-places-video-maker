@@ -133,6 +133,16 @@ jobs:
           python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -r requirements-voice.txt
           python -m pip check
+      - name: Restore and persist accepted draft progress
+        if: inputs.action == 'draft' || github.event_name == 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: state/draft_cache
+          # A unique write key lets later runs save newer progress; app-level files
+          # are keyed by topic + mode/part and ignore unrelated restored entries.
+          key: story-draft-progress-v2-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            story-draft-progress-v2-${{ runner.os }}-
       - name: Execute story pipeline
         id: pipeline
         env:
