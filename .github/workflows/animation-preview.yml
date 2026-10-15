@@ -47,6 +47,35 @@ jobs:
           assert stream["r_frame_rate"] == "30/1", stream
           print("Verified 1080x1920 @ 30 FPS")
           PY
+      - name: Build compact six-frame visual proof
+        run: |
+          python - <<'PY'
+          import base64, io, subprocess
+          from PIL import Image, ImageDraw, ImageFont
+          from pathlib import Path
+
+          video = "output/animation_stage2.mp4"
+          times = [0.3, 1.4, 4.5, 6.6, 19.0, 23.5]
+          thumb_w, thumb_h = 120, 213
+          cell_w, cell_h = 128, 238
+          sheet = Image.new("RGB", (cell_w * 3, cell_h * 2), (235, 232, 224))
+          draw = ImageDraw.Draw(sheet)
+          font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+          for i, seconds in enumerate(times):
+              path = f"/tmp/visual-{i}.png"
+              subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", str(seconds),
+                              "-i", video, "-frames:v", "1", path], check=True)
+              frame = Image.open(path).convert("RGB")
+              frame.thumbnail((thumb_w, thumb_h), Image.Resampling.LANCZOS)
+              x, y = (i % 3) * cell_w + 4, (i // 3) * cell_h + 4
+              sheet.paste(frame, (x, y))
+              draw.text((x, y + thumb_h + 3), f"{seconds:.1f}s", font=font, fill=(20, 20, 20))
+          output = Path("output/visual-proof.jpg")
+          sheet.save(output, "JPEG", quality=55, optimize=True)
+          encoded = base64.b64encode(output.read_bytes()).decode("ascii")
+          print("CONTACT_SHEET_BASE64=" + encoded)
+          print(f"Compact visual proof: {output} ({output.stat().st_size} bytes)")
+          PY
       - name: Upload preview and contact sheet
         uses: actions/upload-artifact@v4
         with:
@@ -55,5 +84,6 @@ jobs:
             output/animation_stage2.mp4
             output/animation_stage2.report.json
             output/animation_contact_sheet.jpg
+            output/visual-proof.jpg
           if-no-files-found: error
           retention-days: 7
