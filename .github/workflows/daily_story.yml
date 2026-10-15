@@ -155,6 +155,7 @@ jobs:
             output/**/description.txt
             output/run.json
             state/
+            debug/
       - name: Persist draft and series state
         if: success() && github.event_name != 'push' && (inputs.action != 'smoke' || github.event_name == 'schedule')
         run: python persist_state.py

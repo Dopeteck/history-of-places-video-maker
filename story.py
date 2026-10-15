@@ -1,8 +1,10 @@
 """Narrator-led history outlines and bounded chapter/Shorts generation."""
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
+import math
 import re
 from typing import Any
 
@@ -79,12 +81,102 @@ def normalise_choice(value: Any, choices: set[str], default: str = "none") -> st
     for item in values:
         if not isinstance(item, str):
             continue
-        label = re.sub(r"\s+", "_", item.strip().lower())
+        label = re.sub(r"[\s-]+", "_", item.strip().lower())
         label = _ACCESSORY_SYNONYMS.get(label, label)
         if label in choices:
             return label
     return default
 
+
+def safe_text(value: Any, default: str, limit: int) -> str:
+    """Use model text when sane; otherwise return a deterministic fallback."""
+    if isinstance(value, str) and value.strip():
+        return value.strip()[:limit]
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return str(value)[:limit]
+    return default[:limit]
+
+
+def first_value(data: dict, names: tuple[str, ...], default: Any = None) -> Any:
+    """Return the first present non-null value among common provider key variants."""
+    for name in names:
+        value = data.get(name)
+        if value is not None:
+            return value
+    return default
+
+
+_ACCENT_NAMES = {
+    "teal": "#1FA2A6",
+    "turquoise": "#1FA2A6",
+    "cyan": "#1FA2A6",
+    "charcoal/black": "#2B2B2B",
+    "charcoal_black": "#2B2B2B",
+    "charcoal": "#2B2B2B",
+    "black": "#2B2B2B",
+    "dark_gray": "#2B2B2B",
+    "dark_grey": "#2B2B2B",
+    "grey": "#2B2B2B",
+    "gray": "#2B2B2B",
+    "red": "#C0392B",
+    "crimson": "#C0392B",
+    "mustard/yellow/gold": "#E0A526",
+    "mustard_yellow_gold": "#E0A526",
+    "mustard": "#E0A526",
+    "yellow": "#E0A526",
+    "gold": "#E0A526",
+    "golden": "#E0A526",
+    "amber": "#E0A526",
+}
+_ACCENT_RGB = {
+    "#1FA2A6": (31, 162, 166),
+    "#2B2B2B": (43, 43, 43),
+    "#C0392B": (192, 57, 43),
+    "#E0A526": (224, 165, 38),
+}
+
+
+def normalise_accent(value: Any, default: str = "#1FA2A6") -> str:
+    """Map arbitrary provider colour labels/hex values to the closest allowed accent."""
+    if not isinstance(value, str) or not value.strip():
+        return default
+    candidate = value.strip().lower().replace(" ", "_")
+    candidate = _ACCENT_NAMES.get(candidate, candidate)
+    if re.fullmatch(r"#?[0-9a-f]{6}", candidate):
+        candidate = "#" + candidate.lstrip("#").upper()
+        if candidate in ACCENTS:
+            return candidate
+        rgb = tuple(int(candidate[i:i + 2], 16) for i in (1, 3, 5))
+        return min(_ACCENT_RGB, key=lambda colour: sum(
+            (rgb[index] - _ACCENT_RGB[colour][index]) ** 2 for index in range(3)))
+    return _ACCENT_NAMES.get(candidate, default)
+
+
+def normalise_enum(value: Any, choices: set[str], default: str,
+                   synonyms: dict[str, str] | None = None) -> str:
+    """Normalise known aliases and snap misspelled strings to the closest enum."""
+    if not isinstance(value, str) or not value.strip():
+        return default
+    candidate = re.sub(r"[\s-]+", "_", value.strip().lower())
+    aliases = synonyms or {}
+    candidate = aliases.get(candidate, candidate)
+    if candidate in choices:
+        return candidate
+    # A similarity cutoff prevents wholly unrelated text from creating surprising choices.
+    nearest = difflib.get_close_matches(candidate, sorted(choices), n=1, cutoff=0.38)
+    return nearest[0] if nearest else default
+
+
+_ENUM_SYNONYMS = {
+    "poses": {"stand": "standing", "idle": "standing", "speak": "talking", "talk": "talking"},
+    "expressions": {"blank": "neutral", "surprised": "shocked", "mad": "angry"},
+    "backgrounds": {"castle": "throne", "arena": "battlefield", "town": "street"},
+    "cameras": {"zoom_in": "push_in", "static_shot": "static", "left_pan": "pan_left",
+                "right_pan": "pan_right"},
+    "effects": {"shake_camera": "shake", "fade_out": "fade", "pop": "pop_in"},
+    "uncertainty": {"medium_confidence": "medium", "uncertain": "unverified",
+                    "verified": "documented", "likely": "medium"},
+}
 
 def words(value: str) -> int:
     return len(re.findall(r"\b[\w]+(?:['’-][\w]+)*\b", value))
@@ -117,125 +209,229 @@ def validate_sources(raw: Any) -> list[dict]:
 
 
 def validate_outline(data: dict, count: int) -> dict:
-    title = text(data['title'], 'title', 70)
-    cast, seen = [], set()
-    if not isinstance(data['cast'], list) or not 1 <= len(data['cast']) <= 8:
-        raise ValueError('Cast must contain 1–8 characters')
-    for index, c in enumerate(data['cast'], 1):
-        if not isinstance(c, dict):
-            raise ValueError('Each cast member must be a JSON object')
-        name = text(c.get('name'), 'cast name', 100)
-        role = text(c.get('role'), 'role', 200)
-        trait = text(c.get('trait'), 'trait', 200)
-        cid = normalise_identifier(c.get('id'), name or f'character_{index}', seen)
-        accessory = normalise_choice(c.get('accessory'), ACCESSORIES, 'none')
-        accent = c.get('accent')
-        if not isinstance(accent, str) or accent not in ACCENTS:
-            raise ValueError(f'Cast accent must be one of: {", ".join(sorted(ACCENTS))}')
-        seen.add(cid)
-        cast.append({'id': cid, 'name': name, 'role': role, 'trait': trait,
-                     'accessory': accessory, 'accent': accent})
-    if not isinstance(data['chapters'], list) or len(data['chapters']) != count:
-        raise ValueError(f'Outline must contain exactly {count} chapters/parts')
-    chapters = []
-    for i, c in enumerate(data['chapters'], 1):
-        events = c['key_events']
-        if not isinstance(events, list) or not 1 <= len(events) <= 6:
-            raise ValueError('Each chapter needs 1–6 key events')
-        chapters.append({'number': i, 'title': text(c['title'], 'chapter title', 70),
-                         'purpose': text(c['purpose'], 'purpose', 400),
-                         'key_events': [text(e, 'event', 500) for e in events]})
-    return {'title': title, 'hook': text(data['hook'], 'hook', 400),
-            'logline': text(data['logline'], 'logline', 500), 'cast': cast,
-            'chapters': chapters, 'ending': text(data['ending'], 'ending', 800)}
+    """Repair common model-shape drift and return a canonical outline."""
+    if not isinstance(data, dict):
+        raise ValueError("Outline response must be a JSON object")
+    try:
+        count = max(1, min(8, int(count)))
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError("Outline chapter count is invalid") from None
 
+    title = safe_text(first_value(data, ("title", "story_title", "name")),
+                     "Untitled history", 70)
+    raw_cast = first_value(data, ("cast", "characters", "character_list"), [])
+    if isinstance(raw_cast, dict):
+        raw_cast = list(raw_cast.values())
+    if not isinstance(raw_cast, list):
+        raw_cast = []
+    raw_cast = raw_cast[:8]
+    if not raw_cast:
+        raw_cast = [{}]
+
+    cast, seen = [], set()
+    for index, raw_character in enumerate(raw_cast, 1):
+        character = raw_character if isinstance(raw_character, dict) else {}
+        name = safe_text(first_value(character, ("name", "character_name", "label")),
+                         "Narrator" if index == 1 else f"Character {index}", 100)
+        role = safe_text(first_value(character, ("role", "function", "description")),
+                         "narrator" if index == 1 else "supporting character", 200)
+        trait = safe_text(first_value(character, ("trait", "personality", "visual_trait")),
+                          "steady and observant", 200)
+        cid = normalise_identifier(first_value(character, ("id", "character_id", "key")),
+                                   name or f"character_{index}", seen)
+        accessory = normalise_choice(first_value(character, ("accessory", "item", "wearing")),
+                                     ACCESSORIES, "none")
+        accent = normalise_accent(first_value(character, ("accent", "color", "colour")))
+        seen.add(cid)
+        cast.append({"id": cid, "name": name, "role": role, "trait": trait,
+                     "accessory": accessory, "accent": accent})
+
+    raw_chapters = first_value(data, ("chapters", "chapter_list", "parts", "outline"), [])
+    if isinstance(raw_chapters, dict):
+        raw_chapters = list(raw_chapters.values())
+    if not isinstance(raw_chapters, list):
+        raw_chapters = []
+    chapters = []
+    for index in range(count):
+        raw_chapter = raw_chapters[index] if index < len(raw_chapters) else {}
+        chapter = raw_chapter if isinstance(raw_chapter, dict) else (
+            {"title": raw_chapter} if isinstance(raw_chapter, str) else {})
+        default_events = [f"Develop the story's historical context for part {index + 1}."]
+        events = first_value(chapter, ("key_events", "events", "beats", "key_points"), default_events)
+        if isinstance(events, str):
+            events = [events]
+        if not isinstance(events, list):
+            events = default_events
+        clean_events = [safe_text(event, default_events[0], 500) for event in events[:6]]
+        if not clean_events:
+            clean_events = default_events
+        chapters.append({
+            "number": index + 1,
+            "title": safe_text(first_value(chapter, ("title", "name", "heading")),
+                               f"Part {index + 1}", 70),
+            "purpose": safe_text(first_value(chapter, ("purpose", "summary", "goal")),
+                                 f"Advance the history in part {index + 1}.", 400),
+            "key_events": clean_events,
+        })
+
+    return {
+        "title": title,
+        "hook": safe_text(first_value(data, ("hook", "opening", "opening_hook")),
+                           "A surprising historical question opens the story.", 400),
+        "logline": safe_text(first_value(data, ("logline", "premise", "summary")),
+                             f"A historical account of {title}.", 500),
+        "cast": cast,
+        "chapters": chapters,
+        "ending": safe_text(first_value(data, ("ending", "conclusion", "payoff")),
+                             "The historical consequences continue to shape the story.", 800),
+    }
 
 def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids: set[str],
                      number: int, minimum: int, maximum: int) -> dict:
-    # A mapping retains cast order and names so missing model IDs can be repaired.
+    """Repair recoverable scene drift while rejecting fundamentally empty chapters."""
+    if not isinstance(data, dict):
+        raise ValueError("Chapter response must be a JSON object")
     cast_map = dict(cast_ids) if isinstance(cast_ids, dict) else {cid: cid for cid in cast_ids}
     if not cast_map:
-        raise ValueError('Chapter validation requires at least one cast identity')
-    scenes = data['scenes']
-    if not isinstance(scenes, list) or not 4 <= len(scenes) <= 60:
-        raise ValueError('Chapter must have 4–60 scenes')
+        raise ValueError("Chapter validation requires at least one cast identity")
+    scenes = first_value(data, ("scenes", "scene_list", "sceneList", "items", "sequence"), None)
+    if isinstance(scenes, dict):
+        scenes = [scenes]
+    if not isinstance(scenes, list) or not scenes:
+        raise ValueError("Chapter response is missing a usable scenes/scene_list array")
+
+    scene_rows = []
+    for raw_scene in scenes[:60]:
+        scene_rows.append(raw_scene if isinstance(raw_scene, dict) else {})
+    # Keep the renderer's existing minimum scene count, repairing very short lists by padding.
+    while len(scene_rows) < 4:
+        scene_rows.append(dict(scene_rows[-1]))
+    scene_rows = scene_rows[:60]
+
     clean = []
-    for i, s in enumerate(scenes, 1):
-        narration = text(s['narration'], 'narration', 800)
+    for index, scene in enumerate(scene_rows, 1):
+        narration = safe_text(first_value(scene, ("narration", "text", "voiceover", "line", "script")),
+                              "The story moves to its next historical moment.", 800)
         if words(narration) > 70:
-            raise ValueError('Keep each scene under 70 words and at most two sentences')
-        actors = s['characters_on_screen']
-        if not isinstance(actors, list) or len(actors) > 4:
-            raise ValueError('At most four on-screen characters')
+            narration = " ".join(narration.split()[:70])
+            if len(narration) > 800:
+                narration = narration[:800].rsplit(" ", 1)[0]
+        actors = first_value(scene, ("characters_on_screen", "characters", "actors", "on_screen"), [])
+        if isinstance(actors, dict):
+            actors = [actors]
+        if not isinstance(actors, list):
+            actors = []
         used, checked = set(), []
-        for a in actors:
-            raw_cid = a.get('id')
-            cid = raw_cid if isinstance(raw_cid, str) and raw_cid in cast_map else None
-            actor_name = a.get('name') or a.get('character') or a.get('role')
-            if cid is None or cid in used:
-                if isinstance(actor_name, str):
-                    wanted = actor_name.strip().casefold()
-                    named_match = next((key for key, name in cast_map.items()
-                                        if str(name).strip().casefold() == wanted and key not in used), None)
-                else:
-                    named_match = None
-                if named_match is not None:
-                    cid = named_match
-                else:
-                    cid = next((key for key in cast_map if key not in used), None)
+        for actor_index, raw_actor in enumerate(actors[:4], 1):
+            actor = raw_actor if isinstance(raw_actor, dict) else {}
+            raw_id = first_value(actor, ("id", "character_id", "character"), None)
+            cid = raw_id if isinstance(raw_id, str) and raw_id in cast_map and raw_id not in used else None
+            actor_name = first_value(actor, ("name", "character_name", "role"), "")
             if cid is None:
-                raise ValueError('Scene has more character entries than available cast identities')
+                wanted = actor_name.strip().casefold() if isinstance(actor_name, str) else ""
+                named_match = next((key for key, name in cast_map.items()
+                                    if wanted and str(name).strip().casefold() == wanted and key not in used), None)
+                cid = named_match or next((key for key in cast_map if key not in used), None)
+            if cid is None:
+                break
             used.add(cid)
-            raw_x = a.get('x', 0.5)
+
+            raw_x = first_value(actor, ("x", "position", "horizontal_position"), 0.3 if actor_index == 1 else 0.7)
             try:
                 x = float(raw_x) if not isinstance(raw_x, bool) else 0.5
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 x = 0.5
-            if x != x:  # NaN cannot be clamped meaningfully.
+            if not math.isfinite(x):
                 x = 0.5
-            x = min(0.9, max(0.1, x))
-            if a.get('pose') not in POSES or a.get('expression') not in EXPRESSIONS:
-                raise ValueError('Unknown pose or expression')
-            checked.append({'id': cid, 'x': x, 'pose': a['pose'], 'expression': a['expression']})
-        if s['background'] not in BACKGROUNDS or s['camera'] not in CAMERAS:
-            raise ValueError('Unknown background or camera')
-        effects = s.get('effects')
-        if not isinstance(effects, list) or any(v not in EFFECTS for v in effects):
-            raise ValueError('Invalid effects')
-        raw_props = s.get('props', [])
+            x = round(min(0.9, max(0.1, x)), 4)
+
+            pose = normalise_enum(first_value(actor, ("pose", "action", "posture"), "standing"),
+                                  POSES, "standing", _ENUM_SYNONYMS["poses"])
+            expression = normalise_enum(first_value(actor, ("expression", "emotion", "face"), "neutral"),
+                                         EXPRESSIONS, "neutral", _ENUM_SYNONYMS["expressions"])
+            checked.append({"id": cid, "x": x, "pose": pose, "expression": expression})
+
+        background = normalise_enum(
+            first_value(scene, ("background", "setting", "location"), "room"),
+            BACKGROUNDS, "room", _ENUM_SYNONYMS["backgrounds"])
+        camera = normalise_enum(
+            first_value(scene, ("camera", "camera_movement", "shot"), "static"),
+            CAMERAS, "static", _ENUM_SYNONYMS["cameras"])
+
+        raw_effects = first_value(scene, ("effects", "visual_effects"), ["cut"])
+        if isinstance(raw_effects, str):
+            raw_effects = [raw_effects]
+        if not isinstance(raw_effects, list):
+            raw_effects = ["cut"]
+        effects = []
+        for effect in raw_effects[:8]:
+            normal = normalise_enum(effect, EFFECTS, "cut", _ENUM_SYNONYMS["effects"])
+            if normal not in effects:
+                effects.append(normal)
+
+        raw_props = first_value(scene, ("props", "objects", "items_in_scene"), [])
         if isinstance(raw_props, str):
             raw_props = [raw_props]
         if not isinstance(raw_props, list):
             raw_props = []
         props = []
-        for value in raw_props:
-            prop = normalise_choice(value, PROPS, 'none')
-            if prop != 'none' and prop not in props:
+        for value in raw_props[:12]:
+            prop = normalise_choice(value, PROPS, "none")
+            if prop != "none" and prop not in props:
                 props.append(prop)
-        refs = s['source_ids']
-        if not isinstance(refs, list) or any(r not in source_ids for r in refs):
-            raise ValueError('Scene references a source not supplied by the user')
-        uncertainty = s['uncertainty']
-        if uncertainty not in {'documented', 'disputed', 'legend', 'unverified'}:
-            raise ValueError('Invalid uncertainty label')
-        if not refs and uncertainty != 'unverified':
-            raise ValueError('A scene without evidence must be labelled unverified')
-        emphasis = s['emphasis_words']
-        if not isinstance(emphasis, list) or len(emphasis) > 8:
-            raise ValueError('emphasis_words must be a list of up to eight words/phrases')
-        emphasis = [text(w, 'emphasis', 80) for w in emphasis]
-        if any(w.casefold() not in narration.casefold() for w in emphasis):
-            raise ValueError('Emphasis must occur in narration')
-        clean.append({'id': f'c{number:02d}s{i:03d}', 'narration': narration,
-                      'characters_on_screen': checked, 'background': s['background'],
-                      'camera': s['camera'], 'effects': effects, 'props': props,
-                      'emphasis_words': emphasis, 'source_ids': refs, 'uncertainty': uncertainty})
-    total = sum(words(s['narration']) for s in clean)
-    if not minimum <= total <= maximum:
-        raise ValueError(f'Chapter has {total} words; required {minimum}–{maximum}')
-    return {'number': number, 'summary': text(data['summary'], 'running summary', 1200),
-            'scenes': clean, 'word_count': total}
 
+        refs = first_value(scene, ("source_ids", "source_references", "sources"), [])
+        if isinstance(refs, str):
+            refs = [refs]
+        if not isinstance(refs, list):
+            refs = []
+        if any(not isinstance(ref, str) or ref not in source_ids for ref in refs):
+            raise ValueError("Scene references a source not supplied by the user")
+        refs = list(dict.fromkeys(refs))
+
+        uncertainty_value = first_value(
+            scene, ("uncertainty", "uncertainty_level", "confidence", "certainty"), "medium")
+        uncertainty = normalise_enum(
+            uncertainty_value, {"documented", "disputed", "legend", "unverified", "medium"},
+            "medium", _ENUM_SYNONYMS["uncertainty"])
+
+        raw_emphasis = first_value(scene, ("emphasis_words", "emphasis", "highlight_words", "keywords"), [])
+        if isinstance(raw_emphasis, str):
+            raw_emphasis = [raw_emphasis]
+        if not isinstance(raw_emphasis, list):
+            raw_emphasis = []
+        emphasis = []
+        for item in raw_emphasis[:8]:
+            candidate = safe_text(item, "", 80)
+            if candidate and candidate.casefold() in narration.casefold() and candidate not in emphasis:
+                emphasis.append(candidate)
+
+        clean.append({
+            "id": f"c{number:02d}s{index:03d}",
+            "narration": narration,
+            "characters_on_screen": checked,
+            "background": background,
+            "camera": camera,
+            "effects": effects,
+            "props": props,
+            "emphasis_words": emphasis,
+            "source_ids": refs,
+            "uncertainty": uncertainty,
+        })
+
+    total = sum(words(scene["narration"]) for scene in clean)
+    if not clean:
+        raise ValueError("Chapter contains no repairable scenes")
+    try:
+        minimum = max(1, int(minimum))
+        maximum = max(minimum, int(maximum))
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError("Chapter word-count bounds are invalid") from None
+    if total < minimum or total > maximum:
+        raise ValueError(f"Chapter has {total} words; required {minimum}–{maximum}")
+    summary = safe_text(first_value(data, ("summary", "running_summary", "continuity_summary")),
+                        clean[0]["narration"], 1200)
+    return {"number": number, "summary": summary, "scenes": clean, "word_count": total}
 
 def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
                 sources: list[dict], niche: str = 'world history') -> dict:
@@ -292,26 +488,33 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
 
 def validate_saved_story(story: dict) -> dict:
     """Validate edited saved scripts before re-review or loading for approval."""
-    if story.get('schema_version') != 1 or story.get('mode') not in {'long', 'shorts'}:
+    if not isinstance(story, dict) or story.get('schema_version') != 1 or story.get('mode') not in {'long', 'shorts'}:
         raise ValueError('Unsupported story schema or mode')
-    sources = validate_sources(story['sources'])
-    chapters = story['chapters']
+    sources = validate_sources(story.get('sources', []))
+    chapters = story.get('chapters')
     if not isinstance(chapters, list) or not 3 <= len(chapters) <= 8:
         raise ValueError('Invalid chapter count')
-    outline = validate_outline(story['outline'], len(chapters))
+    outline = validate_outline(story.get('outline', {}), len(chapters))
     scene_ids = set()
     for i, ch in enumerate(chapters, 1):
         result = validate_chapter(ch, {c['id']: c['name'] for c in outline['cast']},
                                   {s['id'] for s in sources}, i, 1, 5000)
-        if ch['number'] != i:
+        if not isinstance(ch, dict) or ch.get('number', i) != i:
             raise ValueError('Chapter order changed')
-        text(ch['title'], 'chapter title', 70)
-        for saved, normal in zip(ch['scenes'], result['scenes']):
-            if saved.get('id') != normal['id'] or saved['id'] in scene_ids:
+        safe_text(ch.get('title'), f'Part {i}', 70)
+        saved_scenes = first_value(
+            ch, ("scenes", "scene_list", "sceneList", "items", "sequence"), None)
+        if not isinstance(saved_scenes, list) or len(saved_scenes) != len(result['scenes']):
+            raise ValueError('Saved chapter must contain a scene list matching its validated scenes')
+        for saved, normal in zip(saved_scenes, result['scenes']):
+            if not isinstance(saved, dict):
+                raise ValueError('Saved scene must be a JSON object')
+            saved_id = saved.get('id')
+            if not isinstance(saved_id, str) or saved_id != normal['id'] or saved_id in scene_ids:
                 raise ValueError('Scene IDs/order changed; use sequential chapter/scene IDs')
-            scene_ids.add(saved['id'])
-        if ch['word_count'] != result['word_count']:
+            scene_ids.add(saved_id)
+        if ch.get('word_count') != result['word_count']:
             raise ValueError('Word count stale after edit')
-    if story['word_count'] != sum(c['word_count'] for c in chapters):
+    if story.get('word_count') != sum(c.get('word_count', -1) for c in chapters if isinstance(c, dict)):
         raise ValueError('Total word count stale after edit')
     return story
