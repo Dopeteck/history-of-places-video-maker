@@ -496,3 +496,79 @@ class JsonLLM:
                         attempts += 1
         raise RuntimeError("All script providers failed: " + "; ".join(errors))
 
+
+class DryRunLLM:
+    """Deterministic, deliberately imperfect model substitute for offline end-to-end tests."""
+    def __init__(self, draft_cache_dir: Path | None = None):
+        self.draft_cache_dir = draft_cache_dir
+        self.calls: list[dict] = []
+
+    @staticmethod
+    def _scene(narration: str) -> dict:
+        return {
+            "text": narration,
+            "characters": {"character": "dry_narrator", "x": 0.5,
+                           "pose": "talkng", "expression": "neutral"},
+            "background": "palacc",
+            "camera": "static",
+            "effects": ["cut"],
+            "props": [],
+            "source_ids": [],
+        }
+
+    def generate(self, system: str, prompt: dict, validate: Callable[[dict], Any]) -> Any:
+        task = str(prompt.get("task", "unknown"))
+        self.calls.append({"task": task, "prompt": prompt})
+        if task == "outline":
+            count = int(prompt.get("count", 4))
+            raw = {
+                "title": "Offline Test: A Turning Point",
+                "logline": "A compact, fictionalized dry-run demonstration of story structure.",
+                "ending": "The lesson is to separate a memorable tale from verified history.",
+                "characters": [{
+                    "character_id": "dry_narrator", "character_name": "Test Narrator",
+                    "function": "narrator", "personality": "curious",
+                    "wearing": "headscarf", "colour": "teal",
+                }],
+                "chapter_list": [
+                    {"heading": f"Offline chapter {number}",
+                     "summary": "Follow one decision and its consequences.",
+                     "events": ["A choice is made", "The consequences become visible"]}
+                    for number in range(1, count + 1)
+                ],
+            }
+        elif task == "chapter":
+            raw = {
+                "summary": "A choice creates consequences.",
+                "scene_list": [
+                    self._scene("The archive opens on a turning point, where ordinary people face a choice that gradually changes their community."),
+                    self._scene("At first, the decision seems small, but its effects spread through the market and reach people far beyond it."),
+                    self._scene("Witnesses remember different details, reminding the narrator that a confident story is not automatically a verified account."),
+                    self._scene("The final scene pauses at the consequence, leaving room for the next chapter to explain what changed."),
+                ],
+            }
+        elif task == "chapter_extend":
+            # These are new scenes only; existing content remains untouched by the production code.
+            raw = {
+                "summary": "The decision's effects become clearer as the story widens.",
+                "scenes": [
+                    {"narration": "A messenger carries the news through crowded streets, while neighbors compare what they heard and begin to question the easy explanation offered at first. Small disagreements reveal how memory, interest, and incomplete evidence can shape a public account of the same event.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "thinking"}], "background": "street", "camera": "pan_left", "effects": ["cut"], "props": ["scroll"], "source_ids": [], "uncertainty": "medium"},
+                    {"narration": "The next morning brings practical consequences: work is delayed, an agreement must be reconsidered, and people who were distant observers now have a reason to care about the outcome. The story advances through these visible changes rather than repeating the opening claim.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "neutral"}], "background": "market", "camera": "push_in", "effects": ["cut"], "props": ["coin"], "source_ids": [], "uncertainty": "medium"},
+                    {"narration": "Later accounts preserve useful clues, but they do not settle every detail. A careful narrator names what is known, marks what remains uncertain, and resists adding invented dialogue simply to make the scene sound more dramatic.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "thinking", "expression": "neutral"}], "background": "room", "camera": "static", "effects": ["fade"], "props": ["scroll"], "source_ids": [], "uncertainty": "unverified"},
+                    {"narration": "By the end, the added scenes connect the first decision to the wider consequences. The point is not that every question has an answer, but that a strong account can remain compelling while being honest about its limits.", "characters_on_screen": [{"id": "dry_narrator", "x": 0.5, "pose": "talking", "expression": "happy"}], "background": "map", "camera": "push_in", "effects": ["cut"], "props": [], "source_ids": [], "uncertainty": "medium"},
+                ],
+            }
+        elif task == "claim_review":
+            raw = {"scenes": [
+                {"scene_id": scene["scene_id"], "claims": []}
+                for scene in prompt.get("scenes", [])
+            ]}
+        elif task == "suggest_topics":
+            count = int(prompt.get("count", 1))
+            raw = {"topics": [
+                {"topic": f"Offline sample topic {index}", "research_question": "Which primary sources support this topic?"}
+                for index in range(1, count + 1)
+            ]}
+        else:
+            raise ValueError(f"Dry-run has no canned reply for stage: {task}")
+        return validate(raw)
