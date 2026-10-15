@@ -4,8 +4,10 @@ from __future__ import annotations
 import difflib
 import hashlib
 import json
+import logging
 import math
 import re
+from pathlib import Path
 from typing import Any
 
 POSES = {'standing', 'talking', 'pointing', 'shocked', 'running', 'kneeling',
@@ -287,7 +289,7 @@ def validate_outline(data: dict, count: int) -> dict:
     }
 
 def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids: set[str],
-                     number: int, minimum: int, maximum: int) -> dict:
+                     number: int, minimum: int, maximum: int, minimum_scenes: int = 4) -> dict:
     """Repair recoverable scene drift while rejecting fundamentally empty chapters."""
     if not isinstance(data, dict):
         raise ValueError("Chapter response must be a JSON object")
@@ -304,7 +306,8 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
     for raw_scene in scenes[:60]:
         scene_rows.append(raw_scene if isinstance(raw_scene, dict) else {})
     # Keep the renderer's existing minimum scene count, repairing very short lists by padding.
-    while len(scene_rows) < 4:
+    minimum_scenes = max(1, min(4, int(minimum_scenes)))
+    while len(scene_rows) < minimum_scenes:
         scene_rows.append(dict(scene_rows[-1]))
     scene_rows = scene_rows[:60]
 
@@ -427,8 +430,14 @@ def validate_chapter(data: dict, cast_ids: set[str] | dict[str, str], source_ids
         maximum = max(minimum, int(maximum))
     except (TypeError, ValueError, OverflowError):
         raise ValueError("Chapter word-count bounds are invalid") from None
+    # Length is a production target, not a schema failure: short outputs must not
+    # trigger a provider switch and consume another model's quota.
+    if total < 180 or total > 360:
+        logging.warning("Chapter %s has %s words; preferred soft range is 180–360",
+                        number, total)
     if total < minimum or total > maximum:
-        raise ValueError(f"Chapter has {total} words; required {minimum}–{maximum}")
+        logging.warning("Chapter %s has %s words; requested target was %s–%s (soft target)",
+                        number, total, minimum, maximum)
     summary = safe_text(first_value(data, ("summary", "running_summary", "continuity_summary")),
                         clean[0]["narration"], 1200)
     return {"number": number, "summary": summary, "scenes": clean, "word_count": total}
@@ -441,42 +450,169 @@ def build_story(llm, topic: str, mode: str, minutes: float, parts: int,
     if not 8 <= minutes <= 15 or not 3 <= parts <= 5:
         raise ValueError('Long duration must be 8–15 minutes; Shorts series must have 3–5 parts')
     count = parts if mode == 'shorts' else max(4, round(minutes / 2))
-    # Enough words for the target, but final timing must be checked against audio.
+    # Keep a range for the prompt, but word-count miss itself is never fatal.
     minimum, maximum = ((170, 210) if mode == 'shorts' else
                         (int(minutes * 130 / count), int(minutes * 150 / count)))
-    outline = llm.generate(SYSTEM, {
-        'task': 'outline', 'topic': topic, 'niche': niche, 'mode': mode,
-        'count': count, 'sources': sources,
-        'schema': {'title': 'max 70 chars', 'hook': 'opening hook', 'logline': 'one sentence',
-                   'cast': [{'id': 'lowercase_id', 'name': 'name', 'role': 'role', 'trait': 'memorable trait',
-                             'accessory': sorted(ACCESSORIES), 'accent': sorted(ACCENTS)}],
-                   'chapters': [{'title': 'title', 'purpose': 'purpose', 'key_events': ['event']}],
-                   'ending': 'historically grounded payoff'},
-        'instruction': 'Exactly count chapters/parts. Each builds causally on the previous; final part resolves story.'
-    }, lambda d: validate_outline(d, count))
+    target_minimum = max(180, minimum)
+
+    from story_store import read_json, write_json
+    progress_root = getattr(llm, "draft_cache_dir", None)
+    progress_dir = None
+    if progress_root:
+        # The topic parameters and evidence define an isolated resumable draft.
+        progress_key = digest({
+            "cache_schema": "quota-safe-v2",
+            "topic": topic.strip().casefold(),
+            "mode": mode,
+            "minutes": minutes if mode == "long" else None,
+            "parts": parts if mode == "shorts" else None,
+            "niche": niche,
+            "sources": sources,
+        })
+        progress_dir = Path(progress_root) / progress_key
+        progress_dir.mkdir(parents=True, exist_ok=True)
+
+    outline_schema = {
+        'title': 'max 70 chars', 'hook': 'opening hook', 'logline': 'one sentence',
+        'cast': [{'id': 'lowercase_id', 'name': 'name', 'role': 'role', 'trait': 'memorable trait',
+                  'accessory': sorted(ACCESSORIES), 'accent': sorted(ACCENTS)}],
+        'chapters': [{'title': 'title', 'purpose': 'purpose', 'key_events': ['event']}],
+        'ending': 'historically grounded payoff',
+    }
+    outline_path = progress_dir / "outline.json" if progress_dir else None
+    outline = None
+    if outline_path and outline_path.exists():
+        try:
+            outline = validate_outline(read_json(outline_path), count)
+            logging.info("Restored accepted outline from %s", outline_path)
+        except (OSError, ValueError, KeyError, TypeError):
+            logging.warning("Ignoring invalid cached outline at %s", outline_path)
+    if outline is None:
+        outline = llm.generate(SYSTEM, {
+            'task': 'outline', 'topic': topic, 'niche': niche, 'mode': mode,
+            'count': count, 'sources': sources, 'schema': outline_schema,
+            'instruction': 'Exactly count chapters/parts. Each builds causally on the previous; final part resolves story.'
+        }, lambda d: validate_outline(d, count))
+        if outline_path:
+            write_json(outline_path, outline)
+            logging.info("Saved accepted outline to %s", outline_path)
+
     chapters, summaries = [], []
+    cast_map = {c['id']: c['name'] for c in outline['cast']}
+    source_ids = {s['id'] for s in sources}
+    allowed = {'poses': sorted(POSES), 'expressions': sorted(EXPRESSIONS),
+               'backgrounds': sorted(BACKGROUNDS), 'camera': sorted(CAMERAS),
+               'effects': sorted(EFFECTS), 'props': sorted(PROPS)}
+    chapter_schema = {'summary': 'brief continuity summary', 'scenes': [
+        {'narration': 'spoken text', 'characters_on_screen': [
+            {'id': 'cast id', 'x': 0.3, 'pose': 'standing', 'expression': 'neutral'}],
+         'background': 'palace', 'camera': 'push_in', 'effects': ['cut'], 'props': [],
+         'emphasis_words': [], 'source_ids': [], 'uncertainty': 'unverified'}]}
+    # Chapter context is intentionally compact; never resend the entire outline.
+    story_context = {
+        "title": outline["title"], "hook": outline["hook"],
+        "logline": outline["logline"], "ending": outline["ending"],
+        "cast": [{"id": x["id"], "name": x["name"], "role": x["role"],
+                  "accessory": x["accessory"], "accent": x["accent"]} for x in outline["cast"]],
+    }
+    compact_sources, source_budget = [], 4500
+    for source in sources:
+        if source_budget <= 0:
+            break
+        excerpt = source["excerpt"][:min(750, source_budget)]
+        compact_sources.append({"id": source["id"], "title": source["title"],
+                                "url": source["url"], "excerpt": excerpt})
+        source_budget -= len(excerpt)
+
     for chapter in outline['chapters']:
         number = chapter['number']
-        prompt = {'task': 'chapter', 'topic': topic, 'mode': mode, 'outline': outline,
-                  'chapter': chapter, 'previous_summaries': summaries, 'sources': sources,
-                  'word_range': [minimum, maximum],
-                  'instruction': ('One narrator; no speaker A/B dialogue. At most two sentences per scene. '
-                                  'Open with a strong hook and concise context. End non-final parts on a '
-                                  'truthful cliffhanger; final part delivers the ending. No repeat recap filler.'),
-                  'allowed': {'poses': sorted(POSES), 'expressions': sorted(EXPRESSIONS),
-                              'backgrounds': sorted(BACKGROUNDS), 'camera': sorted(CAMERAS),
-                              'effects': sorted(EFFECTS), 'props': sorted(PROPS)},
-                  'schema': {'summary': 'brief continuity summary', 'scenes': [
-                      {'narration': 'spoken text', 'characters_on_screen': [
-                          {'id': 'cast id', 'x': 0.3, 'pose': 'standing', 'expression': 'neutral'}],
-                       'background': 'palace', 'camera': 'push_in', 'effects': ['cut'], 'props': [],
-                       'emphasis_words': [], 'source_ids': [], 'uncertainty': 'unverified'}]}}
-        result = llm.generate(SYSTEM, prompt, lambda d: validate_chapter(
-            d, {c['id']: c['name'] for c in outline['cast']},
-            {s['id'] for s in sources}, number, minimum, maximum))
+        chapter_path = progress_dir / f"chapter_{number:02d}.json" if progress_dir else None
+        result = None
+        resumed = False
+        if chapter_path and chapter_path.exists():
+            try:
+                result = validate_chapter(read_json(chapter_path), cast_map, source_ids,
+                                          number, minimum, maximum)
+                result["title"] = chapter["title"]
+                resumed = True
+                logging.info("Restored accepted chapter %s from %s", number, chapter_path)
+            except (OSError, ValueError, KeyError, TypeError):
+                logging.warning("Ignoring invalid cached chapter %s", chapter_path)
+        if result is None:
+            chapter_prompt = {
+                'task': 'chapter', 'topic': topic, 'mode': mode,
+                'story_context': story_context, 'chapter': chapter,
+                'previous_summaries': summaries[-2:],
+                'sources': compact_sources, 'word_range': [minimum, maximum],
+                'instruction': (
+                    'One narrator; no speaker A/B dialogue. At most two sentences per scene. '
+                    'Aim for the requested word range, but prioritize complete, accurate narration. '
+                    'Open with a strong hook and concise context. End non-final parts on a truthful '
+                    'cliffhanger; final part delivers the ending. Do not repeat recap filler.'),
+                'allowed': allowed, 'schema': chapter_schema,
+            }
+            result = llm.generate(SYSTEM, chapter_prompt, lambda d: validate_chapter(
+                d, cast_map, source_ids, number, minimum, maximum))
+            result['title'] = chapter['title']
+
+        if not resumed and result["word_count"] < target_minimum:
+            shortfall = target_minimum - result["word_count"]
+            logging.warning("Chapter %s is short by %s words; trying one scene-extension call",
+                            number, shortfall)
+            extend_prompt = {
+                'task': 'chapter_extend', 'topic': topic, 'mode': mode,
+                'story_context': story_context, 'chapter': chapter,
+                'previous_summaries': summaries[-2:],
+                'existing_chapter': {
+                    "number": number, "summary": result["summary"],
+                    "scenes": result["scenes"], "word_count": result["word_count"],
+                },
+                'word_shortfall': shortfall,
+                'sources': compact_sources, 'allowed': allowed,
+                'instruction': (
+                    'Extend the existing chapter by appending NEW scenes only. Do not rewrite or return '
+                    'the existing scenes. Preserve its facts and continuity. Add approximately '
+                    f'{shortfall} spoken words total across the new scenes. Return a summary and only '
+                    'the additional scenes, matching the provided chapter schema.'),
+                'schema': chapter_schema,
+            }
+            try:
+                additions = llm.generate(SYSTEM, extend_prompt, lambda d: validate_chapter(
+                    d, cast_map, source_ids, number, 1, 10000, minimum_scenes=1))
+                combined_scenes = (result["scenes"] + additions["scenes"])[:60]
+                for scene_index, scene in enumerate(combined_scenes, 1):
+                    scene["id"] = f"c{number:02d}s{scene_index:03d}"
+                added_count = sum(words(scene["narration"]) for scene in additions["scenes"])
+                candidate = {
+                    "number": number,
+                    "summary": additions.get("summary") or result["summary"],
+                    "scenes": combined_scenes,
+                    "word_count": sum(words(scene["narration"]) for scene in combined_scenes),
+                    "title": chapter["title"],
+                }
+                if candidate["word_count"] > result["word_count"]:
+                    result = candidate
+                    logging.info("Chapter %s extended by %s words; accepted total %s",
+                                 number, added_count, result["word_count"])
+                else:
+                    logging.warning("Chapter %s extension did not improve length; keeping original",
+                                    number)
+            except Exception as exc:
+                if getattr(exc, "status_code", None) in {400, 401, 403, 404} or "Non-retryable HTTP" in str(exc):
+                    raise
+                logging.warning("Chapter %s extension failed; accepting best attempt (%s words): %s",
+                                number, result["word_count"], type(exc).__name__)
+
+        if result["word_count"] < target_minimum or result["word_count"] > maximum:
+            logging.warning("Accepting chapter %s at %s words; target %s–%s is soft",
+                            number, result["word_count"], minimum, maximum)
         result['title'] = chapter['title']
         chapters.append(result)
         summaries.append(result['summary'])
+        if chapter_path:
+            write_json(chapter_path, result)
+            logging.info("Saved accepted chapter %s to %s", number, chapter_path)
+
     return {'schema_version': 1, 'topic': topic, 'mode': mode, 'niche': niche,
             'target_minutes': minutes if mode == 'long' else None,
             'target_seconds_per_part': [60, 90] if mode == 'shorts' else None,
