@@ -67,6 +67,11 @@ TINTS = {
     "snow_forest": (108, 127, 132),
 }
 
+# Apply the logical portrait frame before Manim constructs the scene camera.
+# CLI pixel resolution remains explicit in tools/render_manim_poc.py.
+config.frame_width = FRAME_W
+config.frame_rate = 30
+
 
 def _plate(theme: str, key: str) -> Image.Image:
     shot = {"id": key, "type": "illustration", "theme": theme}
@@ -348,8 +353,6 @@ class ManimHybridProof(MovingCameraScene):
             self.transients.append(mob)
 
     def construct(self):
-        config.frame_width = FRAME_W
-        config.frame_rate = 30
         self.transients = []
         self.hook = _hook_group()
         self.camera.background_color = "#080706"
