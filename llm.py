@@ -472,7 +472,7 @@ class JsonLLM:
                         if status in {400, 401, 403, 404}:
                             raise ProviderHTTPError(
                                 status, body,
-                                f"Non-retryable HTTP {status} from {provider['name']}/{model}") from exc
+                                f"Non-retryable HTTP {status} from {provider['name']}/{model}; All script providers failed fast") from exc
                         # Schema/JSON validation gets one prompt correction, not an API retry.
                         if isinstance(exc, (ValueError, KeyError, TypeError)) and status is None:
                             if not corrected_prompt:
