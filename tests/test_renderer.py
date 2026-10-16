@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 from captions import build_ass,stamp,word_timings
-from characters import character
+from characters import character, resolve_character_asset
 from story import POSES,ACCESSORIES,EXPRESSIONS,BACKGROUNDS,PROPS
 from render import timeline,chapter_audio,smoke_story
 from scenes import backdrop,Scene,prop_icon
@@ -39,9 +39,39 @@ class RendererTests(unittest.TestCase):
             Image.new('RGBA',(40,80),'red').save(Path(d)/'custom_standing.png')
             im=character('custom','standing','neutral','none','#1FA2A6',100,assets=d);self.assertEqual(im.getpixel((50,99)),(255,0,0,255))
             character('absent','standing','neutral','crown','#E0A526',100,assets=d);self.assertEqual(len(list(Path(d).iterdir())),1)
+    def test_pose_packs_keep_character_identity_consistent(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            for folder in ('stickman_standing_idle_pose','stickman_character_pointing_or_e',
+                           'stickman_character_in_surprised','stickman_running_against_magenta',
+                           'stickman_crouching_and_searching','stickman_celebrating_new_pose',
+                           'character_in_green_robe_standing','elder_character_in_neutral_pose'):
+                target=root/folder;target.mkdir()
+                Image.new('RGB',(40,60),(255,0,255)).save(target/'asset.jpg')
+            expected={
+                'standing':'stickman_standing_idle_pose',
+                'talking':'stickman_standing_idle_pose',
+                'pointing':'stickman_character_pointing_or_e',
+                'shocked':'stickman_character_in_surprised',
+                'running':'stickman_running_against_magenta',
+                'kneeling':'stickman_crouching_and_searching',
+                'laughing':'stickman_celebrating_new_pose',
+                'fighting':'stickman_standing_idle_pose',
+                'falling':'stickman_standing_idle_pose',
+                'dead':'stickman_standing_idle_pose',
+                'thinking':'stickman_standing_idle_pose',
+                'praying':'stickman_standing_idle_pose',
+            }
+            for pose,folder in expected.items():
+                self.assertEqual(resolve_character_asset(root,'speaker_a',pose,'none').parent.name,folder)
+            royal={resolve_character_asset(root,'mansa_musa',pose,'crown') for pose in expected}
+            self.assertEqual(len(royal),1)
+            elder={resolve_character_asset(root,'elder_advisor',pose,'beard') for pose in expected}
+            self.assertEqual(len(elder),1)
+
     def test_nested_jpg_magenta_key_is_transparent(self):
         with tempfile.TemporaryDirectory() as d:
-            folder=Path(d)/'character_standing_in_idle_pose';folder.mkdir()
+            folder=Path(d)/'stickman_standing_idle_pose';folder.mkdir()
             src=Image.new('RGB',(80,120),(255,0,255))
             for x in range(25,55):
                 for y in range(20,100):src.putpixel((x,y),(30,180,80))
@@ -49,7 +79,7 @@ class RendererTests(unittest.TestCase):
             im=character('cast_a','standing','neutral','none','#1FA2A6',120,assets=d)
             self.assertEqual(im.mode,'RGBA')
             self.assertEqual(im.getpixel((60,60))[3],255)
-            self.assertEqual(im.getpixel((25,10))[3],0)  # magenta source pixel, not empty canvas
+            self.assertEqual(im.getpixel((22,10))[3],0)  # magenta source pixel, not empty canvas
             self.assertTrue(any(p.suffix=='.jpg' for p in folder.iterdir()))
     def test_scene_determinism_and_motion(self):
         story=smoke_story();data=story['chapters'][0]['scenes'][2];cast={c['id']:c for c in story['outline']['cast']};scene=Scene(data,cast,(320,568),5,word_timings(data['narration'],5))
