@@ -1,0 +1,100 @@
+{
+  "title": "Mansa Musa's 1324 Pilgrimage: The Journey That Redefined Mali",
+  "hook": "When the richest man of his age set out with a mountain of gold, the world took notice—and the Sahara never looked the same.",
+  "logline": "A single pilgrimage turns the humble empire of Mali into a legend, reshaping trade, faith, and global perception.",
+  "cast": [
+    {
+      "id": "mansa_musa",
+      "name": "Mansa Musa",
+      "role": "Emperor of Mali",
+      "trait": "generous to a fault, with a vision of divine legitimacy",
+      "accessory": "crown",
+      "accent": "#C0392B"
+    },
+    {
+      "id": "karim",
+      "name": "Karim al‑Farsi",
+      "role": "Caravan commander",
+      "trait": "meticulous organizer, keeps the camels in line",
+      "accessory": "headwrap",
+      "accent": "#1FA2A6"
+    },
+    {
+      "id": "fatima",
+      "name": "Fatima bint Yusuf",
+      "role": "North African merchant",
+      "trait": "sharp‑tongued trader who knows every market’s pulse",
+      "accessory": "sash",
+      "accent": "#E0A526"
+    },
+    {
+      "id": "sankore",
+      "name": "Sankore the Scholar",
+      "role": "Mali’s court intellectual",
+      "trait": "eager to record the pilgrimage for posterity",
+      "accessory": "glasses",
+      "accent": "#2B2B2B"
+    },
+    {
+      "id": "courtier",
+      "name": "Courtier Jali",
+      "role": "Skeptical adviser",
+      "trait": "cautious, worries about the empire’s coffers",
+      "accessory": "none",
+      "accent": "#1FA2A6"
+    }
+  ],
+  "chapters": [
+    {
+      "number": 1,
+      "title": "The Decision in Niani",
+      "purpose": "Establish why Mansa Musa chooses a hajj and what he hopes to gain.",
+      "key_events": [
+        "Musa declares his intention to fulfill the pilgrimage to Mecca.",
+        "Courtier Jali warns of the financial risk.",
+        "Sankore drafts a plan to document the journey as a legacy project."
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Assembling the Golden Caravan",
+      "purpose": "Show the scale of preparation and the symbolic weight of wealth.",
+      "key_events": [
+        "Karim organizes thousands of camels, soldiers, and scholars.",
+        "Musa loads the caravan with gold, gifts, and a retinue of dignitaries.",
+        "Fatima negotiates trade permits for crossing the Sahara."
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Crossing the Desert – Trials and Triumphs",
+      "purpose": "Depict the hardships of the Sahara and the caravan’s growing reputation.",
+      "key_events": [
+        "Sandstorms test the caravan’s resilience.",
+        "Musa’s generosity to oasis towns earns loyalty and fresh supplies.",
+        "Rumors of a “golden king” begin to spread among nomads."
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Mecca and the Ripple Effect",
+      "purpose": "Illustrate the pilgrimage’s climax and its immediate economic impact.",
+      "key_events": [
+        "Musa performs the rites of hajj, drawing crowds of awe.",
+        "He distributes gold in Cairo, causing a temporary inflation.",
+        "Fatima secures new trade agreements for Mali’s gold, salt, and ivory."
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Return and Re‑branding of Mali",
+      "purpose": "Conclude with how the journey reshapes Mali’s global standing.",
+      "key_events": [
+        "Musa returns to Niani with enhanced prestige and new diplomatic contacts.",
+        "Courtier Jali acknowledges the economic boost despite earlier doubts.",
+        "Sankore’s chronicles spread across the Islamic world, cementing Mali’s legend."
+      ]
+    }
+  ],
+  "ending": "Back in Niani, the emperor’s golden pilgrimage becomes the cornerstone of Mali’s identity—its wealth, piety, and cultural influence echoing through centuries, all recorded in the scholar’s ink‑stained scrolls."
+}

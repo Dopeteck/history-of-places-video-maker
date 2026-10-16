@@ -1,0 +1,183 @@
+{
+  "number": 2,
+  "summary": "The caravan’s preparations swell as distant allies are summoned; a royal emissary secures a water‑well, and the court watches the glittering procession slip beyond the palace gates.",
+  "scenes": [
+    {
+      "id": "c02s001",
+      "narration": "The palace courtyard shimmers with gold as the emperor’s retinue gathers, the weight of wealth palpable in the air.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s002",
+      "narration": "Karim al‑Farsi directs thousands of camels, soldiers, and scholars into the desert’s path, each step echoing the empire’s ambition.",
+      "characters_on_screen": [
+        {
+          "id": "karim",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "market",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s003",
+      "narration": "Mansa Musa, crown gleaming, personally places the last gold coin into the caravan’s chest, a gesture that will soon ripple across continents.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s004",
+      "narration": "Fatima bint Yusuf negotiates trade permits with desert merchants, her calm voice a counterpoint to the empire’s thunderous wealth.",
+      "characters_on_screen": [
+        {
+          "id": "fatima",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s005",
+      "narration": "The golden caravan departs, its glittering path disappearing into the dunes, leaving the palace in stunned silence as the world watches the empire’s first step into legend.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s006",
+      "narration": "From the western dunes, a lone messenger arrives bearing a sealed letter from the Sultan of Egypt, granting safe passage and promising market stalls for the gold‑laden travelers.",
+      "characters_on_screen": [
+        {
+          "id": "courtier",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c02s007",
+      "narration": "At the palace gates, Fatima lifts a crystal flask of desert water, a symbolic offering, as the caravan’s first camel steps forward, its harness jingling with newly minted gold.",
+      "characters_on_screen": [
+        {
+          "id": "fatima",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "mansa_musa",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 165,
+  "title": "Assembling the Golden Caravan"
+}

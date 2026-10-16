@@ -1,0 +1,213 @@
+{
+  "story_sha256": "900d49eac351f4ad5df359af95db7a73a3b8578c6fea348e9982451686ca9ba3",
+  "report_sha256": "5e2129e5068c6c7dd0ad6d5d423bff469d8495b7bc15274863524b359faaa634",
+  "reviewer": "",
+  "full_script_reviewed": false,
+  "sources_checked": [],
+  "claims": [
+    {
+      "id": "c01s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s001q02",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s003q02",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "number": 1,
+  "summary": "Mansa Musa's resolve hardens as he secures allies and prepares the caravan; the court's doubts give way to cautious optimism, while the scholar finalizes the chronicle, promising a legacy that will outshine the desert sands.",
+  "scenes": [
+    {
+      "id": "c01s001",
+      "narration": "The sun slants over Niani’s palace courtyard as Mansa Musa, a figure draped in opulence, announces his pilgrimage to Mecca, a move that would bind Mali’s destiny to the wider Muslim world.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "crown"
+      ],
+      "emphasis_words": [
+        "destiny"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s002",
+      "narration": "Courtier Jali, eyes narrowed, cautions the emperor that the journey could drain the treasury, hinting at the peril of a gold‑laden caravan.",
+      "characters_on_screen": [
+        {
+          "id": "courtier",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "angry"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_left",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "caution",
+        "treasury"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c01s003",
+      "narration": "Sankore, with ink‑stained fingers, drafts a meticulous plan to chronicle the expedition, foreseeing its legacy as a testament to Mali’s wealth and piety.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.5,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "legacy",
+        "chronicle"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c01s004",
+      "narration": "As the caravan gathers at dawn, the emperor’s resolve gleams, but the weight of gold threatens to eclipse the very horizon he seeks to reach.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "sly"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [
+        "gold",
+        "horizon"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s005",
+      "narration": "At sunrise, Karim al‑Farsi steps forward, his headwrap fluttering, and gestures to the assembled merchants and camel drivers, silently pledging his expertise to steer the gold‑laden caravan across the unforgiving Sahara.",
+      "characters_on_screen": [
+        {
+          "id": "karim",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "sly"
+        }
+      ],
+      "background": "street",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [
+        "gold‑laden",
+        "Sahara"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s006",
+      "narration": "Sankore unrolls a fresh parchment, ink glistening, and sketches a route map, noting each oasis and trade hub, confident that this written record will preserve Mali’s glory long after the caravan’s dust settles.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.4,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "route map",
+        "glory"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 170,
+  "title": "The Decision in Niani"
+}

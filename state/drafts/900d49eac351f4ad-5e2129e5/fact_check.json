@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "story_sha256": "900d49eac351f4ad5df359af95db7a73a3b8578c6fea348e9982451686ca9ba3",
+  "claims": [
+    {
+      "id": "c01s001q01",
+      "scene_id": "c01s001",
+      "claim": "Mansa Musa announced a pilgrimage to Mecca",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Mansa Musa’s pilgrimage to Mecca",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s002q01",
+      "scene_id": "c01s002",
+      "claim": "Courtier Jali warned that the pilgrimage could drain Mali’s treasury",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Jali’s warning about treasury impact",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s003q01",
+      "scene_id": "c01s003",
+      "claim": "Sankore drafted a plan to chronicle the expedition",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Sankore’s role in documenting the expedition",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s004q01",
+      "scene_id": "c01s004",
+      "claim": "The weight of gold threatened the journey’s success",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Impact of gold on the caravan",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s005q01",
+      "scene_id": "c01s005",
+      "claim": "Karim al‑Farsi pledged expertise to lead the caravan across the Sahara",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Karim al‑Farsi’s involvement and expertise",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s006q01",
+      "scene_id": "c01s006",
+      "claim": "Sankore sketched a route map noting oases and trade hubs",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Details of Sankore’s route map",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s001q01",
+      "scene_id": "c02s001",
+      "claim": "An emperor’s retinue gathered in a palace courtyard that shimmered with gold.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Existence of such a ceremony and description of the courtyard.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s002q01",
+      "scene_id": "c02s002",
+      "claim": "Karim al‑Farsi directed thousands of camels, soldiers, and scholars into the desert.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Historical figure Karim al‑Farsi and his leadership of a large desert expedition.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s003q01",
+      "scene_id": "c02s003",
+      "claim": "Mansa Musa personally placed the last gold coin into the caravan’s chest.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Mansa Musa’s involvement in a specific gold‑caravan departure and the act of placing a gold coin.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s004q01",
+      "scene_id": "c02s004",
+      "claim": "Fatima bint Yusuf negotiated trade permits with desert merchants.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Historical record of a figure named Fatima bint Yusuf acting as a negotiator for trade permits.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s005q01",
+      "scene_id": "c02s005",
+      "claim": "A golden caravan departed, its glittering path disappearing into the dunes, and the world watched the empire’s first step into legend.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Documented departure of a gold‑laden caravan that attracted worldwide attention.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s006q01",
+      "scene_id": "c02s006",
+      "claim": "A messenger from the Sultan of Egypt arrived bearing a sealed letter granting safe passage and market stalls for gold‑laden travelers.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Existence of such a letter from an Egyptian Sultan granting safe passage to a gold caravan.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s007q01",
+      "scene_id": "c02s007",
+      "claim": "Fatima lifted a crystal flask of desert water as a symbolic offering when the caravan’s first camel stepped forward, its harness jingling with newly minted gold.",
+      "confidence": 0.2,
+      "source_ids": [],
+      "what_to_verify": "Ceremonial act involving a crystal flask and newly minted gold on a caravan’s camel harness.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s001q01",
+      "scene_id": "c03s001",
+      "claim": "A sandstorm curls over the dunes, turning the desert into a sea of white",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Historical records or meteorological accounts of sandstorms in the specific desert region at the time of the caravan",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s002q01",
+      "scene_id": "c03s002",
+      "claim": "At an oasis, the emperor distributes gold and fresh water, securing loyalty from weary traders and nomads alike",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Accounts of an emperor distributing gold and water at an oasis to secure loyalty; identification of the emperor and the oasis",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s003q01",
+      "scene_id": "c03s003",
+      "claim": "Rumors swirl in the caravan’s wake: a “golden king” rides across the dunes, his wealth a beacon for distant tribes",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Historical documentation of a figure referred to as a “golden king” traveling across dunes with notable wealth; evidence of rumors among traders",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s004q01",
+      "scene_id": "c03s004",
+      "claim": "The desert’s harshness tempered by the promise of glory and the weight of gold in every satchel",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Descriptions of the caravan’s morale and the economic value of gold carried",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s005q01",
+      "scene_id": "c03s005",
+      "claim": "At the bustling town of Tamentit, the caravan rolls into the sand‑worn square, and Mansa Musa orders the digging of a new well, gifting each household a sack of gold dust",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Historical evidence that Mansa Musa visited Tamentit, ordered a well, and distributed gold dust to households",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s006q01",
+      "scene_id": "c03s006",
+      "claim": "Sankore the Scholar records the scene, noting how generosity fuels legend, and how the gold‑laden path reshapes trade routes for everlasting generations to come",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Existence of a scholar named Sankore who documented this event; records indicating the impact of the caravan’s generosity on trade routes",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s001q01",
+      "scene_id": "c04s001",
+      "claim": "Mansa Musa bowed before the Kaaba in Mecca during his pilgrimage.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Historical accounts of Mansa Musa's Hajj and whether he performed the bowing ritual at the Kaaba.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s002q01",
+      "scene_id": "c04s002",
+      "claim": "Mansa Musa's caravan distributed gold coins in the markets of Cairo, causing a temporary inflation of prices.",
+      "confidence": 0.7,
+      "source_ids": [],
+      "what_to_verify": "Contemporary or near-contemporary reports of Mansa Musa's 1324–1325 Hajj and its economic impact on Cairo.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s003q01",
+      "scene_id": "c04s003",
+      "claim": "A person named Fatima negotiated with North African traders to exchange gold, salt, and ivory for exclusive rights to Mali’s caravans.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Existence of a historical figure named Fatima associated with Mali’s trade negotiations in the 14th century.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s004q01",
+      "scene_id": "c04s004",
+      "claim": "Scholars such as Sankore the Scholar recorded the impact of Mansa Musa's pilgrimage on Mali’s culture.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Historical records attributing writings on Mansa Musa’s pilgrimage to a scholar named Sankore.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s005q01",
+      "scene_id": "c04s005",
+      "claim": "Mansa Musa's entourage traveled with a caravan of camels laden with silks and gold across the desert.",
+      "confidence": 0.8,
+      "source_ids": [],
+      "what_to_verify": "Descriptions of the composition of Mansa Musa’s Hajj caravan in medieval sources.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s006q01",
+      "scene_id": "c04s006",
+      "claim": "Fatima sealed a pact with North African merchants to supply Mali’s gold, salt, and ivory, influencing Mediterranean trade for decades.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Evidence of a formal trade agreement between Mali and North African merchants attributed to a figure named Fatima.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s001q01",
+      "scene_id": "c05s001",
+      "claim": "The setting is Niani, the capital of the Mali Empire.",
+      "confidence": 0.7,
+      "source_ids": [],
+      "what_to_verify": "Verify that Niani was the capital of Mali",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s001q02",
+      "scene_id": "c05s001",
+      "claim": "The palace courtyard is illuminated by long shadows from the sun.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Verify descriptions of sunlight in Niani palace courtyard",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s002q01",
+      "scene_id": "c05s002",
+      "claim": "Musa is greeted by his court and wears a crown.",
+      "confidence": 0.8,
+      "source_ids": [],
+      "what_to_verify": "Verify Musa's reign and presence of a crown",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s003q01",
+      "scene_id": "c05s003",
+      "claim": "Jali is an adviser who expresses skepticism.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify existence of Jali as an adviser in historical records",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s003q02",
+      "scene_id": "c05s003",
+      "claim": "Musa presents a handful of gold coins as proof of prosperity.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Verify accounts of Musa presenting gold coins",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s004q01",
+      "scene_id": "c05s004",
+      "claim": "Sankore is a scholar who unfurls a scroll.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Verify Sankore’s identity and his use of scrolls",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s005q01",
+      "scene_id": "c05s005",
+      "claim": "Ambassadors arrive in Mali by dusk, traders mention the golden route.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify trade routes and ambassador visits to Mali",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s006q01",
+      "scene_id": "c05s006",
+      "claim": "Ambassadors from Fez and Cairo seek trade pacts with Mali.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Verify diplomatic relations between Mali, Fez, and Cairo",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s007q01",
+      "scene_id": "c05s007",
+      "claim": "Sankore's scrolls reach Baghdad and Cordoba.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify transmission of Mali's documents to Baghdad and Cordoba",
+      "status": "needs_human_review"
+    }
+  ],
+  "warning": "LLM claim extraction can miss errors. Review the full narration against real sources.",
+  "status": "needs_human_review"
+}

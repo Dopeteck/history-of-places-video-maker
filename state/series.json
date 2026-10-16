@@ -9,6 +9,15 @@
       "parts": 1,
       "rendered_parts": [],
       "updated_at": "2026-10-15T12:09:31.685366+00:00"
+    },
+    "900d49eac351f4ad-5e2129e5": {
+      "topic": "Mansa Musa's 1324 pilgrimage: the journey that reshaped Mali's reputation",
+      "mode": "long",
+      "sha256": "900d49eac351f4ad5df359af95db7a73a3b8578c6fea348e9982451686ca9ba3",
+      "status": "awaiting_review",
+      "parts": 1,
+      "rendered_parts": [],
+      "updated_at": "2026-10-16T22:20:49.928555+00:00"
     }
   }
 }

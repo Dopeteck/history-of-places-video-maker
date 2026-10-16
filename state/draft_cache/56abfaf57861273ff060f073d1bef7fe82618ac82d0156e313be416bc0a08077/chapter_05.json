@@ -1,0 +1,241 @@
+{
+  "number": 5,
+  "summary": "Mansa Musa's triumphant return sparks diplomatic overtures and cultural flourishing, as the court embraces newfound wealth and the empire's reputation spreads across the Islamic world.",
+  "scenes": [
+    {
+      "id": "c05s001",
+      "narration": "Back in Niani, the sun casts long shadows over the palace courtyard, the scent of incense mingling with the metallic tang of coins.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "courtier",
+          "x": 0.7,
+          "pose": "thinking",
+          "expression": "sly"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "crown",
+        "coin"
+      ],
+      "emphasis_words": [
+        "Niani",
+        "palace"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s002",
+      "narration": "Musa greets his court with a humble nod, the weight of his crown barely perceptible beneath the desert wind.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "sankore",
+          "x": 0.6,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s003",
+      "narration": "Jali, the skeptical adviser, watches as the emperor presents a handful of gold coins, his eyes widening at the tangible proof of prosperity.",
+      "characters_on_screen": [
+        {
+          "id": "courtier",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "shocked"
+        },
+        {
+          "id": "mansa_musa",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "static",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "coin",
+        "crown"
+      ],
+      "emphasis_words": [
+        "gold",
+        "prosperity"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s004",
+      "narration": "Sankore unfurls a scroll, its parchment already stained with ink, and reads aloud the chronicles of the pilgrimage, his voice echoing across the courtyard.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "mansa_musa",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "pan_left",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "chronicles"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s005",
+      "narration": "By dusk, the empire’s new reputation settles like a warm shawl around Mali; ambassadors arrive, traders whisper of the golden route, and the scholar’s words travel beyond the desert’s edge, cementing the empire’s legend for generations.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "fatima",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll",
+        "coin"
+      ],
+      "emphasis_words": [
+        "ambassadors",
+        "golden route",
+        "legend"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s006",
+      "narration": "Ambassadors from Fez and Cairo unfurl their banners, seeking trade pacts; Musa nods, his golden generosity now a diplomatic currency as valuable as any coin.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "fatima",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll",
+        "coin"
+      ],
+      "emphasis_words": [
+        "ambassadors",
+        "trade",
+        "golden"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c05s007",
+      "narration": "Sankore's scrolls travel to Baghdad and Cordoba, where scholars cite Mali's wealth and piety, sealing its legend in the annals of Islamic history.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "scholars",
+        "legend",
+        "history"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 173,
+  "title": "Return and Re‑branding of Mali"
+}

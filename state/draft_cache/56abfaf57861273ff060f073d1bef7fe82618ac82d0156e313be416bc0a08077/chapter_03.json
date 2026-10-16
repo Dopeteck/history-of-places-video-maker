@@ -1,0 +1,198 @@
+{
+  "number": 3,
+  "summary": "Musa’s caravan deepens its impact, building a well at Tamentit and sharing night‑time generosity, cementing the golden legend across the Sahara.",
+  "scenes": [
+    {
+      "id": "c03s001",
+      "narration": "A sandstorm curls over the dunes, turning the desert into a sea of white, testing the caravan’s resolve.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_left",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s002",
+      "narration": "At an oasis, the emperor distributes gold and fresh water, securing loyalty from weary traders and nomads alike.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "fatima",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "river",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s003",
+      "narration": "Rumors swirl in the caravan’s wake: a “golden king” rides across the dunes, his wealth a beacon for distant tribes.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        },
+        {
+          "id": "courtier",
+          "x": 0.8,
+          "pose": "standing",
+          "expression": "sly"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c03s004",
+      "narration": "The caravan presses onward, the desert’s harshness tempered by the promise of glory and the weight of gold in every satchel.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "battlefield",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s005",
+      "narration": "At the bustling town of Tamentit, the caravan rolls into the sand‑worn square, and Mansa Musa orders the digging of a new well, gifting each household a sack of gold dust. The townsfolk, eyes wide with disbelief, rush to fill their jars, whispering that the desert itself has turned generous today.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "karim",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "fatima",
+          "x": 0.8,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "market",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c03s006",
+      "narration": "Under a canopy of stars, the caravan camps beside a flickering fire; Karim distributes dates while Fatima trades silk, and Mansa Musa, seated on a low stool, watches the horizon. Sankore the Scholar records the scene, noting how generosity fuels legend, and how the gold‑laden path reshapes trade routes for everlasting generations to come.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "fatima",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "sankore",
+          "x": 0.2,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "hut",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 184,
+  "title": "Crossing the Desert – Trials and Triumphs"
+}

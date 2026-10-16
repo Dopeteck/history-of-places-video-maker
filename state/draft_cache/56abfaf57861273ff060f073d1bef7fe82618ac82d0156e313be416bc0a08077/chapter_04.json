@@ -1,0 +1,175 @@
+{
+  "number": 4,
+  "summary": "Mansa Musa's arrival in Mecca ignites awe, his generosity floods Cairo with gold, and Fatima's negotiations seal new trade routes, while scholars back home chronicle the empire's rising prestige.",
+  "scenes": [
+    {
+      "id": "c04s001",
+      "narration": "The sun set over Mecca’s rooftops as Mansa Musa, crowned in gold, bowed before the Kaaba, a silent roar of awe echoing through the crowd.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.5,
+          "pose": "praying",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_left",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "crown"
+      ],
+      "emphasis_words": [
+        "Kaaba"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s002",
+      "narration": "In the bustling markets of Cairo, Musa’s caravan opened its satchel, and gold coins tumbled onto the sand, startling merchants and inflating prices for a fleeting season.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "fatima",
+          "x": 0.4,
+          "pose": "talking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "market",
+      "camera": "push_in",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c04s003",
+      "narration": "Far from the desert’s heat, Fatima negotiated with North African traders, promising a steady stream of gold, salt, and ivory in exchange for exclusive rights to Mali’s caravans.",
+      "characters_on_screen": [
+        {
+          "id": "fatima",
+          "x": 0.5,
+          "pose": "pointing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "trade"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c04s004",
+      "narration": "Back in Niani, scholars like Sankore the Scholar recorded the pilgrimage’s impact, turning the empire’s newfound wealth into a cultural cornerstone that would echo for centuries.",
+      "characters_on_screen": [
+        {
+          "id": "sankore",
+          "x": 0.5,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "cultural"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s005",
+      "narration": "At the holy rites, Musa's entourage unfurled a caravan of camels laden with silks and gold, each step echoing across the desert as pilgrims whispered of a king whose wealth could gild the very sands.",
+      "characters_on_screen": [
+        {
+          "id": "mansa_musa",
+          "x": 0.55,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "karim",
+          "x": 0.35,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "spear",
+        "crown"
+      ],
+      "emphasis_words": [
+        "caravan",
+        "gold"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s006",
+      "narration": "Later, Fatima sealed a pact with North African merchants, promising a steady flow of Mali's gold, salt and ivory; the agreement would soon ripple through Mediterranean markets, reshaping trade maps for decades.",
+      "characters_on_screen": [
+        {
+          "id": "fatima",
+          "x": 0.5,
+          "pose": "pointing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "trade",
+        "pact"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    }
+  ],
+  "word_count": 173,
+  "title": "Mecca and the Ripple Effect"
+}
