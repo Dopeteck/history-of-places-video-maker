@@ -39,6 +39,18 @@ class RendererTests(unittest.TestCase):
             Image.new('RGBA',(40,80),'red').save(Path(d)/'custom_standing.png')
             im=character('custom','standing','neutral','none','#1FA2A6',100,assets=d);self.assertEqual(im.getpixel((50,99)),(255,0,0,255))
             character('absent','standing','neutral','crown','#E0A526',100,assets=d);self.assertEqual(len(list(Path(d).iterdir())),1)
+    def test_nested_jpg_magenta_key_is_transparent(self):
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d)/'character_standing_in_idle_pose';folder.mkdir()
+            src=Image.new('RGB',(80,120),(255,0,255))
+            for x in range(25,55):
+                for y in range(20,100):src.putpixel((x,y),(30,180,80))
+            src.save(folder/'character_standing_in_idle_pose.jpg',quality=100)
+            im=character('cast_a','standing','neutral','none','#1FA2A6',120,assets=d)
+            self.assertEqual(im.mode,'RGBA')
+            self.assertEqual(im.getpixel((60,60))[3],255)
+            self.assertEqual(im.getpixel((2,2))[3],0)
+            self.assertTrue(any(p.suffix=='.jpg' for p in folder.iterdir()))
     def test_scene_determinism_and_motion(self):
         story=smoke_story();data=story['chapters'][0]['scenes'][2];cast={c['id']:c for c in story['outline']['cast']};scene=Scene(data,cast,(320,568),5,word_timings(data['narration'],5))
         self.assertEqual(scene.frame(1).tobytes(),scene.frame(1).tobytes());self.assertNotEqual(scene.frame(1).tobytes(),scene.frame(2).tobytes())
