@@ -117,7 +117,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: character-asset-smoke-\${{ github.run_id }}
+          name: character-asset-smoke-${{ github.run_id }}
           retention-days: 7
           if-no-files-found: warn
           path: |
