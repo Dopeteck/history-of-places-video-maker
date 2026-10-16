@@ -45,7 +45,7 @@ class RendererTests(unittest.TestCase):
             for folder in ('stickman_standing_idle_pose','stickman_character_pointing_or_e',
                            'stickman_character_in_surprised','stickman_running_against_magenta',
                            'stickman_crouching_and_searching','stickman_celebrating_new_pose',
-                           'stickman_king_holding_gold','elder_character_in_neutral_pose'):
+                           'character_asset_with_yellow_turban','elder_character_in_neutral_pose'):
                 target=root/folder;target.mkdir()
                 Image.new('RGB',(40,60),(255,0,255)).save(target/'asset.jpg')
             expected={
