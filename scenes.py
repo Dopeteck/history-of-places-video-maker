@@ -195,7 +195,13 @@ class Scene:
         if 'shake' in d['effects'] and t<.65:
             canvas=Image.new('RGB',self.size,IVORY);canvas.paste(im,(round(math.sin(t*70)*w*.006),round(math.cos(t*85)*h*.004)));im=canvas
         if 'fade' in d['effects'] and t<.25:im=Image.blend(Image.new('RGB',self.size,IVORY),im,t/.25)
-        if self.heading:centered_text(im,self.heading,h*.1,w*.84,max(18,int(w*(.055 if h>w else .028))))
+        if self.heading:
+            d=ImageDraw.Draw(im)
+            top, bottom=int(h*.025),int(h*.125)
+            d.rounded_rectangle((int(w*.035),top,int(w*.965),bottom),
+                                radius=max(8,int(min(w,h)*.012)),fill=IVORY,
+                                outline=GOLD,width=max(2,int(min(w,h)*.002)))
+            centered_text(im,self.heading,h*.045,w*.84,max(18,int(w*(.055 if h>w else .028))))
         return im
 
 def title_card(title,label,size):
