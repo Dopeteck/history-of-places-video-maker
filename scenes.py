@@ -48,7 +48,7 @@ def _asset_backdrop(kind, size):
             stem=path.stem.lower().replace('_',' ').replace('-',' ')
             score=max((len(term) for term in terms if term in stem),default=0)
             if score:
-                candidates.append((score,path.name.lower(),str(folder),path))
+                candidates.append((score,0 if folder.name=='backgrounds' else 1,path.name.lower(),path))
     if not candidates:
         return None
     try:
