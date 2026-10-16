@@ -7,6 +7,7 @@ on:
     paths:
       - '*.py'
       - 'tests/**'
+      - 'assets/**'
       - 'requirements*.txt'
       - '.github/workflows/daily_story.yml'
   pull_request:
