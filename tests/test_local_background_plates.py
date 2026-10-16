@@ -46,7 +46,7 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             root=Path(tmp)
             assets=root/'assets'
             assets.mkdir()
-            Image.new('RGB',(320,180),'#C0392B').save(assets/'Golden_crown_illustration.jpg')
+            Image.new('RGB',(320,180),'#C0392B').save(assets/'Ancient_parchment_scroll_prop.jpg')
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
                 self.assertIsNone(scenes._asset_backdrop('throne',(320,180)))
 
@@ -60,7 +60,7 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             src.save(assets/'Golden_crown_illustration.jpg',quality=100)
             scenes._prop_asset.cache_clear()
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
-                image=scenes._prop_asset('crown',80)
+                image=scenes._prop_asset('scroll',80)
             self.assertIsNotNone(image)
             self.assertEqual(image.mode,'RGBA')
             self.assertEqual(image.getpixel((5,5))[3],0)
