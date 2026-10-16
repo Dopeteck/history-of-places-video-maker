@@ -57,7 +57,7 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             src=Image.new('RGB',(80,80),(255,0,255))
             for x in range(25,55):
                 for y in range(25,55):src.putpixel((x,y),(230,190,20))
-            src.save(assets/'Golden_crown_illustration.jpg',quality=100)
+            src.save(assets/'Ancient_parchment_scroll_prop.jpg',quality=100)
             scenes._prop_asset.cache_clear()
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
                 image=scenes._prop_asset('scroll',80)
