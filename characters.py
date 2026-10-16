@@ -35,19 +35,18 @@ def character(name,pose,expression,accessory,accent,size=380,blink=False,mouth='
                     'shocked':('shocked','surprised','surprise'),
                     'running':('running','run'),
                     'kneeling':('kneeling','crouching','crouch','searching'),
-                    'fighting':('fighting','fight','battle'),
-                    'falling':('falling','fall'),
-                    'dead':('dead','lying'),
+                    'fighting':('fighting','fight','battle','running','pointing'),
+                    'falling':('falling','fall','running','crouching'),
+                    'dead':('dead','lying','crouching','standing'),
                     'laughing':('celebrating','laughing','happy'),
                     'thinking':('thinking','holding','neutral'),
-                    'praying':('praying','kneeling','neutral'),
+                    'praying':('praying','kneeling','neutral','crouching','standing'),
                 }
                 scored=[]
                 for candidate in files:
                     label=(candidate.parent.name+' '+candidate.stem).lower().replace('_',' ').replace('-',' ')
                     score=max((len(term) for term in aliases.get(pose,(pose,)) if term in label),default=0)
                     scored.append((score,candidate.as_posix().lower(),candidate))
-                best=max(x[0] for x in scored)
                 # Stable choice: a pose-specific image beats a generic fallback.
                 chosen=next(x[2] for x in sorted(scored,key=lambda x:(-x[0],x[1])))
                 try:
