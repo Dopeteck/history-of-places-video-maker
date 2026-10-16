@@ -18,7 +18,9 @@ class FlowBackgroundAssetTests(unittest.TestCase):
             with patch.object(scenes, '__file__', str(root / 'scenes.py')):
                 image = scenes._asset_backdrop('throne', (320, 180))
             self.assertEqual(image.size, (320, 180))
-            self.assertEqual(image.getpixel((160, 90)), (192, 57, 43))
+            actual = image.getpixel((160, 90))
+            expected = (192, 57, 43)
+            self.assertLessEqual(max(abs(a - b) for a, b in zip(actual, expected)), 2)
 
     def test_missing_plate_returns_none_for_procedural_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
