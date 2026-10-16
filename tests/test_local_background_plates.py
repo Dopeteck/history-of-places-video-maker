@@ -41,6 +41,15 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
                 self.assertIsNone(scenes._asset_backdrop('market',(320,180)))
 
+    def test_river_and_battlefield_do_not_use_desert_plates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            assets=root/'assets';assets.mkdir()
+            Image.new('RGB',(320,180),'#C0392B').save(assets/'Sahara_desert_sand_dunes_animation_background.jpg')
+            with patch.object(scenes,'__file__',str(root/'scenes.py')):
+                self.assertIsNone(scenes._asset_backdrop('river',(320,180)))
+                self.assertIsNone(scenes._asset_backdrop('battlefield',(320,180)))
+
     def test_props_are_not_selected_as_backgrounds(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
