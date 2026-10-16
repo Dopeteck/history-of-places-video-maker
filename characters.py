@@ -30,7 +30,7 @@ _ASSET_PACKS = {
     },
     # These reference images do not yet contain matched pose sheets. Hold the
     # canonical design across poses until proper matched poses are supplied.
-    "royal": {"base": "character_in_green_robe_standing", "poses": {}},
+    "royal": {"base": "stickman_king_holding_gold", "poses": {}},
     "elder": {"base": "elder_character_in_neutral_pose", "poses": {}},
 }
 
