@@ -46,6 +46,11 @@ def _asset_backdrop(kind, size):
             if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
                 continue
             stem=path.stem.lower().replace('_',' ').replace('-',' ')
+            # Root assets also contain complete storyboard stills; those are not
+            # backgrounds and would duplicate characters when used as scene plates.
+            if folder.name!='backgrounds' and not any(token in stem for token in
+                    ('background','background plate','interior','courtyard','sand dunes','forest path','ship deck')):
+                continue
             score=max((len(term) for term in terms if term in stem),default=0)
             if score:
                 candidates.append((score,0 if folder.name=='backgrounds' else 1,path.name.lower(),path))
@@ -180,7 +185,7 @@ class Scene:
             elif a['pose'] not in {'dead','falling'}:y+=math.sin(t*3+i)*s*.008
             if 'pop_in' in d['effects'] and t<.35:y+=(1-t/.35)**2*h*.3
             x=max(-s*.25,min(w-s*.75,x));im.alpha_composite(sprite,(int(x),int(y)))
-        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.35+i*.12),h*.74,w*.022)
+        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.35+i*.12),h*.64,w*.022)
         im=im.convert('RGB');camera=d['camera'];progress=min(1,t/max(.01,self.duration));zoom=1+.045*progress if camera=='push_in' else 1.025 if camera.startswith('pan') else 1
         if zoom>1:
             cw,ch=int(w/zoom),int(h/zoom);x=(w-cw)/2;y=(h-ch)/2
