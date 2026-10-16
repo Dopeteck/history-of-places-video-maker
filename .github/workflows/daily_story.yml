@@ -7,12 +7,14 @@ on:
     paths:
       - '*.py'
       - 'tests/**'
+      - 'assets/**'
       - 'requirements*.txt'
       - '.github/workflows/daily_story.yml'
   pull_request:
     paths:
       - '*.py'
       - 'tests/**'
+      - 'assets/**'
       - 'requirements*.txt'
       - '.github/workflows/daily_story.yml'
   # Paused until the cloud test passes and the user chooses to enable scheduling.
@@ -81,6 +83,48 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+
+  render-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      STORY_ACTION: smoke
+      STORY_MODE: long
+      GITHUB_EVENT_NAME: pull_request
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: 'requirements*.txt'
+      - name: Install renderer system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run unit tests and real offline renders
+        run: |
+          python -m unittest discover -s tests -v
+          python workflow_run.py
+      - name: Upload smoke-render videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-asset-smoke-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/smoke-shorts/video.mp4
+            output/smoke-long/video.mp4
+            output/smoke-shorts/render-metadata.json
+            output/smoke-long/render-metadata.json
 
   story:
     if: github.ref == 'refs/heads/main'

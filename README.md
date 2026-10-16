@@ -4,6 +4,12 @@ One narrator tells a researched history story while original stick figures act i
 
 **Status:** story generation, review, Kokoro narration, procedural rendering, workflow orchestration, Telegram delivery code and progress persistence are implemented. Scheduling is deliberately paused. See [STAGE3.md](STAGE3.md) for renderer benchmarks. The archived V2 dialogue generator is `legacy_main.py`; the default `main.py` now runs the history pipeline.
 
+## Character image assets
+
+Custom overrides can be supplied as transparent PNGs named `<cast_id>_<pose>.png` directly inside `assets/characters/`. The renderer also scans nested folders for JPG/JPEG/PNG/WebP images and removes the uploaded pure-magenta (`#FF00FF)) background at load time. Files are kept in their original per-image folders; no generated conversion files are required. For best results, use filenames that describe the pose (for example, `standing`, `pointing`, `running`, `shocked`, or `crouching`). If no suitable custom image can be read, the procedural character renderer remains the fallback.
+
+The organized image library is a pose-image pool, not yet a hand-authored cast sheet: different poses may select different source illustrations. For a production story where each named character must look identical across every pose, add an explicit cast-to-asset mapping and prepare matching pose sets.
+
 ## Start in GitHub — no local setup
 
 1. Open **Actions → Stickman history pipeline**. A source-code push runs unit tests and the offline portrait/landscape smoke tests automatically. You can also choose **Run workflow → action: smoke** on `main`.

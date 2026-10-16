@@ -11,6 +11,71 @@ def font(size):
         if Path(path).exists():return ImageFont.truetype(path,size)
     raise RuntimeError('Install fonts-dejavu-core or Windows Arial Bold')
 
+def _asset_backdrop(kind, size):
+    """Load a matching background plate without moving or modifying source assets.
+
+    Prefer explicit plates under assets/backgrounds/, then inspect direct image files
+    in assets/ (the supplied scene plates currently live there). Never scan character
+    subfolders or treat prop illustrations as full-frame backgrounds.
+    """
+    root=Path(__file__).resolve().parent/'assets'
+    roots=[root/'backgrounds',root]
+    aliases={
+        'palace':('palace','royal court','throne room'),
+        'throne':('throne room','throne','palace'),
+        'room':('room','interior','studio'),
+        'river':('river',),
+        'hut':('village','hut'),
+        'market':('market','cairo'),
+        'street':('street','market','village'),
+        'battlefield':('battlefield',),
+        'map':('map',),
+        'desert':('desert','sahara','caravan'),
+        'forest':('forest',),
+        'ship':('ship','deck'),
+        'classroom':('classroom',),
+        'tavern':('tavern',),
+        'studio':('studio',),
+    }
+    terms=aliases.get(str(kind).lower(),(str(kind).lower(),))
+    candidates=[]
+    for folder in roots:
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.iterdir()):
+            if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
+                continue
+            stem=path.stem.lower().replace('_',' ').replace('-',' ')
+            # Root assets also contain complete storyboard stills; reject those
+            # explicitly, while allowing descriptive plate names even if a long filename
+            # was shortened by the upload process.
+            if folder.name!='backgrounds' and any(token in stem for token in
+                    ('mansa musa','enters cairo','prepares to leave','stickman','entourage','merchants')):
+                continue
+            score=max((len(term) for term in terms if term in stem),default=0)
+            if score:
+                candidates.append((score,0 if folder.name=='backgrounds' else 1,path.name.lower(),path))
+    if not candidates:
+        return None
+    try:
+        _,_,_,chosen=sorted(candidates,key=lambda row:(-row[0],row[1],row[2]))[0]
+        with Image.open(chosen) as source:
+            image=source.convert('RGB')
+        target_ratio=size[0]/size[1]
+        ratio=image.width/image.height
+        if ratio>target_ratio:
+            width=max(1,round(image.height*target_ratio))
+            left=(image.width-width)//2
+            image=image.crop((left,0,left+width,image.height))
+        elif ratio<target_ratio:
+            height=max(1,round(image.width/target_ratio))
+            top=(image.height-height)//2
+            image=image.crop((0,top,image.width,top+height))
+        return image.resize(size,Image.Resampling.LANCZOS)
+    except (OSError,ValueError):
+        return None
+
+
 def centered_text(im,text,y,max_width,fontsize,color=INK):
     d=ImageDraw.Draw(im);f=font(fontsize);lines=[];line=''
     for word in text.split():
@@ -25,6 +90,9 @@ def centered_text(im,text,y,max_width,fontsize,color=INK):
 
 @lru_cache(maxsize=24)
 def backdrop(kind,size):
+    asset=_asset_backdrop(kind,size)
+    if asset is not None:
+        return asset
     w,h=size;im=Image.new('RGB',size,IVORY);d=ImageDraw.Draw(im)
     def box(x,y,xx,yy,c):d.rectangle((x*w,y*h,xx*w,yy*h),fill=c)
     def poly(points,c):d.polygon([(x*w,y*h) for x,y in points],fill=c)
@@ -44,8 +112,50 @@ def backdrop(kind,size):
     elif kind=='map':poly([(.2,.25),(.5,.2),(.8,.4),(.66,.65),(.4,.7),(.18,.48)],'#D8BF91');d.line((.28*w,.4*h,.6*w,.55*h),fill=TEAL,width=max(2,w//150))
     return im
 
+@lru_cache(maxsize=32)
+def _prop_asset(kind, size):
+    """Load a keyed local prop illustration, or return None for procedural fallback."""
+    root=Path(__file__).resolve().parent/'assets'
+    aliases={
+        'scroll':('parchment scroll','scroll prop'),
+        'sword':('sword 2d cartoon','sword prop'),
+        'map':('hand drawn map','map on parchment'),
+        'table':('wooden table','table prop'),
+        'chest':('treasure chest','wooden chest'),
+    }
+    terms=aliases.get(str(kind).lower(),())
+    candidates=[]
+    if root.is_dir():
+        for path in sorted(root.iterdir()):
+            if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
+                continue
+            stem=path.stem.lower().replace('_',' ').replace('-',' ')
+            score=max((len(term) for term in terms if term in stem),default=0)
+            if score:candidates.append((score,path.name.lower(),path))
+    if not candidates:return None
+    try:
+        _,_,chosen=sorted(candidates,key=lambda row:(-row[0],row[1]))[0]
+        with Image.open(chosen) as source:image=source.convert('RGBA')
+        px=image.load()
+        for yy in range(image.height):
+            for xx in range(image.width):
+                r,g,b,alpha=px[xx,yy]
+                if r>=235 and b>=235 and g<=45:
+                    px[xx,yy]=(r,g,b,0)
+                elif r>200 and b>200 and g<90 and abs(r-b)<55:
+                    px[xx,yy]=(r,g,b,0)
+        image.thumbnail((size,size),Image.Resampling.LANCZOS)
+        return image
+    except (OSError,ValueError):
+        return None
+
+
 def prop_icon(im,kind,x,y,s):
     d=ImageDraw.Draw(im);x,y,s=int(x),int(y),int(s)
+    asset=_prop_asset(kind,max(1,s*4))
+    if asset is not None:
+        im.paste(asset,(x-asset.width//2,y-asset.height//2),asset)
+        return
     if kind=='coin':d.ellipse((x-s,y-s,x+s,y+s),fill=GOLD,outline=INK,width=2)
     elif kind=='scroll':d.rounded_rectangle((x-s,y-s,x+s,y+s),radius=4,fill=IVORY,outline=INK,width=3);d.line((x-s/2,y,x+s/2,y),fill=INK,width=2)
     elif kind=='crown':d.polygon([(x-s,y+s),(x-s,y-s),(x,y),(x+s,y-s),(x+s,y+s)],fill=GOLD)
@@ -75,7 +185,7 @@ class Scene:
             elif a['pose'] not in {'dead','falling'}:y+=math.sin(t*3+i)*s*.008
             if 'pop_in' in d['effects'] and t<.35:y+=(1-t/.35)**2*h*.3
             x=max(-s*.25,min(w-s*.75,x));im.alpha_composite(sprite,(int(x),int(y)))
-        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.35+i*.12),h*.74,w*.022)
+        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.5+(i-(len(d['props'])-1)/2)*.12),h*.62,w*.022)
         im=im.convert('RGB');camera=d['camera'];progress=min(1,t/max(.01,self.duration));zoom=1+.045*progress if camera=='push_in' else 1.025 if camera.startswith('pan') else 1
         if zoom>1:
             cw,ch=int(w/zoom),int(h/zoom);x=(w-cw)/2;y=(h-ch)/2
@@ -85,7 +195,13 @@ class Scene:
         if 'shake' in d['effects'] and t<.65:
             canvas=Image.new('RGB',self.size,IVORY);canvas.paste(im,(round(math.sin(t*70)*w*.006),round(math.cos(t*85)*h*.004)));im=canvas
         if 'fade' in d['effects'] and t<.25:im=Image.blend(Image.new('RGB',self.size,IVORY),im,t/.25)
-        if self.heading:centered_text(im,self.heading,h*.1,w*.84,max(18,int(w*(.055 if h>w else .028))))
+        if self.heading:
+            d=ImageDraw.Draw(im)
+            top, bottom=int(h*.025),int(h*.125)
+            d.rounded_rectangle((int(w*.035),top,int(w*.965),bottom),
+                                radius=max(8,int(min(w,h)*.012)),fill=IVORY,
+                                outline=GOLD,width=max(2,int(min(w,h)*.002)))
+            centered_text(im,self.heading,h*.045,w*.84,max(18,int(w*(.055 if h>w else .028))))
         return im
 
 def title_card(title,label,size):
