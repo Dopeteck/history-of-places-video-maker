@@ -46,10 +46,11 @@ def _asset_backdrop(kind, size):
             if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
                 continue
             stem=path.stem.lower().replace('_',' ').replace('-',' ')
-            # Root assets also contain complete storyboard stills; those are not
-            # backgrounds and would duplicate characters when used as scene plates.
-            if folder.name!='backgrounds' and not any(token in stem for token in
-                    ('background','background plate','interior','courtyard','sand dunes','forest path','ship deck')):
+            # Root assets also contain complete storyboard stills; reject those
+            # explicitly, while allowing descriptive plate names even if a long filename
+            # was shortened by the upload process.
+            if folder.name!='backgrounds' and any(token in stem for token in
+                    ('mansa musa','enters cairo','prepares to leave','stickman','entourage','merchants')):
                 continue
             score=max((len(term) for term in terms if term in stem),default=0)
             if score:
@@ -116,7 +117,6 @@ def _prop_asset(kind, size):
     """Load a keyed local prop illustration, or return None for procedural fallback."""
     root=Path(__file__).resolve().parent/'assets'
     aliases={
-        'crown':('crown illustration','golden crown'),
         'scroll':('parchment scroll','scroll prop'),
         'sword':('sword 2d cartoon','sword prop'),
         'map':('hand drawn map','map on parchment'),
