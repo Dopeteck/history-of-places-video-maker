@@ -185,7 +185,7 @@ class Scene:
             elif a['pose'] not in {'dead','falling'}:y+=math.sin(t*3+i)*s*.008
             if 'pop_in' in d['effects'] and t<.35:y+=(1-t/.35)**2*h*.3
             x=max(-s*.25,min(w-s*.75,x));im.alpha_composite(sprite,(int(x),int(y)))
-        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.35+i*.12),h*.64,w*.022)
+        for i,p in enumerate(d['props']):prop_icon(im,p,w*(.5+(i-(len(d['props'])-1)/2)*.12),h*.62,w*.022)
         im=im.convert('RGB');camera=d['camera'];progress=min(1,t/max(.01,self.duration));zoom=1+.045*progress if camera=='push_in' else 1.025 if camera.startswith('pan') else 1
         if zoom>1:
             cw,ch=int(w/zoom),int(h/zoom);x=(w-cw)/2;y=(h-ch)/2
