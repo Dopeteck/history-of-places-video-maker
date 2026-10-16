@@ -33,6 +33,14 @@ class LocalBackgroundPlateTests(unittest.TestCase):
                 image=scenes._asset_backdrop('palace',(320,180))
             self.assertEqual(image.getpixel((160,90)),(31,162,166))
 
+    def test_full_storyboard_stills_are_not_used_as_backgrounds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            assets=root/'assets';assets.mkdir()
+            Image.new('RGB',(320,180),'#C0392B').save(assets/'Mansa_Musa_enters_Cairo_marketplace.jpg')
+            with patch.object(scenes,'__file__',str(root/'scenes.py')):
+                self.assertIsNone(scenes._asset_backdrop('market',(320,180)))
+
     def test_props_are_not_selected_as_backgrounds(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
