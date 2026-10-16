@@ -13,6 +13,49 @@ ANGLES={
  'dead':(-75,-25,75,25,-20,-10,20,10),'laughing':(-55,65,55,-65,-16,-5,16,5),
  'thinking':(-20,-5,135,150,-12,-5,12,5),'praying':(-35,150,35,-150,-12,-5,12,5)}
 
+# Explicit pose packs. Missing poses reuse the pack's base illustration rather than
+# switching to a visually unrelated character. Exact cast_id_pose.png overrides win.
+_ASSET_PACKS = {
+    "stickman": {
+        "base": "stickman_standing_idle_pose",
+        "poses": {
+            "standing": "stickman_standing_idle_pose",
+            "talking": "stickman_standing_idle_pose",
+            "pointing": "stickman_character_pointing_or_e",
+            "shocked": "stickman_character_in_surprised",
+            "running": "stickman_running_against_magenta",
+            "kneeling": "stickman_crouching_and_searching",
+            "laughing": "stickman_celebrating_new_pose",
+        },
+    },
+    # These reference images do not yet contain matched pose sheets. Hold the
+    # canonical design across poses until proper matched poses are supplied.
+    "royal": {"base": "character_in_green_robe_standing", "poses": {}},
+    "elder": {"base": "elder_character_in_neutral_pose", "poses": {}},
+}
+
+
+def resolve_character_asset(root, name, pose, accessory="none"):
+    """Resolve an image from one stable character pack; return None if unavailable."""
+    root=Path(root)
+    if not root.is_dir():
+        return None
+    label=f"{name} {accessory}".lower().replace("-", "_")
+    if any(word in label for word in ("elder", "old_man", "old_woman", "advisor", "scholar")):
+        pack="elder"
+    elif accessory in {"crown", "headwrap"} or any(word in label for word in ("king", "queen", "mansa", "ruler", "royal")):
+        pack="royal"
+    else:
+        pack="stickman"
+    spec=_ASSET_PACKS[pack]
+    folder=spec["poses"].get(pose,spec["base"])
+    candidates=sorted((root/folder).glob("*")) if (root/folder).is_dir() else []
+    for candidate in candidates:
+        if candidate.is_file() and candidate.suffix.lower() in {".jpg",".jpeg",".png",".webp"}:
+            return candidate
+    return None
+
+
 @lru_cache(maxsize=192)
 def character(name,pose,expression,accessory,accent,size=380,blink=False,mouth='closed',assets=''):
     if assets:
@@ -23,50 +66,28 @@ def character(name,pose,expression,accessory,accent,size=380,blink=False,mouth='
             with Image.open(path) as src:
                 image=src.convert('RGBA');image.thumbnail((size,size),Image.Resampling.LANCZOS)
             out=Image.new('RGBA',(size,size));out.alpha_composite(image,((size-image.width)//2,size-image.height));return out
-        # Also accept the organized JPG/PNG/WebP library. The uploaded assets use
-        # a pure-magenta key; remove it with a small tolerance for JPEG artifacts.
-        if root.is_dir():
-            files=sorted(p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in {'.jpg','.jpeg','.png','.webp'})
-            if files:
-                aliases={
-                    'standing':('standing','idle','neutral','idle pose'),
-                    'talking':('talking','speaking','standing','neutral'),
-                    'pointing':('pointing','point','gesture'),
-                    'shocked':('shocked','surprised','surprise'),
-                    'running':('running','run'),
-                    'kneeling':('kneeling','crouching','crouch','searching'),
-                    'fighting':('fighting','fight','battle','running','pointing'),
-                    'falling':('falling','fall','running','crouching'),
-                    'dead':('dead','lying','crouching','standing'),
-                    'laughing':('celebrating','laughing','happy'),
-                    'thinking':('thinking','holding','neutral'),
-                    'praying':('praying','kneeling','neutral','crouching','standing'),
-                }
-                scored=[]
-                for candidate in files:
-                    label=(candidate.parent.name+' '+candidate.stem).lower().replace('_',' ').replace('-',' ')
-                    score=max((len(term) for term in aliases.get(pose,(pose,)) if term in label),default=0)
-                    scored.append((score,candidate.as_posix().lower(),candidate))
-                # Stable choice: a pose-specific image beats a generic fallback.
-                chosen=next(x[2] for x in sorted(scored,key=lambda x:(-x[0],x[1])))
-                try:
-                    with Image.open(chosen) as src:
-                        image=src.convert('RGBA')
-                    px=image.load()
-                    for yy in range(image.height):
-                        for xx in range(image.width):
-                            r,g,b,alpha=px[xx,yy]
-                            # Exact magenta plus JPEG edge bleed; preserve non-magenta colours.
-                            if r>=235 and b>=235 and g<=45:
-                                px[xx,yy]=(r,g,b,0)
-                            elif r>200 and b>200 and g<90 and abs(r-b)<55:
-                                px[xx,yy]=(r,g,b,0)
-                    image.thumbnail((size,size),Image.Resampling.LANCZOS)
-                    out=Image.new('RGBA',(size,size))
-                    out.alpha_composite(image,((size-image.width)//2,(size-image.height)//2))
-                    return out
-                except (OSError,ValueError):
-                    pass
+        # Select from an explicit style pack so a cast member never jumps between
+        # unrelated illustrations just because another pose filename matches.
+        chosen=resolve_character_asset(root,name,pose,accessory)
+        if chosen is not None:
+            try:
+                with Image.open(chosen) as src:
+                    image=src.convert('RGBA')
+                px=image.load()
+                for yy in range(image.height):
+                    for xx in range(image.width):
+                        r,g,b,alpha=px[xx,yy]
+                        # Remove the chosen pure-magenta key plus JPEG edge bleed.
+                        if r>=235 and b>=235 and g<=45:
+                            px[xx,yy]=(r,g,b,0)
+                        elif r>200 and b>200 and g<90 and abs(r-b)<55:
+                            px[xx,yy]=(r,g,b,0)
+                image.thumbnail((size,size),Image.Resampling.LANCZOS)
+                out=Image.new('RGBA',(size,size))
+                out.alpha_composite(image,((size-image.width)//2,(size-image.height)//2))
+                return out
+            except (OSError,ValueError):
+                pass
     scale=2;im=Image.new('RGBA',(800,800));d=ImageDraw.Draw(im)
     def line(points,fill=INK,width=10):
         pts=[(int(x*scale),int(y*scale)) for x,y in points];d.line(pts,fill=fill,width=width*scale,joint='curve')
