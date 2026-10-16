@@ -15,8 +15,10 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             assets=root/'assets'
             assets.mkdir()
             Image.new('RGB',(900,600),'#C0392B').save(assets/'Mali_Empire_throne_room_interior.jpg')
+            scenes.backdrop.cache_clear()
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
-                image=scenes._asset_backdrop('throne',(320,180))
+                image=scenes.backdrop('throne',(320,180))
+            scenes.backdrop.cache_clear()
             self.assertIsNotNone(image)
             self.assertEqual(image.size,(320,180))
             self.assertLessEqual(max(abs(a-b) for a,b in zip(image.getpixel((160,90)),(192,57,43))),2)
@@ -42,9 +44,11 @@ class LocalBackgroundPlateTests(unittest.TestCase):
 
     def test_procedural_backdrop_remains_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
+            scenes.backdrop.cache_clear()
             with patch.object(scenes,'__file__',str(Path(tmp)/'scenes.py')):
                 self.assertIsNone(scenes._asset_backdrop('palace',(320,180)))
                 self.assertEqual(scenes.backdrop('palace',(320,180)).size,(320,180))
+            scenes.backdrop.cache_clear()
 
 
 if __name__=='__main__':
