@@ -106,8 +106,51 @@ def backdrop(kind,size):
     elif kind=='map':poly([(.2,.25),(.5,.2),(.8,.4),(.66,.65),(.4,.7),(.18,.48)],'#D8BF91');d.line((.28*w,.4*h,.6*w,.55*h),fill=TEAL,width=max(2,w//150))
     return im
 
+@lru_cache(maxsize=32)
+def _prop_asset(kind, size):
+    """Load a keyed local prop illustration, or return None for procedural fallback."""
+    root=Path(__file__).resolve().parent/'assets'
+    aliases={
+        'crown':('crown illustration','golden crown'),
+        'scroll':('parchment scroll','scroll prop'),
+        'sword':('sword 2d cartoon','sword prop'),
+        'map':('hand drawn map','map on parchment'),
+        'table':('wooden table','table prop'),
+        'chest':('treasure chest','wooden chest'),
+    }
+    terms=aliases.get(str(kind).lower(),())
+    candidates=[]
+    if root.is_dir():
+        for path in sorted(root.iterdir()):
+            if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
+                continue
+            stem=path.stem.lower().replace('_',' ').replace('-',' ')
+            score=max((len(term) for term in terms if term in stem),default=0)
+            if score:candidates.append((score,path.name.lower(),path))
+    if not candidates:return None
+    try:
+        _,_,chosen=sorted(candidates,key=lambda row:(-row[0],row[1]))[0]
+        with Image.open(chosen) as source:image=source.convert('RGBA')
+        px=image.load()
+        for yy in range(image.height):
+            for xx in range(image.width):
+                r,g,b,alpha=px[xx,yy]
+                if r>=235 and b>=235 and g<=45:
+                    px[xx,yy]=(r,g,b,0)
+                elif r>200 and b>200 and g<90 and abs(r-b)<55:
+                    px[xx,yy]=(r,g,b,0)
+        image.thumbnail((size,size),Image.Resampling.LANCZOS)
+        return image
+    except (OSError,ValueError):
+        return None
+
+
 def prop_icon(im,kind,x,y,s):
     d=ImageDraw.Draw(im);x,y,s=int(x),int(y),int(s)
+    asset=_prop_asset(kind,max(1,s*4))
+    if asset is not None:
+        im.paste(asset,(x-asset.width//2,y-asset.height//2),asset)
+        return
     if kind=='coin':d.ellipse((x-s,y-s,x+s,y+s),fill=GOLD,outline=INK,width=2)
     elif kind=='scroll':d.rounded_rectangle((x-s,y-s,x+s,y+s),radius=4,fill=IVORY,outline=INK,width=3);d.line((x-s/2,y,x+s/2,y),fill=INK,width=2)
     elif kind=='crown':d.polygon([(x-s,y+s),(x-s,y-s),(x,y),(x+s,y-s),(x+s,y+s)],fill=GOLD)
