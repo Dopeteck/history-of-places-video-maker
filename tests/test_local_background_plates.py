@@ -42,6 +42,23 @@ class LocalBackgroundPlateTests(unittest.TestCase):
             with patch.object(scenes,'__file__',str(root/'scenes.py')):
                 self.assertIsNone(scenes._asset_backdrop('throne',(320,180)))
 
+    def test_magenta_keyed_prop_uses_local_illustration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            assets=root/'assets';assets.mkdir()
+            src=Image.new('RGB',(80,80),(255,0,255))
+            for x in range(25,55):
+                for y in range(25,55):src.putpixel((x,y),(230,190,20))
+            src.save(assets/'Golden_crown_illustration.jpg',quality=100)
+            scenes._prop_asset.cache_clear()
+            with patch.object(scenes,'__file__',str(root/'scenes.py')):
+                image=scenes._prop_asset('crown',80)
+            self.assertIsNotNone(image)
+            self.assertEqual(image.mode,'RGBA')
+            self.assertEqual(image.getpixel((5,5))[3],0)
+            self.assertEqual(image.getpixel((40,40))[3],255)
+            scenes._prop_asset.cache_clear()
+
     def test_procedural_backdrop_remains_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
             scenes.backdrop.cache_clear()
