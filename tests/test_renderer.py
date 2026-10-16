@@ -49,7 +49,7 @@ class RendererTests(unittest.TestCase):
             im=character('cast_a','standing','neutral','none','#1FA2A6',120,assets=d)
             self.assertEqual(im.mode,'RGBA')
             self.assertEqual(im.getpixel((60,60))[3],255)
-            self.assertEqual(im.getpixel((2,2))[3],0)
+            self.assertEqual(im.getpixel((25,10))[3],0)  # magenta source pixel, not empty canvas
             self.assertTrue(any(p.suffix=='.jpg' for p in folder.iterdir()))
     def test_scene_determinism_and_motion(self):
         story=smoke_story();data=story['chapters'][0]['scenes'][2];cast={c['id']:c for c in story['outline']['cast']};scene=Scene(data,cast,(320,568),5,word_timings(data['narration'],5))
