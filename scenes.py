@@ -11,6 +11,65 @@ def font(size):
         if Path(path).exists():return ImageFont.truetype(path,size)
     raise RuntimeError('Install fonts-dejavu-core or Windows Arial Bold')
 
+def _asset_backdrop(kind, size):
+    """Load a matching background plate without moving or modifying source assets.
+
+    Prefer explicit plates under assets/backgrounds/, then inspect direct image files
+    in assets/ (the supplied scene plates currently live there). Never scan character
+    subfolders or treat prop illustrations as full-frame backgrounds.
+    """
+    root=Path(__file__).resolve().parent/'assets'
+    roots=[root/'backgrounds',root]
+    aliases={
+        'palace':('palace','royal court','throne room'),
+        'throne':('throne room','throne','palace'),
+        'room':('room','interior','studio'),
+        'river':('river','caravan','desert'),
+        'hut':('village','hut'),
+        'market':('market','cairo'),
+        'street':('street','market','village'),
+        'battlefield':('battlefield','desert','caravan'),
+        'map':('map',),
+        'desert':('desert','sahara','caravan'),
+        'forest':('forest',),
+        'ship':('ship','deck'),
+        'classroom':('classroom',),
+        'tavern':('tavern',),
+        'studio':('studio',),
+    }
+    terms=aliases.get(str(kind).lower(),(str(kind).lower(),))
+    candidates=[]
+    for folder in roots:
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.iterdir()):
+            if not path.is_file() or path.suffix.lower() not in {'.png','.jpg','.jpeg','.webp'}:
+                continue
+            stem=path.stem.lower().replace('_',' ').replace('-',' ')
+            score=max((len(term) for term in terms if term in stem),default=0)
+            if score:
+                candidates.append((score,path.name.lower(),str(folder),path))
+    if not candidates:
+        return None
+    try:
+        _,_,_,chosen=sorted(candidates,key=lambda row:(-row[0],row[1],row[2]))[0]
+        with Image.open(chosen) as source:
+            image=source.convert('RGB')
+        target_ratio=size[0]/size[1]
+        ratio=image.width/image.height
+        if ratio>target_ratio:
+            width=max(1,round(image.height*target_ratio))
+            left=(image.width-width)//2
+            image=image.crop((left,0,left+width,image.height))
+        elif ratio<target_ratio:
+            height=max(1,round(image.width/target_ratio))
+            top=(image.height-height)//2
+            image=image.crop((0,top,image.width,top+height))
+        return image.resize(size,Image.Resampling.LANCZOS)
+    except (OSError,ValueError):
+        return None
+
+
 def centered_text(im,text,y,max_width,fontsize,color=INK):
     d=ImageDraw.Draw(im);f=font(fontsize);lines=[];line=''
     for word in text.split():
@@ -25,6 +84,9 @@ def centered_text(im,text,y,max_width,fontsize,color=INK):
 
 @lru_cache(maxsize=24)
 def backdrop(kind,size):
+    asset=_asset_backdrop(kind,size)
+    if asset is not None:
+        return asset
     w,h=size;im=Image.new('RGB',size,IVORY);d=ImageDraw.Draw(im)
     def box(x,y,xx,yy,c):d.rectangle((x*w,y*h,xx*w,yy*h),fill=c)
     def poly(points,c):d.polygon([(x*w,y*h) for x,y in points],fill=c)
