@@ -16,11 +16,58 @@ ANGLES={
 @lru_cache(maxsize=192)
 def character(name,pose,expression,accessory,accent,size=380,blink=False,mouth='closed',assets=''):
     if assets:
-        path=Path(assets)/f'{name}_{pose}.png'
+        root=Path(assets)
+        # Keep the documented <cast_id>_<pose>.png override as highest priority.
+        path=root/f'{name}_{pose}.png'
         if path.is_file():
             with Image.open(path) as src:
                 image=src.convert('RGBA');image.thumbnail((size,size),Image.Resampling.LANCZOS)
             out=Image.new('RGBA',(size,size));out.alpha_composite(image,((size-image.width)//2,size-image.height));return out
+        # Also accept the organized JPG/PNG/WebP library. The uploaded assets use
+        # a pure-magenta key; remove it with a small tolerance for JPEG artifacts.
+        if root.is_dir():
+            files=sorted(p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in {'.jpg','.jpeg','.png','.webp'})
+            if files:
+                aliases={
+                    'standing':('standing','idle','neutral','idle pose'),
+                    'talking':('talking','speaking','standing','neutral'),
+                    'pointing':('pointing','point','gesture'),
+                    'shocked':('shocked','surprised','surprise'),
+                    'running':('running','run'),
+                    'kneeling':('kneeling','crouching','crouch','searching'),
+                    'fighting':('fighting','fight','battle'),
+                    'falling':('falling','fall'),
+                    'dead':('dead','lying'),
+                    'laughing':('celebrating','laughing','happy'),
+                    'thinking':('thinking','holding','neutral'),
+                    'praying':('praying','kneeling','neutral'),
+                }
+                scored=[]
+                for candidate in files:
+                    label=(candidate.parent.name+' '+candidate.stem).lower().replace('_',' ').replace('-',' ')
+                    score=max((len(term) for term in aliases.get(pose,(pose,)) if term in label),default=0)
+                    scored.append((score,candidate.as_posix().lower(),candidate))
+                best=max(x[0] for x in scored)
+                # Stable choice: a pose-specific image beats a generic fallback.
+                chosen=next(x[2] for x in sorted(scored,key=lambda x:(-x[0],x[1])))
+                try:
+                    with Image.open(chosen) as src:
+                        image=src.convert('RGBA')
+                    px=image.load()
+                    for yy in range(image.height):
+                        for xx in range(image.width):
+                            r,g,b,alpha=px[xx,yy]
+                            # Exact magenta plus JPEG edge bleed; preserve non-magenta colours.
+                            if r>=235 and b>=235 and g<=45:
+                                px[xx,yy]=(r,g,b,0)
+                            elif r>200 and b>200 and g<90 and abs(r-b)<55:
+                                px[xx,yy]=(r,g,b,0)
+                    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+                    out=Image.new('RGBA',(size,size))
+                    out.alpha_composite(image,((size-image.width)//2,(size-image.height)//2))
+                    return out
+                except (OSError,ValueError):
+                    pass
     scale=2;im=Image.new('RGBA',(800,800));d=ImageDraw.Draw(im)
     def line(points,fill=INK,width=10):
         pts=[(int(x*scale),int(y*scale)) for x,y in points];d.line(pts,fill=fill,width=width*scale,joint='curve')
