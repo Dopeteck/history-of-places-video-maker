@@ -29,13 +29,13 @@ class DestinationHistoryTests(unittest.TestCase):
         with self.assertRaises(ValueError): validate_destination_plan(data)
 
     def test_unknown_license_rejected(self):
-        asset={"source_url":"https://example.org/image","author":"A",
+        asset={"source_url":"https://example.org/image","rights_statement":"CC BY 4.0","rights_url":"https://example.org/rights","author":"A",
                "license":"unknown","date_retrieved":"2026-10-17",
                "local_filename":"x.jpg","scene_id":"s1"}
         with self.assertRaises(ValueError): validate_asset(asset)
 
     def test_cc_by_requires_credit_and_review_flags_surface(self):
-        asset={"source_url":"https://example.org/image","author":"A",
+        asset={"source_url":"https://example.org/image","rights_statement":"CC BY 4.0","rights_url":"https://example.org/rights","author":"A",
                "license":"CC BY 4.0","date_retrieved":"2026-10-17",
                "local_filename":"x.jpg","scene_id":"s1","review_flags":["face"]}
         result=validate_asset(asset)
@@ -44,7 +44,7 @@ class DestinationHistoryTests(unittest.TestCase):
         self.assertIn("CC BY 4.0", credits_text([asset]))
 
     def test_public_domain_does_not_require_attribution(self):
-        asset={"source_url":"https://example.org/image","author":"US agency",
+        asset={"source_url":"https://example.org/image","rights_statement":"Public Domain","rights_url":"https://example.org/rights","author":"US agency",
                "license":"Public Domain","date_retrieved":"2026-10-17",
                "local_filename":"x.jpg","scene_id":"s1"}
         self.assertFalse(validate_asset(asset)["credit_required"])
