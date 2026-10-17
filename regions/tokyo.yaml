@@ -77,10 +77,10 @@ scenes:
     image_type: historic
   - title: "Kyoto and Edo"
     narration_intent: "Contrast the imperial court in Kyoto with Edo's political power."
-    image_search_terms: ["Kyoto Edo Japan historical map", "Edo Kyoto Tokaido route map historical", "Japan historical cities Kyoto Edo map"]
+    image_search_terms: ["Kyoto imperial palace historical photo", "Edo Kyoto historical painting Japan", "Kyoto Edo historical illustration"]
     required_keywords: [Kyoto, Edo, Japan]
     banned_keywords: [cover, catalogue, report, document]
-    image_type: map
+    image_type: historic
   - title: "The Turning Point"
     narration_intent: "Describe the 1868 political transition that ended shogunate rule."
     image_search_terms: ["Meiji Restoration 1868 historical photograph", "Japan 1868 Edo historical image", "Meiji era Tokyo early photograph"]
