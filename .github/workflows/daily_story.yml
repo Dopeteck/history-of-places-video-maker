@@ -23,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'smoke = offline test; draft = new script; render = approved script'
+        description: 'smoke = offline test; draft = new script; preview = unapproved video; render = approved script'
         type: choice
-        options: [smoke, draft, recheck, render]
+        options: [smoke, draft, recheck, preview, render]
         default: smoke
       mode:
         description: 'New draft format (render uses saved script format)'
@@ -166,7 +166,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
       - name: Restore speech models
-        if: inputs.action == 'render' || github.event_name == 'schedule'
+        if: inputs.action == 'render' || inputs.action == 'preview' || github.event_name == 'schedule'
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
@@ -211,10 +211,10 @@ jobs:
             state/
             debug/
       - name: Persist draft and series state
-        if: success() && github.event_name != 'push' && (inputs.action != 'smoke' || github.event_name == 'schedule')
+        if: success() && github.event_name != 'push' && inputs.action != 'preview' && (inputs.action != 'smoke' || github.event_name == 'schedule')
         run: python persist_state.py
       - name: Telegram delivery or failure alert
-        if: always() && github.event_name != 'push'
+        if: always() && github.event_name != 'push' && inputs.action != 'preview'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
