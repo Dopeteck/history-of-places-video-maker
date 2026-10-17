@@ -199,10 +199,19 @@ def resolve_archival(query: str, limit_per_source: int = 10) -> list[dict]:
     for name, resolver in RESOLVERS:
         try:
             results.extend(resolver(query, limit_per_source))
-        except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
+        except Exception as exc:
             # A provider outage/schema change must not block other official APIs.
             print(f"Archive source {name} unavailable or malformed: {type(exc).__name__}")
     return results
+
+def choose_fallback(available: dict[str, bool]) -> str:
+    """Choose the first available fallback in the required editorial order."""
+    order = ("archival_still", "map", "document", "site_today", "ai_reconstruction")
+    for key in order:
+        if available.get(key):
+            return key
+    return "unresolved"
+
 
 def save_candidates(candidates: list[dict], manifest_path: Path, asset_root: Path) -> int:
     """Append metadata-only candidates. Downloads require separate explicit review."""
