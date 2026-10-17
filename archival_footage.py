@@ -213,6 +213,26 @@ def choose_fallback(available: dict[str, bool]) -> str:
     return "unresolved"
 
 
+def resolve_plan(plan: dict, limit_per_source: int = 5) -> list[dict]:
+    """Resolve candidate assets per scene and attach scene IDs for later review."""
+    scenes = plan.get("scenes")
+    if not isinstance(scenes, list):
+        raise ValueError("Plan must contain a scenes array")
+    all_candidates = []
+    for scene in scenes:
+        if not isinstance(scene, dict) or not scene.get("id"):
+            continue
+        query_parts = scene.get("asset_tags") or scene.get("search_terms") or [scene.get("title", ""), scene.get("narration", "")]
+        query = " ".join(str(part) for part in query_parts if str(part).strip())[:240]
+        if not query.strip():
+            continue
+        for candidate in resolve_archival(query, limit_per_source):
+            candidate["scene_id"] = str(scene["id"])
+            candidate["scene_query"] = query
+            all_candidates.append(candidate)
+    return all_candidates
+
+
 def save_candidates(candidates: list[dict], manifest_path: Path, asset_root: Path) -> int:
     """Append metadata-only candidates. Downloads require separate explicit review."""
     existing = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else []
@@ -231,12 +251,12 @@ def save_candidates(candidates: list[dict], manifest_path: Path, asset_root: Pat
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--query", required=True, help="Historical event/place/topic")
+    parser.add_argument("--query", help="Historical event/place/topic")\n    parser.add_argument("--plan", type=Path, help="Optional scene plan; resolves each scene separately")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
-    candidates = resolve_archival(args.query, max(1, min(args.limit, 25)))
+    if not args.query and not args.plan:\n        parser.error("provide --query or --plan")\n    limit = max(1, min(args.limit, 25))\n    if args.plan:\n        plan = json.loads(args.plan.read_text(encoding="utf-8"))\n        candidates = resolve_plan(plan, limit)\n    else:\n        candidates = resolve_archival(args.query, limit)
     count = save_candidates(candidates, args.manifest, args.assets)
     print(f"Added {count} total manifest entries; {len(candidates)} archival candidates passed rights filters. All remain unapproved.")
     return 0
