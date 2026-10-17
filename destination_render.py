@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 import math
 
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 import numpy as np
 
 WIDTH, HEIGHT = 1080, 1920
@@ -125,7 +125,35 @@ def render_scene_frame(scene: dict[str, Any], progress: float = 0.0,
         for line in lines:
             draw.text((SAFE_X, y + 20), line, font=caption_font, fill=(*PAPER, 255))
             y += line_h
+    if scene.get("archival_look") is True:
+        canvas = _apply_archival_look(canvas, seed=str(scene.get("id", "archive")))
+    if scene.get("ai_reconstruction") is True:
+        draw = ImageDraw.Draw(canvas, "RGBA")
+        label_font = _font(max(24, int(width * 0.032)), True)
+        label = "ILLUSTRATION / RECONSTRUCTION"
+        bbox = draw.textbbox((0, 0), label, font=label_font)
+        pad = max(10, width // 60)
+        x = width - (bbox[2] - bbox[0]) - SAFE_X
+        y = height - SAFE_BOTTOM - (bbox[3] - bbox[1]) - 2 * pad
+        draw.rounded_rectangle((x - pad, y - pad, width - SAFE_X + pad, y + bbox[3] - bbox[1] + pad),
+                               radius=8, fill=(0, 0, 0, 220))
+        draw.text((x, y), label, font=label_font, fill=(255, 244, 220, 255))
     return canvas
+
+
+def _apply_archival_look(image: Image.Image, seed: str = "archive") -> Image.Image:
+    """Apply consistent mild desaturation, film grain, and edge vignette."""
+    import hashlib
+    arr = np.asarray(ImageEnhance.Color(image.convert("RGB")).enhance(0.72), dtype=np.float32)
+    h, w = arr.shape[:2]
+    rng_seed = int(hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8], 16)
+    rng = np.random.default_rng(rng_seed)
+    arr += rng.normal(0.0, 3.2, size=(h, w, 1))
+    yy, xx = np.mgrid[-1:1:complex(h), -1:1:complex(w)]
+    radius = np.sqrt(xx * xx + yy * yy)
+    vignette = np.clip(1.0 - 0.20 * np.maximum(0, radius - 0.28), 0.76, 1.0)
+    arr *= vignette[..., None]
+    return Image.fromarray(np.uint8(np.clip(arr, 0, 255)), "RGB")
 
 
 def render_frame_array(scene: dict[str, Any], progress: float = 0.0,
