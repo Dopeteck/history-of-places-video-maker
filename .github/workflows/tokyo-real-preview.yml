@@ -22,7 +22,7 @@ jobs:
       - name: Install system tools and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg ffprobe fonts-dejavu-core espeak-ng
+          sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
