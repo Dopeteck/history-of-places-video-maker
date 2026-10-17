@@ -251,12 +251,20 @@ def save_candidates(candidates: list[dict], manifest_path: Path, asset_root: Pat
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--query", help="Historical event/place/topic")\n    parser.add_argument("--plan", type=Path, help="Optional scene plan; resolves each scene separately")
+    parser.add_argument("--query", help="Historical event/place/topic")
+    parser.add_argument("--plan", type=Path, help="Optional scene plan; resolves each scene separately")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
-    if not args.query and not args.plan:\n        parser.error("provide --query or --plan")\n    limit = max(1, min(args.limit, 25))\n    if args.plan:\n        plan = json.loads(args.plan.read_text(encoding="utf-8"))\n        candidates = resolve_plan(plan, limit)\n    else:\n        candidates = resolve_archival(args.query, limit)
+    if not args.query and not args.plan:
+        parser.error("provide --query or --plan")
+    limit = max(1, min(args.limit, 25))
+    if args.plan:
+        plan = json.loads(args.plan.read_text(encoding="utf-8"))
+        candidates = resolve_plan(plan, limit)
+    else:
+        candidates = resolve_archival(args.query, limit)
     count = save_candidates(candidates, args.manifest, args.assets)
     print(f"Added {count} total manifest entries; {len(candidates)} archival candidates passed rights filters. All remain unapproved.")
     return 0
