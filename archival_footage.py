@@ -41,7 +41,7 @@ def rights_allowed(statement: str) -> bool:
     if not s:
         return False
     # Reject restrictive/non-commercial terms even if other words appear nearby.
-    if any(term in s for term in ("non-commercial", "noncommercial", "no derivatives", "all rights reserved", "copyright protected", "permission required")):
+    if any(term in s for term in ("non-commercial", "noncommercial", "cc by-nc", "cc by nc", "cc-by-nc", "cc by-nd", "cc-by-nd", "no derivatives", "all rights reserved", "copyright protected", "permission required")):
         return False
     return any(term in s for term in ALLOWED_RIGHTS)
 
