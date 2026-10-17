@@ -35,7 +35,38 @@ SCENES = [
  ("Walk the old city", "Tokyo historic district traditional street", "still"),
 ]
 ALLOWED = ("public domain", "public domain mark", "cc0", "cc by", "cc-by", "cc by-sa", "cc-by-sa")
-S = requests.Session(); S.headers.update({"User-Agent": UA})
+S = requests.Session()
+S.headers.update({"User-Agent": UA, "Accept": "application/json"})
+_LAST_COMMONS_REQUEST = 0.0
+
+def commons_get(url, *, params=None, timeout=(10,40)):
+    """Polite Commons request with bounded retries for transient rate limits."""
+    global _LAST_COMMONS_REQUEST
+    for attempt in range(6):
+        delay = 1.0 - (time.monotonic() - _LAST_COMMONS_REQUEST)
+        if delay > 0:
+            time.sleep(delay)
+        try:
+            response = S.get(url, params=params, timeout=timeout)
+            _LAST_COMMONS_REQUEST = time.monotonic()
+        except requests.RequestException:
+            if attempt == 5:
+                raise
+            time.sleep(min(2 ** attempt, 30))
+            continue
+        if response.status_code == 429 or 500 <= response.status_code < 600:
+            if attempt == 5:
+                response.raise_for_status()
+            retry_after = response.headers.get("Retry-After", "")
+            try:
+                wait = float(retry_after)
+            except (TypeError, ValueError):
+                wait = min(3 * (2 ** attempt), 30)
+            time.sleep(max(1, min(wait, 45)))
+            continue
+        response.raise_for_status()
+        return response
+    raise RuntimeError("Commons request retry budget exhausted")
 def fail(msg): raise RuntimeError(msg)
 def license_ok(short, url):
     x = (short or "").strip().lower()
@@ -63,11 +94,11 @@ def commons_image(query, index):
     seen=set()
     for search_term in variants:
       params={"action":"query","format":"json","generator":"search","gsrsearch":search_term,
-              "gsrnamespace":6,"gsrlimit":50,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1800}
+              "gsrnamespace":6,"gsrlimit":20,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1400}
       try:
-        response=S.get(COMMONS,params=params,timeout=(10,40)); response.raise_for_status(); payload=response.json()
+        response=commons_get(COMMONS,params=params,timeout=(10,40)); payload=response.json()
       except Exception as e:
-        fail(f"Wikimedia Commons API failed for scene {index} ({search_term}): {type(e).__name__}: {e}")
+        fail(f"Wikimedia Commons API failed for scene {index} ({search_term}) after retries: {type(e).__name__}: {e}")
       pages=payload.get("query",{}).get("pages",{})
       candidates=[]
       for p in pages.values():
@@ -87,7 +118,7 @@ def commons_image(query, index):
       candidates.sort(key=lambda z: (0 if z[2] else 1, 0 if z[5].lower().endswith((".jpg",".jpeg")) else 1))
       for p,info,short,licurl,artist,url,page in candidates:
         try:
-          result=S.get(url,timeout=(10,60)); result.raise_for_status()
+          result=commons_get(url,timeout=(10,60))
           from io import BytesIO
           im=Image.open(BytesIO(result.content)).convert("RGB")
           if im.width<640 or im.height<360: continue
