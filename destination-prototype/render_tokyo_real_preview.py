@@ -144,18 +144,37 @@ def main():
     if oldcredits.exists():
       try: old={x.get("file"):x for x in json.loads(oldcredits.read_text())}
       except Exception: old={}
+    manifest_path=ROOT / "destination-prototype" / "assets_manifest.json"
+    try: manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as e: fail(f"Cannot read existing asset manifest: {type(e).__name__}: {e}")
+    manifest_by_name={str(a.get("local_filename","")).replace("\\","/").split("/")[-1]:a for a in manifest if isinstance(a,dict)}
     media=[]; credits=[]
     for i,(title,query,kind) in enumerate(SCENES,1):
       if kind=="map":
         im,credit=map_image(i)
       else:
-        local_candidates=[]
-        tokens=[t for t in re.findall(r"[a-z0-9]+",title.lower()) if len(t)>3]
-        for p in list(ASSETS.glob("*")):
-          if p.suffix.lower() in {".jpg",".jpeg",".png",".webp"} and any(t in p.stem.lower() for t in tokens) and p.name in old:
-            local_candidates.append(p)
-        if local_candidates:
-          p=local_candidates[0]; im=Image.open(p).convert("RGB"); credit=old[p.name]
+        local_choice=None
+        tokens=[t for t in re.findall(r"[a-z0-9]+",(title+" "+query).lower()) if len(t)>3]
+        for base in (ASSETS, ROOT/"assets", ROOT/"destination-prototype"):
+          if not base.exists(): continue
+          for p in base.rglob("*"):
+            if not p.is_file() or p.suffix.lower() not in {".jpg",".jpeg",".png",".webp"}: continue
+            rec=manifest_by_name.get(p.name) or old.get(p.name)
+            if rec and any(t in p.stem.lower() for t in tokens):
+              local_choice=(p,rec); break
+          if local_choice: break
+        if local_choice:
+          p,rec=local_choice
+          lic=str(rec.get("license") or rec.get("rights_statement") or "")
+          page=str(rec.get("source_url") or "")
+          rights_url=str(rec.get("rights_url") or rec.get("license_url") or page)
+          if license_ok(lic,rights_url) and page.startswith("https://") and rights_url.startswith("https://"):
+            im=Image.open(p).convert("RGB")
+            credit={"scene_id":f"scene-{i:02d}","file":str(p.relative_to(ROOT)),"title":rec.get("title",p.name),
+              "author":rec.get("author","Unknown / not stated"),"license":lic,"rights_statement":rec.get("rights_statement",lic),
+              "license_url":rights_url,"source_url":page,"date_retrieved":rec.get("date_retrieved",dt.date.today().isoformat())}
+          else:
+            im,credit=commons_image(query,i)
         else:
           im,credit=commons_image(query,i)
       if im.width<640 or im.height<360: fail(f"Scene {i} image too small: {im.size}")
