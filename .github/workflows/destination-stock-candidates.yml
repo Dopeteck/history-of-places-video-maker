@@ -1,0 +1,65 @@
+name: Destination stock candidates
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Which media candidates to collect
+        type: choice
+        options:
+          - photo
+          - video
+          - both
+        default: photo
+        required: true
+      provider:
+        description: Provider(s) to search (only configured secrets are used)
+        type: choice
+        options:
+          - all
+          - pexels
+          - pixabay
+          - unsplash
+        default: all
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  collect-candidates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/destination-history-shorts
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install collector dependency
+        run: python -m pip install requests
+      - name: Collect small review-only batch
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: |
+          python stock_media.py \
+            --plan destination-prototype/tokyo-plan.json \
+            --assets destination-prototype/assets \
+            --manifest destination-prototype/assets_manifest.json \
+            --mode "${{ inputs.mode }}" \
+            --provider "${{ inputs.provider }}" \
+            --per-scene 1
+      - name: Upload private review bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: destination-stock-candidates
+          path: |
+            destination-prototype/assets/
+            destination-prototype/assets_manifest.json
+          if-no-files-found: error
+          retention-days: 7
