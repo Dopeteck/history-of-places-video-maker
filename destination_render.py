@@ -151,7 +151,7 @@ def validate_render_inputs(plan: dict[str, Any], manifest: list[dict[str, Any]],
             matches = [item for item in by_scene.get(scene["id"], [])
                        if item.get("media_type", "photo") == "photo"]
             if not matches:
-                raise ValueError(f"Scene {scene['id']} has no manifest-backed photo (video clips are not yet supported by this renderer)")
+                raise ValueError(f"Scene {scene['id']} has no manifest-backed image/photo (video clips are not yet supported by this renderer)")
             candidate = asset_root / matches[0]["local_filename"]
             if not candidate.is_file():
                 raise ValueError(f"Manifest image is missing on disk: {candidate}")
