@@ -190,7 +190,10 @@ def main():
  # Low-level ambient bed, faded at ends. No external copyrighted track.
  bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
  bed*=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
- mixed=np.clip(voice*.84+bed,-.98,.98); wav=out/"narration_mix.wav"
+ mixed=voice*.84+bed
+  rms=float(np.sqrt(np.mean(mixed**2)))
+  if rms<0.001: fail("Narration mix is silent or near-silent")
+  mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
  with wave.open(str(wav),"wb") as f: f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate); f.writeframes((mixed*32767).astype("<i2").tobytes())
  # Scene durations follow scene narration intent lengths, then normalize to the actual narration duration.
  weights=np.array([max(1,len(s["narration_intent"].split())) for s,_ in media],dtype=float); durations=duration*weights/weights.sum(); boundaries=np.cumsum(durations)
@@ -208,6 +211,15 @@ def main():
   full=" ".join(capwords); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
   for j,w in enumerate(capwords):
    col=accent if lo+j==wi else "white"; d.text((x,y),w+" ",font=cf,fill=col,stroke_width=2,stroke_fill="black"); x+=widths[j]
+  # Crossfade into the next scene over the final 0.4 seconds of each scene.
+  if si < len(media)-1 and tm >= boundaries[si]-0.4:
+   alpha=max(0.0,min(1.0,(tm-(boundaries[si]-0.4))/0.4))
+   nxt_scene,nxt_im=media[si+1]
+   nxt=smart_fit(nxt_im,0.0).convert("RGBA")
+   nd=ImageDraw.Draw(nxt,"RGBA")
+   nd.rounded_rectangle((42,85,W-42,190),radius=22,fill=(0,0,0,165))
+   nd.text((68,105),nxt_scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
+   frame=Image.blend(frame.convert("RGB"),nxt.convert("RGB"),alpha)
   proc.stdin.write(np.asarray(frame.convert("RGB"),dtype=np.uint8).tobytes())
   if fi % (FPS*5)==0: contact.append(frame.convert("RGB").resize((180,320)))
  proc.stdin.close(); err=proc.stderr.read().decode("utf-8","replace"); rc=proc.wait()
