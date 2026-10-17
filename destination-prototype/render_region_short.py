@@ -92,6 +92,36 @@ def get_image(scene,idx,config,asset_dir,used,output):
   except Exception as e:
    print(f"Candidate rejected for {scene['title']}: {title}: {type(e).__name__}: {e}",file=sys.stderr)
  fail(f"No acceptable image for scene '{scene['title']}'. Tried variants: {tried}; ranked relevant candidates: {len(ranked)}")
+def local_image(scene,idx,config,used):
+ # Prefer repository stills only when the manifest proves both provenance and license.
+ manifest_path=ROOT/"destination-prototype"/"assets_manifest.json"
+ if not manifest_path.exists(): return None
+ try: manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+ except Exception as e: fail(f"Cannot read asset manifest: {e}")
+ assets=[ROOT/"assets",ROOT/"destination-prototype"/"assets"]
+ for rec in manifest:
+  if not isinstance(rec,dict): continue
+  rel=rec.get("local_filename") or rec.get("file") or rec.get("path")
+  if not rel: continue
+  candidates=[]
+  p=Path(rel)
+  candidates.append(p if p.is_absolute() else ROOT/p)
+  for base in assets: candidates.append(base/p.name)
+  for p in candidates:
+   if not p.is_file() or p.suffix.lower() not in (".jpg",".jpeg",".png",".webp"): continue
+   title=str(rec.get("title") or p.name); desc=str(rec.get("description") or "")
+   keys=scene.get("required_keywords",[])
+   match=score_candidate(title,desc,rec.get("categories",[]),keys)
+   lic=str(rec.get("license") or rec.get("rights_statement") or "")
+   licurl=str(rec.get("license_url") or rec.get("rights_url") or "")
+   source=str(rec.get("source_url") or "")
+   if match<=0 or not allowed(lic,licurl) or not source.startswith("https://") or not licurl.startswith("https://"): continue
+   if banned(title+" "+desc+" "+" ".join(rec.get("categories",[])),config.get("image_banned_terms",[])+scene.get("banned_keywords",[])): continue
+   im=Image.open(p).convert("RGB")
+   if min(im.size)<1080 or hashlib.sha256(p.read_bytes()).hexdigest() in used: continue
+   digest=hashlib.sha256(p.read_bytes()).hexdigest(); used.add(digest)
+   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"license_url":licurl,"source_url":source,"match_score":match,"search_variant":"repository manifest (preferred local still)","warnings":[]}
+ return None
 def make_map(scene,idx,config,asset_dir):
  from PIL import ImageDraw
  lat=float(config["map"]["latitude"]); lon=float(config["map"]["longitude"])
@@ -130,7 +160,10 @@ def main():
  media=[]; credits=[]; used=set(); previous_digest=None
  for i,scene in enumerate(cfg["scenes"],1):
   if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
-  else: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
+  else:
+   local=local_image(scene,i,cfg,used)
+   if local: im,credit=local
+   else: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
   if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
    # Match must come from metadata; no quiet substitute for the present-day visual.
    if credit["match_score"]<3: fail(f"Modern/present image relevance gate failed for scene '{scene['title']}'")
