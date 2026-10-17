@@ -37,7 +37,7 @@ def _get_json(url: str, params: dict | None = None) -> dict:
 
 def rights_allowed(statement: str) -> bool:
     """Only allow explicit, recognized rights statements; unknown is always rejected."""
-    s = re.sub(r"\\s+", " ", str(statement or "").strip().lower())
+    s = re.sub(r"\s+", " ", str(statement or "").strip().lower())
     if not s:
         return False
     # Reject restrictive/non-commercial terms even if other words appear nearby.
