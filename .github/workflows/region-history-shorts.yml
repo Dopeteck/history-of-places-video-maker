@@ -44,9 +44,7 @@ jobs:
           python-version: '3.11'
       - name: Install config and renderer dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
-          python -m pip install -r requirements-regions.txt
+          python -m pip install PyYAML
       - name: Validate config shape and source list
         run: |
           python - <<'PY'
@@ -82,6 +80,12 @@ jobs:
             raise SystemExit("APPROVAL GATE FAILED: claim_sources mapping is required for factual-claim traceability")
           print("Explicit review marker and claim-source mapping found.")
           PY
+      - name: Install rendering dependencies
+        if: github.event_name == 'workflow_dispatch' && inputs.render_approved
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
+          python -m pip install -r requirements-regions.txt
       - name: Render approved region short
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
