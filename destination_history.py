@@ -24,6 +24,8 @@ COMMERCIAL_LICENSES = {
     "Public Domain Mark 1.0",
     "NASA Media Usage Guidelines",
     "Pexels License",
+    "Pixabay Content License",
+    "Unsplash License",
 }
 ATTRIBUTION_REQUIRED = {x for x in COMMERCIAL_LICENSES if x.startswith(("CC BY ", "CC BY-SA "))}
 
