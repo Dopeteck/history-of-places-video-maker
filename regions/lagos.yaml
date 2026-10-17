@@ -21,6 +21,13 @@ sources:
   - https://en.wikipedia.org/wiki/History_of_Lagos
   - https://www.nigerianmuseums.gov.ng/
   - https://whc.unesco.org/en/tentativelists/5173/
+claim_sources:
+  "Eko is a name associated with Lagos Island and its older Yoruba history": [https://en.wikipedia.org/wiki/History_of_Lagos, https://en.wikipedia.org/wiki/Lagos]
+  "Lagoons and waterways shaped settlement, fishing and trade": [https://en.wikipedia.org/wiki/Lagos, https://whc.unesco.org/en/tentativelists/5173/]
+  "Lagos was annexed by Britain in 1861": [https://en.wikipedia.org/wiki/History_of_Lagos]
+  "The port was involved in the Atlantic slave trade and colonial rule": [https://en.wikipedia.org/wiki/History_of_Lagos, https://whc.unesco.org/en/tentativelists/5173/]
+  "Nigeria became independent in 1960 and Lagos became a major national centre": [https://en.wikipedia.org/wiki/Lagos, https://en.wikipedia.org/wiki/History_of_Lagos]
+  "Modern Lagos is a major centre for commerce and popular culture": [https://en.wikipedia.org/wiki/Lagos]
 visual_style:
   palette: [lagoon-teal, sand-gold, deep-indigo]
   accent_color: "#19A7A1"
