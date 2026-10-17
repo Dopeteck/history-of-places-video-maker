@@ -25,6 +25,16 @@ class DestinationAssetResolverTests(unittest.TestCase):
             self.assertEqual(result["status"], "selected")
             self.assertEqual(result["fallback"], "archival_still")
 
+
+    def test_path_traversal_outside_asset_root_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            p = Path(outside) / "secret.jpg"
+            p.write_bytes(b"x")
+            manifest = [{"scene_id":"s1","approved":True,"download_validated":True,
+                         "local_filename":str(p),"media_type":"photo","needs_human_review":False}]
+            result = choose_scene_asset({"id":"s1"}, manifest, Path(tmp))
+            self.assertEqual(result["status"], "unresolved")
+
     def test_missing_asset_blocks_scene(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = [{"scene_id":"s1","approved":True,"download_validated":True,
