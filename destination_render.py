@@ -76,8 +76,8 @@ def render_scene_frame(scene: dict[str, Any], progress: float = 0.0,
         raise ValueError(f"{kind} requires a reviewed, manifest-backed local image")
     if image_path:
         source = Image.open(image_path).convert("RGB")
-        if min(source.size) < 1080:
-            raise ValueError("Source image must be at least 1920 px on its long side and suitable for a 1080px output")
+        if max(source.size) < 1920 or min(source.size) < 1080:
+            raise ValueError("Source image must have a long side of at least 1920 px and a short side of at least 1080 px")
         if layout == "full-bleed":
             canvas = _fit_cover(source, width, height, progress)
         else:
