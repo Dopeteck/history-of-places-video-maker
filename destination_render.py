@@ -164,24 +164,31 @@ def render_frame_array(scene: dict[str, Any], progress: float = 0.0,
 
 
 def validate_render_inputs(plan: dict[str, Any], manifest: list[dict[str, Any]], asset_root: Path) -> dict[str, Path]:
-    """Require every image-backed scene to resolve to a licensed manifest asset."""
+    """Require every image-backed scene to resolve to approved, validated, reviewed media."""
     from destination_history import validate_asset, validate_destination_plan
+    from destination_asset_resolver import choose_scene_asset
+
     validate_destination_plan(plan)
     resolved: dict[str, Path] = {}
-    by_scene: dict[str, list[dict[str, Any]]] = {}
+    validated: list[dict[str, Any]] = []
     for raw in manifest:
         asset = validate_asset(raw)
         if asset.get("approved") is not True:
             raise ValueError(f"Asset {asset['local_filename']} has not been explicitly approved after human review")
-        by_scene.setdefault(asset["scene_id"], []).append(asset)
+        if asset.get("download_validated") is not True:
+            raise ValueError(f"Asset {asset['local_filename']} has not passed download validation")
+        # validate_asset derives the review flag from review_flags. A reviewed asset must
+        # have its flags resolved by a human, not merely have approved=True.
+        if asset.get("needs_human_review") is True:
+            raise ValueError(f"Asset {asset['local_filename']} still has unresolved review flags")
+        validated.append(asset)
+
     for scene in plan["scenes"]:
         if scene["type"] in {"still_kenburns", "clip", "split_compare"}:
-            matches = [item for item in by_scene.get(scene["id"], [])
-                       if item.get("media_type", "photo") == "photo"]
-            if not matches:
-                raise ValueError(f"Scene {scene['id']} has no manifest-backed image/photo (video clips are not yet supported by this renderer)")
-            candidate = asset_root / matches[0]["local_filename"]
-            if not candidate.is_file():
-                raise ValueError(f"Manifest image is missing on disk: {candidate}")
-            resolved[scene["id"]] = candidate
+            choice = choose_scene_asset(scene, validated, asset_root)
+            if choice["status"] != "selected":
+                raise ValueError(f"Scene {scene['id']} blocked: {choice['message']}")
+            if choice["asset"].get("media_type", "photo") not in {"photo", "still", "image"}:
+                raise ValueError(f"Scene {scene['id']} requires a still image; video clips are not yet supported by this renderer")
+            resolved[scene["id"]] = choice["path"]
     return resolved
