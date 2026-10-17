@@ -1,0 +1,7 @@
+requests>=2.31.0
+Pillow>=10.0.0
+numpy>=1.26.0
+PyYAML>=6.0.1
+kokoro==0.9.4
+soundfile>=0.12.1
+pytesseract>=0.3.10
