@@ -187,7 +187,7 @@ def validate_render_inputs(plan: dict[str, Any], manifest: list[dict[str, Any]],
         if scene["type"] in {"still_kenburns", "clip", "split_compare"}:
             choice = choose_scene_asset(scene, validated, asset_root)
             if choice["status"] != "selected":
-                raise ValueError(f"Scene {scene['id']} blocked: {choice['message']}")
+                raise ValueError(f"Scene {scene['id']} has no manifest-backed image: {choice['message']}")
             if choice["asset"].get("media_type", "photo") not in {"photo", "still", "image"}:
                 raise ValueError(f"Scene {scene['id']} requires a still image; video clips are not yet supported by this renderer")
             resolved[scene["id"]] = choice["path"]
