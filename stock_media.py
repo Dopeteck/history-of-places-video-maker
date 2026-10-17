@@ -166,6 +166,16 @@ def collect(plan_path: Path, asset_root: Path, manifest_path: Path, mode: str = 
     if not isinstance(scenes, list):
         raise ValueError("Plan must contain a scenes array")
     providers = providers or ["pexels", "pixabay", "unsplash"]
+    key_names = {"pexels": "PEXELS_API_KEY", "pixabay": "PIXABAY_API_KEY", "unsplash": "UNSPLASH_ACCESS_KEY"}
+    active = []
+    for provider in providers:
+        if os.environ.get(key_names[provider], "").strip():
+            active.append(provider)
+        else:
+            print(f"Skipping {provider}: {key_names[provider]} is not configured.")
+    if not active:
+        raise RuntimeError("No stock providers configured. Add at least one provider API key.")
+    providers = active
     wanted = ["photo", "video"] if mode == "both" else [mode]
     existing = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else []
     if not isinstance(existing, list):
