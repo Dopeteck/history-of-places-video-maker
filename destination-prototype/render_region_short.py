@@ -191,9 +191,9 @@ def main():
  bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
  bed*=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
  mixed=voice*.84+bed
-  rms=float(np.sqrt(np.mean(mixed**2)))
-  if rms<0.001: fail("Narration mix is silent or near-silent")
-  mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
+ rms=float(np.sqrt(np.mean(mixed**2)))
+ if rms<0.001: fail("Narration mix is silent or near-silent")
+ mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
  with wave.open(str(wav),"wb") as f: f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate); f.writeframes((mixed*32767).astype("<i2").tobytes())
  # Scene durations follow scene narration intent lengths, then normalize to the actual narration duration.
  weights=np.array([max(1,len(s["narration_intent"].split())) for s,_ in media],dtype=float); durations=duration*weights/weights.sum(); boundaries=np.cumsum(durations)
