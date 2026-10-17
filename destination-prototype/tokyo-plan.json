@@ -1,0 +1,37 @@
+{
+  "title": "Tokyo Was Once Called Edo",
+  "topic": "Tokyo, Japan",
+  "layout": "framed",
+  "aspect_ratio": "9:16",
+  "target_seconds": 50,
+  "status": "needs_human_review",
+  "visual_style": "photographic travel documentary; no characters, no illustration assets",
+  "hook_style": "historical_reveal",
+  "structure_variant": "past_to_present",
+  "script": [
+    "Tokyo's story begins with a different name: Edo.",
+    "For centuries, Edo grew around the seat of the Tokugawa shogunate, becoming one of Japan's major urban centers.",
+    "In 1868, the imperial capital moved from Kyoto to Edo, and the city took the name Tokyo, meaning eastern capital.",
+    "That history is still part of the city's landscape: traditional districts, shrines, gardens, and modern streets sit within the same enormous metropolis.",
+    "For a history-focused visit, choose one area rather than racing across the whole city. Walk slowly, and look for what has changed around older streets and sacred sites.",
+    "Before you go, check current access details for any museum or site you plan to enter."
+  ],
+  "source_ids": ["tokyo-museum", "edo-tokyo", "gotokyo"],
+  "editorial_notes": [
+    "This is a draft, not fact-check approval. Verify the 1868 transition and all historical wording against authoritative sources.",
+    "Do not state prices, opening hours, or entry rules without dated evidence.",
+    "A useful tip is included; current details are explicitly directed to official sources."
+  ],
+  "scenes": [
+    {"id":"hook","type":"still_kenburns","duration_seconds":3,"narration":"Tokyo's story begins with a different name: Edo.","source_ids":["tokyo-museum"],"asset_tags":["edo-tokyo-historical-map","tokyo-old-city"],"motion":"slow_push_in","review_flags":["asset_not_yet_resolved"]},
+    {"id":"edo","type":"map","duration_seconds":4,"narration":"For centuries, Edo grew around the seat of the Tokugawa shogunate, becoming one of Japan's major urban centers.","source_ids":["tokyo-museum","edo-tokyo"],"map":{"country":"Japan","region":"Tokyo","route":[]}},
+    {"id":"capital","type":"icon_card","duration_seconds":3,"narration":"In 1868, the imperial capital moved from Kyoto to Edo, and the city took the name Tokyo, meaning eastern capital.","source_ids":["tokyo-museum"],"labels":["1868","Edo → Tokyo"]},
+    {"id":"city","type":"still_kenburns","duration_seconds":4,"narration":"That history is still part of the city's landscape: traditional districts, shrines, gardens, and modern streets sit within the same enormous metropolis.","source_ids":["gotokyo"],"asset_tags":["tokyo-shrine-garden","tokyo-street-modern"],"motion":"slow_pan_right","review_flags":["asset_not_yet_resolved"]},
+    {"id":"then-now","type":"split_compare","duration_seconds":3,"narration":"Traditional districts and modern streets share the same city.","source_ids":["tokyo-museum","gotokyo"],"labels":["THEN","NOW"],"review_flags":["two_assets_not_yet_resolved"]},
+    {"id":"tip","type":"icon_card","duration_seconds":3,"narration":"For a history-focused visit, choose one area rather than racing across the whole city.","source_ids":["gotokyo"],"labels":["VISIT TIP","Choose one district"]},
+    {"id":"check","type":"still_kenburns","duration_seconds":3,"narration":"Walk slowly, and look for what has changed around older streets and sacred sites.","source_ids":["gotokyo"],"asset_tags":["tokyo-historic-street"],"motion":"slow_push_out","review_flags":["asset_not_yet_resolved"]},
+    {"id":"outro","type":"icon_card","duration_seconds":3,"narration":"Before you go, check current access details for any museum or site you plan to enter.","source_ids":["gotokyo"],"labels":["CHECK CURRENT DETAILS"]}
+  ],
+  "asset_policy": "No asset may render until its source, author, exact license, retrieval date, local path, dimensions, and scene usage are recorded in assets_manifest.json and the license passes the commercial-use allowlist.",
+  "rendering_note": "Durations currently total 26 seconds; this plan is an editorial starter, not a render-ready 50-second script. Expand and align the script to Kokoro timings before preview."
+}
