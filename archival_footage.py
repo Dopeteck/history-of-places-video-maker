@@ -67,7 +67,7 @@ def _candidate(provider: str, item_id: str, title: str, page_url: str, media_url
         "date_retrieved": date.today().isoformat(),
         "local_filename": "",
         "approved": False,
-        "review_flags": ["archival item requires human context review"],
+        "review_flags": ["check identifiable people", "check logos/trademarks", "check modern elements and rights ambiguity", "archival context requires human review"],
         "needs_human_review": True,
         "extra": extra or {},
     }
