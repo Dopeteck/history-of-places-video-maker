@@ -1,50 +1,56 @@
-# Stock media setup (free API, no paid service)
+# Stock media setup (free API, no paid plan assumed)
 
-## Recommended first provider: Pexels
+The destination-history collector can search **Pexels, Pixabay, and Unsplash**. Pexels and Pixabay provide photos and videos; Unsplash is photo-only. Each provider requires its own API credential. All downloads remain unapproved until reviewed.
 
-Pexels offers a free API for both photos and videos. You need to create a Pexels account and request an API key; the pipeline cannot authenticate without it. API access and use are subject to Pexels' current terms, rate limits, and attribution requirements.
+## Add the API credentials
 
-1. Create/get a key at https://www.pexels.com/api/
-2. In GitHub, open the repository **Settings → Secrets and variables → Actions → New repository secret**.
-3. Name it `PEXELS_API_KEY` and paste the key as the secret value. Never commit the key into code, JSON, workflow YAML, or a public issue.
-4. For local tests, set the environment variable in your terminal session rather than saving it in the repository.
-5. Run the collector from the repository root:
+In GitHub, open **Settings → Secrets and variables → Actions → New repository secret**. Add the secrets for providers you want to use. Never commit keys into code, JSON, workflow YAML, or issues.
+
+| Provider | Secret name | Media | API access |
+|---|---|---|---|
+| Pexels | `PEXELS_API_KEY` | Photos + videos | https://www.pexels.com/api/ |
+| Pixabay | `PIXABAY_API_KEY` | Photos + videos | https://pixabay.com/api/docs/ |
+| Unsplash | `UNSPLASH_ACCESS_KEY` | Photos only | https://unsplash.com/developers |
+
+Use local environment variables for local runs. You do not need to configure every provider: select only those whose secrets you have added.
+
+## Run the collector
+
+Search all configured providers for photos:
 
 ```bash
-python stock_media.py --plan destination-prototype/tokyo-plan.json --assets destination-prototype/assets --manifest destination-prototype/assets_manifest.json --mode photo
+python stock_media.py --plan destination-prototype/tokyo-plan.json --assets destination-prototype/assets --manifest destination-prototype/assets_manifest.json --mode photo --provider all
 ```
 
-To search for video candidates as well:
+Search Pexels and Pixabay for video candidates (Unsplash will not be queried for video):
 
 ```bash
-python stock_media.py --plan destination-prototype/tokyo-plan.json --assets destination-prototype/assets --manifest destination-prototype/assets_manifest.json --mode both
+python stock_media.py --plan destination-prototype/tokyo-plan.json --assets destination-prototype/assets --manifest destination-prototype/assets_manifest.json --mode both --provider all
 ```
 
-The collector downloads a small, bounded number of candidates and records their source page, photographer, provider, retrieval date, dimensions, media type, and license label. It intentionally marks every new candidate `approved: false` and adds review flags. This is a *candidate-ingestion step*, not automatic rights approval.
+Or limit a run to one provider with `--provider pexels`, `--provider pixabay`, or `--provider unsplash`. To keep the first test small, use `--per-scene 1`.
 
-## Human review required before render
+The collector records the source page, creator, provider, retrieval date, dimensions, media type, license label, query, and local filename in `assets_manifest.json`. It marks every candidate `approved: false`; ingestion is not rights approval.
+
+## Review before rendering
 
 For every candidate:
-- Open the source page and confirm the exact media, creator, and current license/terms.
-- Check it actually depicts the intended place/period; do not use generic Tokyo footage as proof of a specific historical claim.
-- Inspect for identifiable people, logos, branded signs, copyrighted art, and misleading historical context.
-- Verify the local file opens and is high enough resolution for 1080x1920 crops.
-- Set `approved` to `true` only after review; remove resolved flags and keep any unresolved risk flags.
-- For a video candidate, inspect the full clip and confirm duration, orientation, frame size, and that the downloaded file is decodable.
+- Open its source page and confirm the exact asset, creator, and current license/terms.
+- Confirm it depicts the intended place/period; generic Tokyo imagery must not be treated as evidence for a specific historical claim.
+- Inspect identifiable people, logos, branded signs, artwork, and misleading historical context.
+- Verify the local file opens and has sufficient resolution for a 1080×1920 crop.
+- Set `approved: true` only after review; resolve review flags or retain outstanding risks.
+- For video, inspect the entire clip and confirm duration, orientation, frame size, and decodability.
 
-Pexels' license does not require creator attribution in general, but API guidelines request a prominent Pexels link and recommend photographer credit. Keep provider/creator details in the manifest and include a credit screen/description credit in the eventual publication workflow. Depicted people, trademarks, brands, and artworks may have separate rights.
+**License handling:** manifest labels are provider-level starting points, not a substitute for checking the exact license and current provider terms. Pixabay may contain AI-generated material, so inspect and flag it rather than assuming it is documentary photography. Unsplash and Pexels have their own API attribution/display guidance; follow current API terms as well as the content license. People, trademarks, and artworks can carry separate rights.
 
 ## Current renderer limitation
 
-The current renderer can use **reviewed photo assets**. The collector can also fetch video candidates, but the current destination renderer does not yet decode and cut those video clips into scenes. Video files are recorded in the manifest and must not be mistaken for still images. Implementing actual clip trimming, audio stripping/muting, aspect/crop handling, and scene timing is the next video-provider integration task.
+The destination renderer currently supports reviewed **photo assets**. The collector can fetch video candidates from Pexels and Pixabay, but actual video trimming, audio muting, crop handling, and scene timing are not yet integrated into the destination renderer. Do not treat downloaded clips as render-ready still images.
 
-## Alternative source
+## Secrets and costs
 
-Pixabay also offers a free API for images and videos: https://pixabay.com/api/docs/. Its API requires a key too, and the usage/license rules should be checked for each integration. Wikimedia Commons is useful for historically specific photographs/maps, but license and attribution metadata varies file by file; do not assume all Commons content is commercially reusable.
-
-## Required secrets and costs
-
-- Required now for stock ingestion: `PEXELS_API_KEY` (free API key; no paid plan assumed).
-- Required for speech render: existing Kokoro dependencies and FFmpeg in the runner.
-- No stock provider key is required to run offline unit tests.
-- No photos or video clips have been marked approved by this documentation.
+- Add only the provider secrets you intend to use: `PEXELS_API_KEY`, `PIXABAY_API_KEY`, and/or `UNSPLASH_ACCESS_KEY`.
+- No paid plan is assumed by this code; providers can change API limits or terms.
+- No stock API key is needed for offline unit tests.
+- No downloaded asset is approved automatically.
