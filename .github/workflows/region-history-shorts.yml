@@ -46,7 +46,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
-          python -m pip install -r destination-prototype/requirements-regions.txt
+          python -m pip install -r requirements-regions.txt
       - name: Validate config shape and source list
         run: |
           python - <<'PY'
