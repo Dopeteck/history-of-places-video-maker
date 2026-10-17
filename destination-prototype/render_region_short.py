@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Config-driven region short renderer. Fails closed on rights, relevance, media and QA."""
 from __future__ import annotations
-import argparse, datetime as dt, html, json, math, re, subprocess, sys, time, wave
+import argparse, datetime as dt, hashlib, html, json, math, re, subprocess, sys, time, wave
 from pathlib import Path
 from io import BytesIO
 import requests, yaml, numpy as np
@@ -72,7 +72,9 @@ def get_image(scene,idx,config,asset_dir,used,output):
  ranked.sort(key=lambda x:(-x[0],-int(x[4].get("width",0))*int(x[4].get("height",0))))
  for match,title,desc,cats,info,meta,url,page in ranked:
   try:
-   data=get(url,timeout=(10,60)).content; im=Image.open(BytesIO(data)).convert("RGB")
+   data=get(url,timeout=(10,60)).content; digest=hashlib.sha256(data).hexdigest()
+   if digest in used: continue
+   im=Image.open(BytesIO(data)).convert("RGB")
    if min(im.size)<1080 or max(im.size)/min(im.size)>3.0 or len(data)<40000: continue
    # OCR check when Tesseract is available; reject images with substantial text coverage.
    try:
@@ -85,8 +87,8 @@ def get_image(scene,idx,config,asset_dir,used,output):
    filename=f"scene_{idx:02d}.jpg"; path=asset_dir/filename; im.save(path,quality=94)
    lic=clean(meta.get("LicenseShortName",{}).get("value",""))
    author=clean(meta.get("Artist",{}).get("value","Unknown / not stated"))
-   used.add(title)
-   return im,{"scene":scene["title"],"file":str(path.relative_to(ROOT)),"title":title,"author":author,"license":lic,"license_url":clean(meta.get("LicenseUrl",{}).get("value","")),"source_url":page,"match_score":match,"search_variant":query,"warnings":[]}
+   used.add(title); used.add(digest)
+   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(path.relative_to(ROOT)),"title":title,"author":author,"license":lic,"license_url":clean(meta.get("LicenseUrl",{}).get("value","")),"source_url":page,"match_score":match,"search_variant":query,"warnings":[]}
   except Exception as e:
    print(f"Candidate rejected for {scene['title']}: {title}: {type(e).__name__}: {e}",file=sys.stderr)
  fail(f"No acceptable image for scene '{scene['title']}'. Tried variants: {tried}; ranked relevant candidates: {len(ranked)}")
@@ -102,7 +104,7 @@ def make_map(scene,idx,config,asset_dir):
    r=get(f"https://tile.openstreetmap.org/{z}/{xx}/{yy}.png",timeout=(10,30)); canvas.paste(Image.open(BytesIO(r.content)).convert("RGB"),((dx+1)*256,(dy+1)*256))
  px=384+(x-tx)*256; py=384+(y-ty)*256; d=ImageDraw.Draw(canvas); d.ellipse((px-16,py-16,px+16,py+16),fill="#D33A32",outline="white",width=5); d.text((20,20),config["map"].get("label",config["name"]).upper(),font=font(28,True),fill="#171717",stroke_width=3,stroke_fill="white"); d.text((20,730),"© OpenStreetMap contributors",font=font(14),fill="#111111",stroke_width=2,stroke_fill="white")
  p=asset_dir/f"scene_{idx:02d}_map.jpg"; canvas.save(p,quality=94)
- return canvas,{"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":"OpenStreetMap location map","author":"OpenStreetMap contributors","license":"ODbL","license_url":"https://www.openstreetmap.org/copyright","source_url":"https://www.openstreetmap.org/","match_score":1,"search_variant":"OSM tile map centred on configured coordinates","warnings":[]}
+ return canvas,{"content_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":"OpenStreetMap location map","author":"OpenStreetMap contributors","license":"ODbL","license_url":"https://www.openstreetmap.org/copyright","source_url":"https://www.openstreetmap.org/","match_score":1,"search_variant":"OSM tile map centred on configured coordinates","warnings":[]}
 def smart_fit(im,progress):
  # Portrait images use focal-aware fit; wide images use blurred fill rather than cutting through the subject.
  if im.width/im.height < .78:
@@ -125,13 +127,17 @@ def main():
  if "[REVIEW]" in script or "[DRAFT" in script or len(script.split())<110 or len(script.split())>155: fail("Narration must be reviewed, non-placeholder, and 110–155 words")
  for term in ("pending","placeholder","archival asset"):
   if term in script.lower() or term in cfgpath.read_text(encoding="utf-8").lower(): fail(f"Forbidden placeholder text '{term}' in narration/config")
- media=[]; credits=[]; used=set()
+ media=[]; credits=[]; used=set(); previous_digest=None
  for i,scene in enumerate(cfg["scenes"],1):
   if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
   else: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
   if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
    # Match must come from metadata; no quiet substitute for the present-day visual.
    if credit["match_score"]<3: fail(f"Modern/present image relevance gate failed for scene '{scene['title']}'")
+  digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
+  if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
+  if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
+  credit["content_sha256"]=digest; previous_digest=digest
   media.append((scene,im)); credits.append(credit); print(f"IMAGE {i}/{len(cfg['scenes'])}: {scene['title']} score={credit['match_score']} {credit['title']}")
  # Kokoro only: no silent speech-provider fallback.
  try:
