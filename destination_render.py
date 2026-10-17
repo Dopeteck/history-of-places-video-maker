@@ -143,6 +143,8 @@ def validate_render_inputs(plan: dict[str, Any], manifest: list[dict[str, Any]],
     by_scene: dict[str, list[dict[str, Any]]] = {}
     for raw in manifest:
         asset = validate_asset(raw)
+        if asset.get("approved") is not True:
+            raise ValueError(f"Asset {asset['local_filename']} has not been explicitly approved after human review")
         by_scene.setdefault(asset["scene_id"], []).append(asset)
     for scene in plan["scenes"]:
         if scene["type"] in {"still_kenburns", "clip", "split_compare"}:
