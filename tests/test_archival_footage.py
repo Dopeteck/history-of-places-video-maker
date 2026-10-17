@@ -10,7 +10,7 @@ class ArchivalFootageTests(unittest.TestCase):
             self.assertTrue(af.rights_allowed(rights), rights)
 
     def test_unknown_or_noncommercial_rights_rejected(self):
-        for rights in ("", "Unknown", "CC BY-NC 4.0", "All rights reserved", "Permission required"):
+        for rights in ("", "Unknown", "CC BY-NC 4.0", "CC BY-ND 4.0", "All rights reserved", "Permission required"):
             self.assertFalse(af.rights_allowed(rights), rights)
 
     def test_candidate_keeps_exact_rights_and_url_and_is_unapproved(self):
@@ -24,6 +24,9 @@ class ArchivalFootageTests(unittest.TestCase):
     def test_candidate_rejects_unknown_rights(self):
         self.assertIsNone(af._candidate("test", "id", "Title", "https://example.org/item",
                                        "https://example.org/file.mp4", "Unknown", "video"))
+
+    def test_whitespace_is_normalized(self):
+        self.assertTrue(af.rights_allowed("  CC   BY  4.0  "))
 
     def test_fallback_order(self):
         self.assertEqual(af.choose_fallback({"ai_reconstruction": True, "site_today": True}), "site_today")
