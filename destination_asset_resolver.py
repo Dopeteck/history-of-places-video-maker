@@ -22,14 +22,18 @@ def choose_scene_asset(scene: dict[str, Any], manifest: list[dict[str, Any]], as
             continue
         local = str(asset.get("local_filename") or "")
         path = (asset_root / local).resolve() if local else None
-        if not path or not path.is_file() or asset.get("needs_human_review") is True:
+        root = asset_root.resolve()
+        # Manifest paths are untrusted input; reject absolute paths and traversal outside root.
+        if not path or (path != root and root not in path.parents):
+            continue
+        if not path.is_file() or asset.get("needs_human_review") is True:
             # Human review flag means unresolved review; never use until cleared.
             continue
         usable.append((asset, path))
     for wanted_type in ("video", "still", "image", "document", "photo"):
         for asset, path in usable:
             if str(asset.get("media_type", "")).lower() == wanted_type:
-                return {"status": "selected", "scene_id": scene_id, "fallback": "archival_still" if wanted_type != "video" else "archival_clip",
+                return {"status": "selected", "scene_id": scene_id, "fallback": ("archival_clip" if wanted_type == "video" else "document" if wanted_type == "document" else "archival_still"),
                         "asset": asset, "path": path}
     # Don't silently use a fallback that has no concrete, reviewed asset.
     available = scene.get("fallback_assets") if isinstance(scene.get("fallback_assets"), dict) else {}
@@ -41,7 +45,8 @@ def choose_scene_asset(scene: dict[str, Any], manifest: list[dict[str, Any]], as
             continue
         local = str(item.get("local_filename") or "")
         path = (asset_root / local).resolve() if local else None
-        if path and path.is_file() and item.get("needs_human_review") is not True:
+        root = asset_root.resolve()
+        if path and (path == root or root in path.parents) and path.is_file() and item.get("needs_human_review") is not True:
             return {"status": "selected", "scene_id": scene_id, "fallback": fallback, "asset": item, "path": path}
     return {"status": "unresolved", "scene_id": scene_id, "fallback_order": list(FALLBACK_ORDER),
             "message": "No approved, validated asset available; scene must remain blocked from rendering."}
