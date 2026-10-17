@@ -1,0 +1,29 @@
+{
+  "plan": "tokyo-plan.json",
+  "status": "asset_research_required",
+  "policy": "This file is a scene-to-asset research queue, not an approval manifest. Nothing here is cleared for rendering until a real asset is downloaded, rights metadata is recorded, and human review is complete.",
+  "scenes": [
+    {"scene_id":"hook","preferred":["edo-period-map","historic-tokyo-map"],"fallback_order":["archival_still","map","document","site_today","ai_reconstruction"],"review_flags":["verify depiction and date","verify commercial reuse rights"]},
+    {"scene_id":"founding","preferred":["Edo/Tokugawa-era map"],"fallback_order":["map","document","site_today","ai_reconstruction"],"review_flags":["map must be historically sourced"]},
+    {"scene_id":"shogunate","preferred":["edo-castle-historical-map"],"fallback_order":["archival_still","map","document","site_today","ai_reconstruction"],"review_flags":["verify date and depicted location"]},
+    {"scene_id":"metropolis","preferred":["edo-cityscape-print"],"fallback_order":["archival_still","document","map","site_today","ai_reconstruction"],"review_flags":["verify print date and rights"]},
+    {"scene_id":"kyoto","preferred":["Kyoto/Edo locator map"],"fallback_order":["map","document","site_today","ai_reconstruction"],"review_flags":["keep geography legible"]},
+    {"scene_id":"turning-point","preferred":["1868 timeline/document"],"fallback_order":["document","map","site_today","ai_reconstruction"],"review_flags":["avoid implying a specific document says more than it does"]},
+    {"scene_id":"renaming","preferred":["tokyo-renaming-document"],"fallback_order":["document","archival_still","map","site_today","ai_reconstruction"],"review_flags":["verify document provenance and readable date"]},
+    {"scene_id":"layers","preferred":["tokyo-historic-street"],"fallback_order":["archival_still","site_today","map","ai_reconstruction"],"review_flags":["do not imply present-day buildings are Edo-era"]},
+    {"scene_id":"gardens","preferred":["edo-era-garden"],"fallback_order":["archival_still","site_today","map","ai_reconstruction"],"review_flags":["verify surviving garden history before calling it Edo-era"]},
+    {"scene_id":"nihonbashi","preferred":["nihonbashi-historic-print"],"fallback_order":["archival_still","document","site_today","map","ai_reconstruction"],"review_flags":["verify bridge/location and print date"]},
+    {"scene_id":"routes","preferred":["Five Highways / Nihonbashi route map"],"fallback_order":["map","document","site_today","ai_reconstruction"],"review_flags":["use a sourced schematic; don't invent routes"]},
+    {"scene_id":"culture","preferred":["ukiyo-e-woodblock"],"fallback_order":["archival_still","document","site_today","ai_reconstruction"],"review_flags":["verify artwork title, creator, and license"]},
+    {"scene_id":"modern","preferred":["tokyo-historic-street","tokyo-modern-street"],"fallback_order":["site_today","archival_still","map","ai_reconstruction"],"review_flags":["split comparison needs two separately reviewed assets; renderer currently accepts one image only"]},
+    {"scene_id":"museum","preferred":["edo-tokyo-museum-exterior"],"fallback_order":["site_today","document","map","ai_reconstruction"],"review_flags":["check image license separately from museum website facts"]},
+    {"scene_id":"visitor-tip","preferred":["typographic visitor tip card"],"fallback_order":["map","document","site_today"],"review_flags":["no unverified opening hours, prices, or access claims"]},
+    {"scene_id":"outro","preferred":["typographic source/visitor reminder card"],"fallback_order":["map","document","site_today"],"review_flags":["do not present the card as an official museum notice"]}
+  ],
+  "blocking_issues": [
+    "No media asset is approved by the factual source registry.",
+    "Each downloaded asset needs an exact rights statement and rights URL, attribution, retrieval date, SHA-256, dimensions, and human review.",
+    "The split_compare scene must not render until the renderer supports two independently validated image assets or the scene is changed to a single-image layout.",
+    "The current Tokyo plan is a 48-second editorial draft; final timing must be reconciled with actual Kokoro narration."
+  ]
+}
