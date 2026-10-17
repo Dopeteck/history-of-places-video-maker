@@ -56,35 +56,49 @@ def wrap(draw, text, f, maxw):
     if line: out.append(line)
     return out
 def commons_image(query, index):
-    params={"action":"query","format":"json","generator":"search","gsrsearch":f'filetype:bitmap {query} (incategory:Public_domain OR incategory:CC-BY OR incategory:CC-BY-SA OR incategory:CC0)',
-            "gsrnamespace":6,"gsrlimit":30,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1800}
-    try: data=S.get(COMMONS,params=params,timeout=(10,40)); data.raise_for_status(); payload=data.json()
-    except Exception as e: fail(f"Wikimedia Commons API failed for scene {index} ({query}): {type(e).__name__}: {e}")
-    pages=payload.get("query",{}).get("pages",{})
-    candidates=[]
-    for p in pages.values():
+    # Commons category syntax in free-text search is brittle; search broadly first,
+    # then apply a strict rights filter to each result's machine-readable metadata.
+    variants=[query, query.replace("public domain",""), query.replace("historical photograph","photograph"),
+              " ".join(query.split()[:4])]
+    seen=set()
+    for search_term in variants:
+      params={"action":"query","format":"json","generator":"search","gsrsearch":search_term,
+              "gsrnamespace":6,"gsrlimit":50,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1800}
+      try:
+        response=S.get(COMMONS,params=params,timeout=(10,40)); response.raise_for_status(); payload=response.json()
+      except Exception as e:
+        fail(f"Wikimedia Commons API failed for scene {index} ({search_term}): {type(e).__name__}: {e}")
+      pages=payload.get("query",{}).get("pages",{})
+      candidates=[]
+      for p in pages.values():
+        if p.get("title") in seen: continue
+        seen.add(p.get("title"))
         info=(p.get("imageinfo") or [{}])[0]; meta=info.get("extmetadata") or {}
-        short=html.unescape((meta.get("LicenseShortName") or {}).get("value","")).strip()
+        short=html.unescape(re.sub("<[^>]+>"," ",(meta.get("LicenseShortName") or {}).get("value",""))).strip()
         licurl=html.unescape((meta.get("LicenseUrl") or {}).get("value","")).strip()
-        if not license_ok(short,licurl): continue
-        url=info.get("thumburl") or info.get("url")
-        page=info.get("descriptionurl")
-        if url and page and url.startswith("https://") and page.startswith("https://"):
-            artist=html.unescape(re.sub("<[^>]+>"," ",(meta.get("Artist") or {}).get("value","Unknown / not stated"))).strip() or "Unknown / not stated"
-            candidates.append((p,info,short,licurl,artist,url,page))
-    for p,info,short,licurl,artist,url,page in candidates:
+        status=html.unescape(re.sub("<[^>]+>"," ",(meta.get("Copyrighted") or {}).get("value",""))).strip().lower()
+        if not license_ok(short,licurl) and not (status=="false" and "public domain" in (meta.get("UsageTerms") or {}).get("value","").lower()):
+          continue
+        url=info.get("thumburl") or info.get("url"); page=info.get("descriptionurl")
+        if not (url and page and url.startswith("https://") and page.startswith("https://")): continue
+        artist=html.unescape(re.sub("<[^>]+>"," ",(meta.get("Artist") or {}).get("value","Unknown / not stated"))).strip() or "Unknown / not stated"
+        candidates.append((p,info,short,licurl,artist,url,page))
+      # Prefer items with an explicit, standard license statement and large image.
+      candidates.sort(key=lambda z: (0 if z[2] else 1, 0 if z[5].lower().endswith((".jpg",".jpeg")) else 1))
+      for p,info,short,licurl,artist,url,page in candidates:
         try:
-            response=S.get(url,timeout=(10,60)); response.raise_for_status()
-            from io import BytesIO
-            im=Image.open(BytesIO(response.content)).convert("RGB")
-            if im.width<640 or im.height<360: continue
-            path=ASSETS/f"commons_{index:02d}.jpg"; im.save(path,quality=94)
-            return im, {"scene_id":f"scene-{index:02d}","file":str(path.relative_to(ROOT)),"title":p.get("title",""),
-              "author":artist,"license":short,"rights_statement":short,"license_url":licurl or page,
-              "source_url":page,"download_url":url,"date_retrieved":dt.date.today().isoformat()}
+          result=S.get(url,timeout=(10,60)); result.raise_for_status()
+          from io import BytesIO
+          im=Image.open(BytesIO(result.content)).convert("RGB")
+          if im.width<640 or im.height<360: continue
+          path=ASSETS/f"commons_{index:02d}.jpg"; im.save(path,quality=94)
+          exact_license=short or "Public domain (Commons metadata: Copyrighted=false)"
+          return im, {"scene_id":f"scene-{index:02d}","file":str(path.relative_to(ROOT)),"title":p.get("title",""),
+            "author":artist,"license":exact_license,"rights_statement":exact_license,
+            "license_url":licurl or page,"source_url":page,"download_url":url,"date_retrieved":dt.date.today().isoformat()}
         except Exception as e:
-            print(f"Rejected broken Commons candidate {p.get('title')}: {type(e).__name__}: {e}",file=sys.stderr)
-    fail(f"No usable Public Domain/CC image found for scene {index}: {query}")
+          print(f"Rejected broken Commons candidate {p.get('title')}: {type(e).__name__}: {e}",file=sys.stderr)
+    fail(f"No usable Public Domain/CC image found for scene {index}: {query}; searched variants={variants}")
 def tile_xy(lon,lat,z):
     lat=max(-85,min(85,lat)); n=2**z
     return ((lon+180)/360*n, (1-math.asinh(math.tan(math.radians(lat)))/math.pi)/2*n)
