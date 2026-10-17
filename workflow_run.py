@@ -76,6 +76,33 @@ def run(root: Path=ROOT, env=None) -> dict:
         created=set(drafts.iterdir())-before
         if len(created)!=1:raise RuntimeError('Expected exactly one new draft')
         draft=created.pop();result={'status':'awaiting_review','draft_id':draft.name,'draft':str(draft),'run_url':run_url}
+    elif action=='preview':
+        # Render an explicitly unapproved draft for private visual review only.
+        # Never create an approval receipt or update approved-render state here.
+        draft=draft_path(root,sid)
+        story=read_json(draft/'story.json')
+        if story.get('mode') not in {'shorts','long'}:raise ValueError('Saved draft has an invalid mode')
+        if story['mode']=='shorts' and part is None:raise ValueError('Select a Shorts part (1–5)')
+        if part is not None and story['mode']=='shorts':
+            chapters=story.get('chapters',[])
+            selected=next((ch for ch in chapters if ch.get('number')==part),None)
+            if selected is None:raise ValueError('Requested Shorts part is not in this draft')
+            story={**story,'chapters':[selected]}
+        from render import render_story
+        destination=out/('preview-'+sid+(f'-part-{part}' if part else ''))
+        video=render_story(story,destination,config.STORY_VOICE,config.STORY_SPEED,preview=True)
+        metadata=read_json(destination/'render-metadata.json')
+        metadata['disclosure']='UNAPPROVED PREVIEW — historical claims have not been cleared for publication.'
+        metadata['preview_only']=True
+        write_json(destination/'render-metadata.json',metadata)
+        description=destination/'description.txt'
+        existing=description.read_text(encoding='utf-8') if description.exists() else ''
+        description.write_text('PREVIEW ONLY — NOT FACT-CHECKED OR APPROVED FOR PUBLICATION.\n\n'+existing,encoding='utf-8')
+        (destination/'PREVIEW-ONLY.txt').write_text(
+            'This video is an unapproved visual preview. Historical claims have not been cleared for publication.\n',
+            encoding='utf-8')
+        result={'status':'preview_rendered','draft_id':sid,'mode':story['mode'],'part':part,
+                'video':str(video),'preview_only':True,'run_url':run_url}
     elif action=='render':
         draft=draft_path(root,sid)
         if env.get('STORY_APPROVE','false').lower()=='true':
