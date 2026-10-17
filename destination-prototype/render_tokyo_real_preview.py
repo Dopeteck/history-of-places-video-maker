@@ -91,10 +91,10 @@ def tile_xy(lon,lat,z):
 def map_image(index):
     # Real OpenStreetMap raster tiles, with a real Tokyo-Kyoto route drawn on the map.
     from io import BytesIO
-    z=6; center=tile_xy(137.2,36.1,z); tx0=int(center[0])-1; ty0=int(center[1])-1
-    canvas=Image.new("RGB",(768,768),(235,232,220))
+    z=6; center=tile_xy(137.2,36.1,z); tx0=int(center[0])-1; ty0=int(center[1])-2
+    canvas=Image.new("RGB",(768,1536),(235,232,220))
     for dx in range(3):
-      for dy in range(3):
+      for dy in range(6):
         x,y=tx0+dx,ty0+dy
         try:
           r=S.get(f"https://tile.openstreetmap.org/{z}/{x}/{y}.png",timeout=(10,30),headers={"User-Agent":UA}); r.raise_for_status()
@@ -109,7 +109,7 @@ def map_image(index):
     d=ImageDraw.Draw(canvas); d.line(pts,fill=(196,38,35),width=7,joint="curve")
     for x,y in (pts[0],pts[-1]): d.ellipse((x-9,y-9,x+9,y+9),fill=(196,38,35),outline="white",width=3)
     d.text((20,20),"KYOTO → TOKYO",font=font(25,True),fill=(35,30,25),stroke_width=2,stroke_fill="white")
-    d.text((20,730),"© OpenStreetMap contributors",font=font(15),fill=(25,25,25),stroke_width=2,stroke_fill="white")
+    d.text((20,1490),"© OpenStreetMap contributors",font=font(15),fill=(25,25,25),stroke_width=2,stroke_fill="white")
     return canvas, {"scene_id":f"scene-{index:02d}","file":"generated OpenStreetMap route map","author":"OpenStreetMap contributors",
       "license":"Open Database License (ODbL)","rights_statement":"© OpenStreetMap contributors; data available under ODbL",
       "license_url":"https://www.openstreetmap.org/copyright","source_url":"https://www.openstreetmap.org/","date_retrieved":dt.date.today().isoformat()}
