@@ -32,7 +32,7 @@ ATTRIBUTION_REQUIRED = {x for x in COMMERCIAL_LICENSES if x.startswith(("CC BY "
 
 def validate_asset(item: dict[str, Any]) -> dict[str, Any]:
     """Reject assets without traceable provenance, commercial rights, or usable size."""
-    required = ("source_url", "author", "license", "date_retrieved", "local_filename", "scene_id")
+    required = ("source_url", "rights_statement", "rights_url", "author", "license", "date_retrieved", "local_filename", "scene_id")
     missing = [key for key in required if not str(item.get(key, "")).strip()]
     if missing:
         raise ValueError("Asset missing required manifest fields: " + ", ".join(missing))
@@ -42,8 +42,12 @@ def validate_asset(item: dict[str, Any]) -> dict[str, Any]:
         date.fromisoformat(item["date_retrieved"])
     except (TypeError, ValueError) as exc:
         raise ValueError("date_retrieved must be an ISO date (YYYY-MM-DD)") from exc
-    if not str(item["source_url"]).startswith(("https://", "http://")):
-        raise ValueError("source_url must be an HTTP(S) URL")
+    if not str(item["source_url"]).startswith("https://"):
+        raise ValueError("source_url must be an HTTPS URL")
+    if not str(item["rights_url"]).startswith("https://"):
+        raise ValueError("rights_url must be an HTTPS URL")
+    if not str(item["rights_statement"]).strip():
+        raise ValueError("rights_statement must preserve the exact source rights statement")
     if not str(item["local_filename"]).strip():
         raise ValueError("local_filename cannot be empty")
     flags = item.get("review_flags", [])
