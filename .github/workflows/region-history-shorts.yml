@@ -50,8 +50,8 @@ jobs:
       - name: Validate config shape and source list
         run: |
           python - <<'PY'
-          import pathlib, yaml, sys
-          p=pathlib.Path("regions") / (sys.argv[1]+".yaml")
+          import pathlib, yaml, os
+          p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
           d=yaml.safe_load(p.read_text())
           assert d.get("name") and d.get("country") and d.get("sources"), "missing region identity/sources"
           assert 8 <= len(d.get("scenes",[])) <= 12, "expected 8–12 scenes"
@@ -63,7 +63,8 @@ jobs:
             assert s.get("image_type") in ("historic","modern","map"), s["title"]+" has invalid image_type"
           print("Config structure OK:", d["name"], "scenes=",len(d["scenes"]))
           PY
-          ${{ matrix.region }}
+        env:
+          REGION: ${{ matrix.region }}
       - name: Require explicit story approval before rendering
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved
         env:
