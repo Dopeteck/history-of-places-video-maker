@@ -25,6 +25,11 @@ class ArchivalFootageTests(unittest.TestCase):
         self.assertIsNone(af._candidate("test", "id", "Title", "https://example.org/item",
                                        "https://example.org/file.mp4", "Unknown", "video"))
 
+    def test_fallback_order(self):
+        self.assertEqual(af.choose_fallback({"ai_reconstruction": True, "site_today": True}), "site_today")
+        self.assertEqual(af.choose_fallback({"archival_still": True, "map": True}), "archival_still")
+        self.assertEqual(af.choose_fallback({}), "unresolved")
+
     def test_resolver_uses_requested_order_and_continues_after_failure(self):
         with patch.object(af, "RESOLVERS", [
             ("first", lambda q, n: (_ for _ in ()).throw(RuntimeError("offline"))),
