@@ -36,6 +36,13 @@ def allowed(short,url):
  x=(short+" "+url).lower()
  if any(k in x for k in ("noncommercial","non-commercial","cc by-nc","cc-by-nc","cc by-nd","cc-by-nd","all rights reserved")): return False
  return any(k in x for k in ALLOWED) or "creativecommons.org/publicdomain" in x or "creativecommons.org/licenses/by/" in x or "creativecommons.org/licenses/by-sa/" in x
+def color(value,default=(32,32,32)):
+ try:
+  named={"ink-black":"#20242B","warm-ivory":"#F2E6CE","vermilion":"#E65A45","lagoon-teal":"#19A7A1","sand-gold":"#D9B56D","deep-indigo":"#26264A","steel-blue":"#45657A","warm-neutral":"#C8B89A","dark-contrast":"#262626"}
+  v=named.get(str(value).lower(),value)
+  if isinstance(v,str) and v.startswith("#") and len(v)==7: return tuple(int(v[i:i+2],16) for i in (1,3,5))
+ except Exception: pass
+ return default
 def font(size,bold=False):
  p="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
  return ImageFont.truetype(p,size) if Path(p).exists() else ImageFont.load_default()
@@ -187,9 +194,19 @@ def main():
  voice=np.concatenate(chunks); rate=24000; duration=len(voice)/rate
  if not 45<=duration<=60: fail(f"Narration duration {duration:.2f}s outside 45–60s; edit script, do not fallback")
  t=np.arange(len(voice))/rate; accent=cfg["visual_style"].get("accent_color","#CC5533")
- # Low-level ambient bed, faded at ends. No external copyrighted track.
- bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
- bed*=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
+ style=cfg.get("visual_style",{}); mood=style.get("music_mood","calm ambient").lower()
+ # Original procedural ambient bed shaped by each region's visual/music brief.
+ envelope=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
+ if any(k in mood for k in ("percussion","rhythmic","african","lagoon")):
+  pulse=(np.sin(2*np.pi*2.0*t)>0.92).astype(np.float32)
+  pulse=np.convolve(pulse,np.ones(1200,dtype=np.float32)/1200,mode="same")
+  bed=(.010*np.sin(2*np.pi*73*t)+.006*np.sin(2*np.pi*110*t)+.009*pulse*np.sin(2*np.pi*55*t)).astype(np.float32)
+ elif any(k in mood for k in ("plucked","strings","japan","reflective")):
+  pulse=np.maximum(0,np.sin(2*np.pi*.55*t))**8
+  bed=(.008*np.sin(2*np.pi*110*t)+.004*np.sin(2*np.pi*164.8*t)+.010*pulse*np.sin(2*np.pi*220*t)).astype(np.float32)
+ else:
+  bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
+ bed*=envelope
  mixed=voice*.84+bed
  rms=float(np.sqrt(np.mean(mixed**2)))
  if rms<0.001: fail("Narration mix is silent or near-silent")
@@ -204,7 +221,8 @@ def main():
  for fi in range(round(duration*FPS)):
   tm=fi/FPS; si=min(len(media)-1,int(np.searchsorted(boundaries,tm,side="right"))); start=0 if si==0 else boundaries[si-1]; progress=max(0,min(1,(tm-start)/max(.01,durations[si]))); scene,im=media[si]
   frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
-  d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(0,0,0,165)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
+  palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
+  d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
   wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); lo=max(0,wi-3); hi=min(len(words),wi+4); capwords=words[lo:hi]; cf=font(48,True); y=H-420
   d.rounded_rectangle((42,y-24,W-42,H-265),radius=26,fill=(0,0,0,210),outline=accent,width=4)
   # Word-by-word karaoke emphasis; active word accent colour, all other words white.
@@ -217,7 +235,7 @@ def main():
    nxt_scene,nxt_im=media[si+1]
    nxt=smart_fit(nxt_im,0.0).convert("RGBA")
    nd=ImageDraw.Draw(nxt,"RGBA")
-   nd.rounded_rectangle((42,85,W-42,190),radius=22,fill=(0,0,0,165))
+   nd.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220))
    nd.text((68,105),nxt_scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
    frame=Image.blend(frame.convert("RGB"),nxt.convert("RGB"),alpha)
   proc.stdin.write(np.asarray(frame.convert("RGB"),dtype=np.uint8).tobytes())
@@ -251,7 +269,7 @@ def main():
    text=pytesseract.image_to_string(im.resize((360,640))).lower()
    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
  except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
- qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
+ qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
  (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
  print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
