@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fast offline contract tests for region configs and config-draft helper."""
 import json, subprocess, sys, tempfile
-from asset_resolver import _rights_ok, BANNED, PROVIDERS
+from asset_resolver import _rights_ok, BANNED, PROVIDERS, _candidate, _clip_scores
 from pathlib import Path
 import yaml
 ROOT=Path(__file__).resolve().parents[1]
@@ -45,7 +45,19 @@ def main():
   assert not _rights_ok(rights), f"rights must fail closed: {rights}"
  assert BANNED.search("Book cover — 1908")
  assert BANNED.search("scanned text page")
+ numeric = _candidate("Test Provider", 123, 456, "https://example.org/image.jpg",
+     "https://example.org/item/7", "CC0", "https://creativecommons.org/publicdomain/zero/1.0/",
+     789, 1011)
+ assert numeric and numeric["title"] == "123" and numeric["description"] == "456"
+ assert numeric["author"] == "789" and numeric["identifier"] == "1011"
  assert len(PROVIDERS) >= 10, "multi-provider registry unexpectedly incomplete"
- print("PASS resolver contract: rights allowlist, banned scans and provider registry")
+ print("PASS resolver contract: rights allowlist, metadata coercion, banned scans and provider registry")
+ from PIL import Image
+ import io
+ image = Image.new("RGB", (224, 224), (40, 90, 180))
+ buf = io.BytesIO(); image.save(buf, format="PNG")
+ scores = _clip_scores("a blue image", [{"title":"known test image"}], [buf.getvalue()])
+ assert len(scores) == 1 and isinstance(scores[0], float) and -1.0 <= scores[0] <= 1.0, scores
+ print("PASS CLIP model load + image/text embedding score")
  print("ALL REGION CONTRACT TESTS PASSED")
 if __name__=="__main__": main()
