@@ -1,0 +1,12 @@
+{
+  "region": "tokyo",
+  "approved": false,
+  "reviewer": "REPLACE_WITH_REVIEWER",
+  "reviewed_at": "YYYY-MM-DD",
+  "claim_sources": {
+    "COPY_EACH_EXACT_CLAIM_KEY_FROM_REGIONS_CONFIG": [
+      "https://example.org/source"
+    ]
+  },
+  "notes": "Replace this example with source URLs actually checked by a human. Do not approve until all claims, script wording, pronunciation and visual rights have been reviewed."
+}
