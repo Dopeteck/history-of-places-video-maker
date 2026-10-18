@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Config-driven region short renderer. Fails closed on rights, relevance, media and QA."""
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, html, json, math, re, subprocess, sys, time, wave
+import argparse, datetime as dt, hashlib, html, json, math, os, re, subprocess, sys, time, wave
 from pathlib import Path
 from io import BytesIO
 import requests, yaml, numpy as np
