@@ -187,7 +187,7 @@ def main():
      im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
   if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
    # Match must come from metadata; no quiet substitute for the present-day visual.
-   if credit["match_score"]<3:
+   if credit.get("match_score") is None or credit["match_score"]<3:
     reason=f"Modern/present image relevance gate failed for scene '{scene['title']}'"
     if a.visual_review_only:
      print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
