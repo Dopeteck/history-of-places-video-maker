@@ -307,8 +307,8 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         key=c["source_url"]
         if key in unique or not _rights_ok(c["rights_statement"]): continue
         text=c["title"]+" "+c["description"]
-        if BANNED.search(text) or any(t.lower() in text.lower() for t in banned_terms): continue
-        if not any(k.lower() in text.lower() for k in required): continue
+        if BANNED.search(text) or any(str(t).lower() in text.lower() for t in banned_terms): continue
+        if not any(str(k).lower() in text.lower() for k in required): continue
         unique[key]=c
     candidates=list(unique.values())
     if not candidates: raise RuntimeError(f"No licensed candidates discovered for scene '{scene['title']}'")
