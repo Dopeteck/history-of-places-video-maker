@@ -83,7 +83,7 @@ def get_image(scene,idx,config,asset_dir,used,output):
     words=[x.strip() for x in txt["text"] if x.strip()]
     conf=[float(x) for x in txt["conf"] if str(x).replace(".","",1).isdigit() and float(x)>=30]
     if len(words)>=18 and len(conf)>=14: continue
-   except Exception: pass
+   except Exception as e: fail(f"OCR quality gate failed for candidate {title}: {type(e).__name__}: {e}")
    filename=f"scene_{idx:02d}.jpg"; path=asset_dir/filename; im.save(path,quality=94)
    lic=clean(meta.get("LicenseShortName",{}).get("value",""))
    author=clean(meta.get("Artist",{}).get("value","Unknown / not stated"))
@@ -250,7 +250,7 @@ def main():
   for i,(_,im) in enumerate(media):
    text=pytesseract.image_to_string(im.resize((360,640))).lower()
    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
- except ImportError: warnings.append("pytesseract unavailable; OCR frame scan not run")
+ except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
  qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
  (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
