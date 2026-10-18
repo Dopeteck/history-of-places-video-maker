@@ -12,6 +12,11 @@ on:
         description: "Path to reviewed JSON with approved=true and claim_sources for every factual claim"
         type: string
         required: false
+      visual_review_only:
+        description: "Fetch/rank scene images and upload an approval board without producing a publishable video"
+        type: boolean
+        default: false
+        required: true
       render_approved:
         description: "Render only after the named review file passes the approval gate"
         type: boolean
@@ -98,19 +103,22 @@ jobs:
           print("Review gate passed: all config claims have explicit source mappings and reviewer metadata.")
           PY
       - name: Install rendering dependencies
-        if: github.event_name == 'workflow_dispatch' && inputs.render_approved
+        if: github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
           python -m pip install -r requirements-regions.txt
+      - name: Render visual approval board (no audio / not publishable)
+        if: github.event_name == 'workflow_dispatch' && inputs.visual_review_only
+        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml --visual-review-only
       - name: Render approved region short
-        if: github.event_name == 'workflow_dispatch' && inputs.render_approved
+        if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
       - name: Upload reviewable region outputs
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.render_approved
+        if: always() && github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)
         uses: actions/upload-artifact@v4
         with:
-          name: region-short-${{ inputs.region }}-${{ github.run_id }}
+          name: region-review-${{ inputs.region }}-${{ github.run_id }}
           retention-days: 7
           if-no-files-found: warn
           path: |
