@@ -92,7 +92,7 @@ scenes:
     image_search_terms: ["Lagos city aerial lagoon modern", "Lagos Island mainland bridge photo", "Lagos Nigeria skyline aerial"]
     required_keywords: [Lagos, lagoon, city]
     banned_keywords: [cover, catalogue, report, document]
-    image_type: modern
+    image_type: map
   - title: "A Changing Skyline"
     narration_intent: "Illustrate the present-day city and its continuing growth."
     image_search_terms: ["Lagos skyline Victoria Island modern", "Lagos Nigeria contemporary skyline photo", "Lagos city waterfront skyline"]
