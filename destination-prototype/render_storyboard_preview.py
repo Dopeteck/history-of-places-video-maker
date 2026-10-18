@@ -104,7 +104,7 @@ def main():
                     frame = storyboard_frame(scene, scene_idx, len(scenes), j / max(1, count - 1))
                     path = td / f"frame-{frame_idx:05d}.jpg"
                     frame.save(path, quality=88, optimize=True)
-                    listing.write(f"file '{path.as_posix()}'\\n")
+                    listing.write(f"file '{path.as_posix()}'\n")
                     frame_idx += 1
         subprocess.run([
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
