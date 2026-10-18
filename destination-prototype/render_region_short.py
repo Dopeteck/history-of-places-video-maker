@@ -59,46 +59,8 @@ def score_candidate(title,description,cats,required):
  hay=(title+" "+description+" "+" ".join(cats)).lower()
  return sum(3 if k.lower() in title.lower() else 2 if k.lower() in description.lower() else 1 for k in required if k.lower() in hay)
 def get_image(scene,idx,config,asset_dir,used,output):
- terms=config.get("image_banned_terms",[])+scene.get("banned_keywords",[])
- variants=scene["image_search_terms"]
- tried=[]; ranked=[]
- for query in variants:
-  tried.append(query)
-  payload=get(COMMONS,{"action":"query","format":"json","generator":"search","gsrsearch":query,"gsrnamespace":6,"gsrlimit":30,"prop":"imageinfo|categories","cllimit":30,"iiprop":"url|extmetadata|size","iiurlwidth":2000}).json()
-  for p in payload.get("query",{}).get("pages",{}).values():
-   title=p.get("title",""); info=(p.get("imageinfo") or [{}])[0]; meta=info.get("extmetadata",{})
-   desc=clean(meta.get("ImageDescription",{}).get("value","")); cats=[c.get("title","") for c in p.get("categories",[])]
-   alltext=title+" "+desc+" "+" ".join(cats)
-   if banned(alltext,terms) or not allowed(clean(meta.get("LicenseShortName",{}).get("value","")),clean(meta.get("LicenseUrl",{}).get("value",""))): continue
-   match=score_candidate(title,desc,cats,scene.get("required_keywords",[]))
-   if match<=0: continue
-   url=info.get("thumburl") or info.get("url"); page=info.get("descriptionurl")
-   if not url or not page or not url.startswith("https://") or not page.startswith("https://"): continue
-   if title in used: continue
-   ranked.append((match,title,desc,cats,info,meta,url,page))
- ranked.sort(key=lambda x:(-x[0],-int(x[4].get("width",0))*int(x[4].get("height",0))))
- for match,title,desc,cats,info,meta,url,page in ranked:
-  try:
-   data=get(url,timeout=(10,60)).content; digest=hashlib.sha256(data).hexdigest()
-   if digest in used: continue
-   im=Image.open(BytesIO(data)).convert("RGB")
-   if min(im.size)<1080 or max(im.size)/min(im.size)>3.0 or len(data)<40000: continue
-   # OCR check when Tesseract is available; reject images with substantial text coverage.
-   try:
-    import pytesseract
-    txt=pytesseract.image_to_data(im.resize((min(900,im.width),int(im.height*min(900,im.width)/im.width))),output_type=pytesseract.Output.DICT)
-    words=[x.strip() for x in txt["text"] if x.strip()]
-    conf=[float(x) for x in txt["conf"] if str(x).replace(".","",1).isdigit() and float(x)>=30]
-    if len(words)>=18 and len(conf)>=14: continue
-   except Exception as e: fail(f"OCR quality gate failed for candidate {title}: {type(e).__name__}: {e}")
-   filename=f"scene_{idx:02d}.jpg"; path=asset_dir/filename; im.save(path,quality=94)
-   lic=clean(meta.get("LicenseShortName",{}).get("value",""))
-   author=clean(meta.get("Artist",{}).get("value","Unknown / not stated"))
-   used.add(title); used.add(digest)
-   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(path.relative_to(ROOT)),"title":title,"author":author,"license":lic,"license_url":clean(meta.get("LicenseUrl",{}).get("value","")),"source_url":page,"match_score":match,"search_variant":query,"warnings":[]}
-  except Exception as e:
-   print(f"Candidate rejected for {scene['title']}: {title}: {type(e).__name__}: {e}",file=sys.stderr)
- fail(f"No acceptable image for scene '{scene['title']}'. Tried variants: {tried}; ranked relevant candidates: {len(ranked)}")
+ from asset_resolver import resolve_scene_image
+ return resolve_scene_image(scene,idx,config,asset_dir,used,output)
 def local_image(scene,idx,config,used):
  # Prefer repository stills only when the manifest proves both provenance and license.
  manifest_path=ROOT/"destination-prototype"/"assets_manifest.json"
@@ -142,6 +104,45 @@ def make_map(scene,idx,config,asset_dir):
  px=384+(x-tx)*256; py=384+(y-ty)*256; d=ImageDraw.Draw(canvas); d.ellipse((px-16,py-16,px+16,py+16),fill="#D33A32",outline="white",width=5); d.text((20,20),config["map"].get("label",config["name"]).upper(),font=font(28,True),fill="#171717",stroke_width=3,stroke_fill="white"); d.text((20,730),"© OpenStreetMap contributors",font=font(14),fill="#111111",stroke_width=2,stroke_fill="white")
  p=asset_dir/f"scene_{idx:02d}_map.jpg"; canvas.save(p,quality=94)
  return canvas,{"content_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":"OpenStreetMap location map","author":"OpenStreetMap contributors","license":"ODbL","license_url":"https://www.openstreetmap.org/copyright","source_url":"https://www.openstreetmap.org/","match_score":1,"search_variant":"OSM tile map centred on configured coordinates","warnings":[]}
+def text_fallback_card(scene,idx,config,asset_dir,error):
+ im=Image.new("RGB",(1080,1440),(31,37,48)); d=ImageDraw.Draw(im)
+ accent=color(config.get("visual_style",{}).get("accent_color","#D9B56D"),(217,181,109))
+ d.rounded_rectangle((60,80,1020,1360),radius=36,outline=accent,width=6)
+ d.text((100,130),"VISUAL NOT VERIFIED",font=font(48,True),fill=accent)
+ y=250
+ for line in wrap(d,scene["title"],font(54,True),850):
+  d.text((100,y),line,font=font(54,True),fill="white"); y+=72
+ y+=45
+ for line in wrap(d,scene.get("narration_intent",""),font(32),850):
+  d.text((100,y),line,font=font(32),fill=(225,228,232)); y+=48
+ y+=50
+ for line in wrap(d,"No licensed image passed the relevance threshold. Use this card for review; replace with a verified map or source image before publication.",font(26),850):
+  d.text((100,y),line,font=font(26),fill=(240,190,170)); y+=40
+ p=asset_dir/f"scene_{idx:02d}_text-card.jpg"; im.save(p,quality=92)
+ return im,{"content_sha256":hashlib.sha256(im.tobytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),
+  "title":"Text review card — no image passed relevance gate","author":"Generated by renderer","license":"Original generated artwork",
+  "rights_statement":"Original generated artwork","license_url":"","source_url":"","provider":"fallback text card",
+  "match_score":0.0,"search_variant":"Fallback after resolver rejection","warnings":[str(error)]}
+def write_approval_board(media,credits,cfg,out):
+ # A standalone HTML approval board puts each real chosen image beside its narration line and rights.
+ cards=[]
+ for i,((scene,im),c) in enumerate(zip(media,credits),1):
+  rel=Path(c["file"]).as_posix()
+  try: rel=Path(rel).relative_to(out.relative_to(ROOT)).as_posix()
+  except Exception: pass
+  cards.append(f"""<article><img src="{html.escape(rel)}" alt="{html.escape(c['title'])}"><section><h2>{i}. {html.escape(scene['title'])}</h2><p><b>Narration intent:</b> {html.escape(scene.get('narration_intent',''))}</p><p><b>Chosen asset:</b> {html.escape(c['title'])}</p><p><b>Provider:</b> {html.escape(c.get('provider','unknown'))}</p><p><b>Rights:</b> {html.escape(c.get('rights_statement',c.get('license','unknown')))}</p><p><b>License URL:</b> <a href="{html.escape(c.get('license_url',''),quote=True)}">{html.escape(c.get('license_url','not provided'))}</a></p><p><b>Source:</b> <a href="{html.escape(c.get('source_url',''),quote=True)}">{html.escape(c.get('source_url','not provided'))}</a></p><p><b>CLIP relevance:</b> {c.get('match_score','n/a')}</p><p><b>Warnings:</b> {html.escape('; '.join(c.get('warnings',[])) or 'None')}</p></section></article>""")
+ page="""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Visual approval board</title><style>body{font:16px system-ui;max-width:1200px;margin:auto;padding:24px;background:#f4f1ea;color:#20242b}h1{margin-bottom:4px}.notice{padding:14px;background:#fff0ce;border-left:5px solid #b7791f}article{display:grid;grid-template-columns:minmax(240px,38%) 1fr;gap:22px;background:white;padding:18px;margin:20px 0;border-radius:12px}img{width:100%;height:auto;max-height:520px;object-fit:contain;background:#222}a{overflow-wrap:anywhere}@media(max-width:700px){article{grid-template-columns:1fr}}</style></head><body><h1>Visual approval board — """+html.escape(cfg["name"])+"""</h1><p class="notice"><b>REVIEW ONLY — NOT APPROVED FOR PUBLISHING.</b> Verify every image against the narration and inspect the rights/source links. A text card means no candidate passed the relevance threshold.</p>"""+''.join(cards)+"</body></html>"
+ (out/"approval-board.html").write_text(page,encoding="utf-8")
+ # Persist rights/source details to the resolver manifest; existing manually supplied entries are preserved.
+ manifest=ROOT/"destination-prototype"/"assets_manifest.json"
+ try: old=json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
+ except Exception: old=[]
+ if not isinstance(old,list): old=[]
+ byhash={str(x.get("content_sha256")):x for x in old if isinstance(x,dict) and x.get("content_sha256")}
+ for c in credits:
+  rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}
+  if c.get("content_sha256"): byhash[c["content_sha256"]]=rec
+ manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
 def smart_fit(im,progress):
  # Portrait images use focal-aware fit; wide images use blurred fill rather than cutting through the subject.
  if im.width/im.height < .78:
@@ -170,7 +171,11 @@ def main():
   else:
    local=local_image(scene,i,cfg,used)
    if local: im,credit=local
-   else: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
+   else:
+    try: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
+    except Exception as resolver_error:
+     print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
+     im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
   if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
    # Match must come from metadata; no quiet substitute for the present-day visual.
    if credit["match_score"]<3: fail(f"Modern/present image relevance gate failed for scene '{scene['title']}'")
@@ -179,7 +184,7 @@ def main():
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
   credit["content_sha256"]=digest; previous_digest=digest
   media.append((scene,im)); credits.append(credit); print(f"IMAGE {i}/{len(cfg['scenes'])}: {scene['title']} score={credit['match_score']} {credit['title']}")
- # Kokoro only: no silent speech-provider fallback.
+ write_approval_board(media,credits,cfg,out)\n # Kokoro only: no silent speech-provider fallback.
  try:
   import torch
   from kokoro import KPipeline
