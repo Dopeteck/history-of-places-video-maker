@@ -35,6 +35,11 @@ def _rights_ok(rights):
     return any(k in x for k in ALLOWED) or "creativecommons.org/licenses/by/" in x or "creativecommons.org/licenses/by-sa/" in x or "creativecommons.org/publicdomain/" in x
 
 def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier=""):
+    # Provider metadata is not schema-stable: normalize values before string operations.
+    title, description = str(title or ""), str(description or "")
+    image_url, source_url = str(image_url or ""), str(source_url or "")
+    rights, rights_url = str(rights or ""), str(rights_url or "")
+    author, identifier = str(author or ""), str(identifier or "")
     if not title or not image_url or not source_url or not rights or not _rights_ok(rights):
         return None
     if BANNED.search(title + " " + description + " " + image_url):
@@ -265,17 +270,22 @@ def _clip_scores(query, candidates, image_bytes):
     model, processor=_load_clip(model_id)
     images=[Image.open(io.BytesIO(b)).convert("RGB") for b in image_bytes]
     with torch.inference_mode():
-        text=processor(text=[query],return_tensors="pt",padding=True,truncation=True)
-        ti=model.get_text_features(**text)
+        text=processor(text=[str(query)],return_tensors="pt",padding=True,truncation=True)
         ims=processor(images=images,return_tensors="pt")
-        ii=model.get_image_features(**ims)
-        ti=ti/ti.norm(dim=-1,keepdim=True); ii=ii/ii.norm(dim=-1,keepdim=True)
+        # Use CLIPModel.forward outputs for stable projected embeddings.
+        outputs=model(**text, **ims)
+        ti, ii = outputs.text_embeds, outputs.image_embeds
+        ti=ti/ti.norm(p=2,dim=-1,keepdim=True).clamp(min=1e-12)
+        ii=ii/ii.norm(p=2,dim=-1,keepdim=True).clamp(min=1e-12)
         scores=(ii @ ti.T).squeeze(-1).tolist()
     return [float(s) for s in scores]
 
 def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     """Discover across providers, filter rights/format/size, rank with CLIP, save best."""
-    queries=list(dict.fromkeys([config.get("name","")+" "+q for q in scene.get("image_search_terms",[])]))
+    # Search from planner semantics/entities rather than editorial scene titles.
+    tags=scene.get("visual_tags",[]) or scene.get("asset_tags",[])
+    entities=scene.get("named_entities",[]) or scene.get("entities",[])
+    queries=list(dict.fromkeys(str(q) for q in (list(scene.get("image_search_terms",[]))+list(tags)+list(entities)) if str(q).strip()))
     place=config.get("name","")
     candidates=[]
     # Place-aware Commons category first; ordinary text search is fallback.
