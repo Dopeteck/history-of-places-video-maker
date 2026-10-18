@@ -5,7 +5,7 @@ Uses official collection APIs only. API-key providers are enabled when their
 documented key environment variable is configured; no key is fabricated.
 """
 from __future__ import annotations
-import hashlib, io, os, re, time
+import hashlib, io, os, re, time\nfrom functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 import requests
@@ -250,7 +250,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 
-def _clip_scores(query, candidates, image_bytes):
+@lru_cache(maxsize=1)\ndef _load_clip(model_id):\n    import torch\n    from transformers import CLIPModel, CLIPProcessor\n    model=CLIPModel.from_pretrained(model_id).to("cpu").eval()\n    return model, CLIPProcessor.from_pretrained(model_id)\n\ndef _clip_scores(query, candidates, image_bytes):
     """Small CPU-only CLIP model; return cosine similarity on text/image embeddings."""
     import torch
     from transformers import CLIPModel, CLIPProcessor
