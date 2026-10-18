@@ -1,0 +1,176 @@
+{
+  "number": 1,
+  "summary": "Kenji continues describing the immediate aftermath, highlighting the chaotic scramble for food, the makeshift governance by local committees, and the first sparks of reconstruction as the occupation authorities begin clearing rubble and mapping new districts.",
+  "scenes": [
+    {
+      "id": "c01s001",
+      "narration": "The city was a sea of ash, with two‑thirds of Tokyo reduced to smoldering ruins, and the streets echoing with the silence of loss.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "ash",
+        "ruins"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s002",
+      "narration": "Civilians, now homeless, crammed into makeshift huts and temporary shelters, their faces a mix of shock and resolve.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.3,
+          "pose": "kneeling",
+          "expression": "shocked"
+        }
+      ],
+      "background": "hut",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s003",
+      "narration": "At dawn, Allied officers issued the first demolition orders, a directive that would reshape the city’s very bones.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "demolition"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s004",
+      "narration": "Kenji notes that these orders were not merely punitive; they were a call to rebuild, to question whether Tokyo would simply mirror its past or chart a new course.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "call",
+        "new course"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s005",
+      "narration": "The chapter ends with Kenji’s reflection: as the city lay in ashes, the choice was clear—rebuild as it was, or reinvent itself entirely.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "battlefield",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "rebuild",
+        "reinvent"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s006",
+      "narration": "In the weeks that followed, makeshift kitchens sprouted in surviving basements, where volunteers handed out rice and tea, while neighborhood councils—formed overnight—tried to keep order amid the endless tide of displaced families.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "hut",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "fire"
+      ],
+      "emphasis_words": [
+        "rice",
+        "order"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c01s007",
+      "narration": "Meanwhile, Allied engineers rolled out bulldozers, clearing debris along the former Shinjuku corridor, mapping streets anew, and whispering promises of a modern grid that would soon host skyscrapers instead of shattered rooftops.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "bulldozers",
+        "grid"
+      ],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 180,
+  "title": "The Ashes of 1945"
+}

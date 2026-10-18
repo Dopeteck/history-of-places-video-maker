@@ -1,0 +1,202 @@
+{
+  "number": 3,
+  "summary": "Kenji continues the tour, showing how the 1949 Metropolitan Plan's grid took shape: new boulevards cut through ruins, resident protests sparked compromises, and the first modern traffic systems flickered to life.",
+  "scenes": [
+    {
+      "id": "c03s001",
+      "narration": "The map of Tokyo spreads like a wounded heart, its streets a patchwork of fire‑blackened blocks and hopeful outlines of a new grid.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "grid"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s002",
+      "narration": "At a modest council room, planners sketch wide avenues—Shinjuku‑Gaien and the like—promising a breath of fresh air amid the ruins.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.4,
+          "pose": "thinking",
+          "expression": "neutral"
+        },
+        {
+          "id": "occupation_forces",
+          "x": 0.6,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s003",
+      "narration": "Debates flare, a silent clash between those who wish to preserve narrow lanes of old Edo and those who see them as obstacles to progress.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.3,
+          "pose": "talking",
+          "expression": "sly"
+        },
+        {
+          "id": "entrepreneurs",
+          "x": 0.7,
+          "pose": "talking",
+          "expression": "sly"
+        }
+      ],
+      "background": "street",
+      "camera": "push_in",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "torch"
+      ],
+      "emphasis_words": [
+        "preserve"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c03s004",
+      "narration": "By the late 1950s, the first wide avenues glittered under new streetlights, a testament to planners’ resolve and the city’s restless spirit.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "fire"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s005",
+      "narration": "The first concrete arteries—broad, sun‑bleached boulevards—sprang from the ashes, their steel ribs promising speed where wooden alleys once whispered tea‑house gossip.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.45,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "occupation_forces",
+          "x": 0.55,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "spear"
+      ],
+      "emphasis_words": [
+        "concrete"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c03s006",
+      "narration": "But the grid met resistance; elders clutched lanterns, pleading for the preservation of their narrow lanes, while developers brandished blueprints like swords, insisting progress must cut clean.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.35,
+          "pose": "standing",
+          "expression": "sad"
+        },
+        {
+          "id": "entrepreneurs",
+          "x": 0.65,
+          "pose": "standing",
+          "expression": "sly"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "torch"
+      ],
+      "emphasis_words": [
+        "progress"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c03s007",
+      "narration": "When the first traffic lights flickered green, the city breathed a new rhythm; commuters, once foot‑bound, now rode the pulse of a modern Tokyo, eyes on horizons beyond the old walls.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "traffic lights",
+        "rhythm"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    }
+  ],
+  "word_count": 178,
+  "title": "Designing a Modern Grid"
+}

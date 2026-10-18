@@ -1,0 +1,359 @@
+{
+  "schema_version": 1,
+  "story_sha256": "9ad1d0631e19226dcf7d2e1dab42f4d5445b6581c76af29aa3a1fc2d19348a24",
+  "claims": [
+    {
+      "id": "c01s001q01",
+      "scene_id": "c01s001",
+      "claim": "Two‑thirds of Tokyo were reduced to smoldering ruins.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Proportion of Tokyo destroyed in the described event",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s002q01",
+      "scene_id": "c01s002",
+      "claim": "Civilians became homeless and lived in makeshift huts and temporary shelters.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Extent of civilian displacement and shelter conditions",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s003q01",
+      "scene_id": "c01s003",
+      "claim": "Allied officers issued the first demolition orders at dawn.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Timing and authority of demolition orders",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s004q01",
+      "scene_id": "c01s004",
+      "claim": "Kenji notes that the demolition orders were intended as a call to rebuild rather than purely punitive.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Interpretation of demolition orders by Kenji",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s005q01",
+      "scene_id": "c01s005",
+      "claim": "Kenji reflects that the city must choose to rebuild as it was or reinvent itself.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Kenji's stated reflection",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s006q01",
+      "scene_id": "c01s006",
+      "claim": "Makeshift kitchens appeared in surviving basements where volunteers distributed rice and tea.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Existence of basement kitchens and volunteer food distribution",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s006q02",
+      "scene_id": "c01s006",
+      "claim": "Neighborhood councils formed overnight to maintain order among displaced families.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Formation and role of spontaneous neighborhood councils",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c01s007q01",
+      "scene_id": "c01s007",
+      "claim": "Allied engineers used bulldozers to clear debris along the former Shinjuku corridor and planned a modern street grid.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Bulldozer activity and urban planning in Shinjuku after the event",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s001q01",
+      "scene_id": "c02s001",
+      "claim": "The night after the last ember died, Tokyo’s streets lay half‑cobblestone, half‑rubble, a silent testimony to the war’s fury.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Physical condition of Tokyo streets immediately after World War II bombing",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s002q01",
+      "scene_id": "c02s002",
+      "claim": "In 1946, SCAP rolled out land reform, redistributing tenant farms and shattering the feudal agrarian hierarchy that had long underpinned Tokyo’s suburbs.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Year and scope of SCAP land reform in Japan, especially impact on Tokyo suburbs",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s003q01",
+      "scene_id": "c02s003",
+      "claim": "A new SCAP urban planning office sprouted in the heart of the city, its maps littered with red‑lined streets wide enough to let a truck pass, a bold move to curb future conflagrations.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Existence and activities of a SCAP urban planning office in Tokyo post‑war",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s004q01",
+      "scene_id": "c02s004",
+      "claim": "Fire‑break zoning became the city’s new skin, a network of empty lots that would later cradle Tokyo’s neon skyline and keep its heart from burning again.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "Implementation of fire‑break zoning in post‑war Tokyo and its influence on later urban development",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s005q01",
+      "scene_id": "c02s005",
+      "claim": "While planners widened streets, they also mandated demolition of historic neighborhoods, a decision still debated in Tokyo’s streets today.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Post‑war street widening and demolition of historic neighborhoods in Tokyo and contemporary debates",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s006q01",
+      "scene_id": "c02s006",
+      "claim": "SCAP soon established the Housing Reconstruction Agency, tasking it with rebuilding homes and public utilities, a massive effort that turned rubble into concrete neighborhoods.",
+      "confidence": 0.6,
+      "source_ids": [],
+      "what_to_verify": "Creation and role of a SCAP‑led Housing Reconstruction Agency in Japan after WWII",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c02s007q01",
+      "scene_id": "c02s007",
+      "claim": "Planners ordered the clearance of dense slums, replacing them with wide avenues and parks—a move praised for safety but lamented for erasing community ties.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Post‑war slum clearance policies in Tokyo and their social impact",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s001q01",
+      "scene_id": "c03s001",
+      "claim": "The map of Tokyo spreads like a wounded heart, its streets a patchwork of fire‑blackened blocks and hopeful outlines of a new grid.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Whether post‑World War II Tokyo’s street layout was described as a patchwork of fire‑blackened blocks and a new grid.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s002q01",
+      "scene_id": "c03s002",
+      "claim": "Planners sketch wide avenues—Shinjuku‑Gaien and the like—promising a breath of fresh air amid the ruins.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "If a wide avenue named Shinjuku‑Gaien was planned in post‑war Tokyo reconstruction.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s003q01",
+      "scene_id": "c03s003",
+      "claim": "Debates flared between those who wished to preserve narrow lanes of old Edo and those who saw them as obstacles to progress.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Historical records of debates over preserving Edo‑period narrow lanes during Tokyo’s post‑war rebuilding.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s004q01",
+      "scene_id": "c03s004",
+      "claim": "By the late 1950s, the first wide avenues glittered under new streetlights.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Construction of wide avenues with street lighting in Tokyo completed by the late 1950s.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s005q01",
+      "scene_id": "c03s005",
+      "claim": "The first concrete arteries—broad, sun‑bleached boulevards—sprang from the ashes.",
+      "confidence": 0.4,
+      "source_ids": [],
+      "what_to_verify": "When Tokyo’s first major concrete boulevards were built after WWII.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s006q01",
+      "scene_id": "c03s006",
+      "claim": "Elders clutched lanterns pleading for preservation of narrow lanes while developers brandished blueprints insisting progress must cut clean.",
+      "confidence": 0.3,
+      "source_ids": [],
+      "what_to_verify": "Documented opposition by local residents to widening projects in post‑war Tokyo.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c03s007q01",
+      "scene_id": "c03s007",
+      "claim": "When the first traffic lights flickered green, the city breathed a new rhythm; commuters, once foot‑bound, now rode the pulse of a modern Tokyo.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Date of installation of Tokyo’s first traffic lights and their impact on commuter behavior.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s001q01",
+      "scene_id": "c04s001",
+      "claim": "When the last ember in the city’s heart sputtered out, a quiet stillness settled over Tokyo—an uneasy pause before the engines of change would roar to life.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Metaphorical description; not a factual claim.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s002q01",
+      "scene_id": "c04s002",
+      "claim": "By the early 1950s, a handful of modest workshops popped up in reclaimed districts, their wooden frames a stark contrast to the steel skeletons of the old shanty towns.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Number and nature of workshops in reclaimed districts of Tokyo in early 1950s.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s003q01",
+      "scene_id": "c04s003",
+      "claim": "The government, wary of another housing crisis, rolled out subsidies for cooperative dwellings, turning cramped alleyways into orderly rows of modest homes.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Existence and timing of government subsidies for cooperative housing in post‑war Tokyo.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s004q01",
+      "scene_id": "c04s004",
+      "claim": "In 1960, the first Toei Subway Line sliced through the city, its trains humming beneath the streets like a second heartbeat, promising swift movement for the masses.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Opening year of the first Toei Subway line in Tokyo.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s005q01",
+      "scene_id": "c04s005",
+      "claim": "The convergence of private zeal and public policy sparked a wave of industrial output—electronics, textiles, and automobiles—propelling Tokyo onto the world stage.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Growth of electronics, textile, and automobile production in Tokyo during the 1960s.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s006q01",
+      "scene_id": "c04s006",
+      "claim": "By the mid‑1960s, Tokyo’s skyline had reborn itself: steel spires kissed the clouds, and the city’s pulse, once a ragged drumbeat, now thrummed with calculated rhythm—an engineered miracle born of ash and ambition.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Extent of high‑rise construction in Tokyo by mid‑1960s.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s007q01",
+      "scene_id": "c04s007",
+      "claim": "Entrepreneurs flooded reclaimed zones, stitching together a new industrial tapestry.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Entrepreneurial activity in reclaimed land areas of Tokyo post‑war.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c04s008q01",
+      "scene_id": "c04s008",
+      "claim": "The Toei line roared, linking factories to markets and commuters alike.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Role of the Toei Subway line in connecting industrial areas and commuter traffic.",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s001q01",
+      "scene_id": "c05s001",
+      "claim": "The opening of the 1964 Olympic Stadium was less a sporting event and more a grand proclamation: Tokyo had shed its ashes and donned a gleaming, modern mantle.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify date and nature of 1964 Olympic Stadium opening ceremony and symbolic statements",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s001q02",
+      "scene_id": "c05s001",
+      "claim": "Tokyo had shed its ashes and donned a gleaming, modern mantle.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify claims of Tokyo's post-war reconstruction status in 1964",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s002q01",
+      "scene_id": "c05s002",
+      "claim": "Aerial footage of Shinjuku’s towering cranes, their glass facades reflecting a city that once lay in ruins, now pulsed with ambition.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify existence of aerial footage of Shinjuku cranes in 1964 and description of city condition",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s003q01",
+      "scene_id": "c05s003",
+      "claim": "Marunouchi’s business district, a grid of steel and ambition, stands as a testament to the 1949 Metropolitan Plan’s vision—if only a few streets were left unpaved.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify 1949 Metropolitan Plan details and Marunouchi development timeline",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s003q02",
+      "scene_id": "c05s003",
+      "claim": "if only a few streets were left unpaved",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify street paving status in Marunouchi during mid-20th century",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s004q01",
+      "scene_id": "c05s004",
+      "claim": "Socioeconomic cleavages—born from wartime rationing and post‑war subsidies—continue to echo through Tokyo’s alleyways.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify impact of wartime rationing and post-war subsidies on Tokyo socioeconomic structure",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s005q01",
+      "scene_id": "c05s005",
+      "claim": "By the mid‑1960s, Tokyo had not merely rebuilt; it had reinvented itself into a symbol of resilience and paradox, where progress coexists with the ghosts of its past.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify assessments of Tokyo's status in mid-1960s regarding resilience and paradox",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s006q01",
+      "scene_id": "c05s006",
+      "claim": "The Olympic torch lit not just the stadium but the imagination of a nation; new highways spanned the city, linking once‑isolated neighborhoods into a pulsating network of commerce and culture.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify construction of new highways in Tokyo around 1964 and their impact on connectivity",
+      "status": "needs_human_review"
+    },
+    {
+      "id": "c05s007q01",
+      "scene_id": "c05s007",
+      "claim": "Pockets of old‑town shanties persisted, reminding us that the gleam of progress often casts shadows where inequality quietly endures.",
+      "confidence": 0.5,
+      "source_ids": [],
+      "what_to_verify": "Verify existence of old-town shanties in Tokyo during mid-1960s and correlation with inequality",
+      "status": "needs_human_review"
+    }
+  ],
+  "warning": "LLM claim extraction can miss errors. Review the full narration against real sources.",
+  "status": "needs_human_review"
+}

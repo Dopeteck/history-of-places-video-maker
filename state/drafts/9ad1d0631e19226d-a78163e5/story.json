@@ -1,0 +1,1072 @@
+{
+  "schema_version": 1,
+  "topic": "Tokyo, Japan: rebuilding and transforming after World War II",
+  "mode": "long",
+  "niche": "world history",
+  "target_minutes": 10.0,
+  "target_seconds_per_part": null,
+  "outline": {
+    "title": "Rising from the Rubble: Tokyo's Post‑War Metamorphosis",
+    "hook": "When the fires finally died, a shattered city faced a choice: rebuild as it was, or reinvent itself entirely.",
+    "logline": "A narrator guides us through five decisive phases that turned war‑torn Tokyo into a modern metropolis, spotlighting the policies, people, and paradoxes that shaped its rebirth.",
+    "cast": [
+      {
+        "id": "narrator",
+        "name": "Kenji",
+        "role": "Narrator",
+        "trait": "dry‑witted historian with a knack for spotting irony",
+        "accessory": "glasses",
+        "accent": "#2B2B2B"
+      },
+      {
+        "id": "occupation_forces",
+        "name": "Allied Occupation",
+        "role": "Policy Enforcer",
+        "trait": "bureaucratic pragmatism",
+        "accessory": "none",
+        "accent": "#1FA2A6"
+      },
+      {
+        "id": "city_planners",
+        "name": "Tokyo City Planners",
+        "role": "Urban Architects",
+        "trait": "visionary yet constrained by scarcity",
+        "accessory": "sash",
+        "accent": "#E0A526"
+      },
+      {
+        "id": "entrepreneurs",
+        "name": "Post‑War Entrepreneurs",
+        "role": "Economic Catalysts",
+        "trait": "opportunistic optimism",
+        "accessory": "bow_tie",
+        "accent": "#C0392B"
+      },
+      {
+        "id": "civic_residents",
+        "name": "Everyday Residents",
+        "role": "Grass‑roots Movers",
+        "trait": "resilient community spirit",
+        "accessory": "none",
+        "accent": "#1FA2A6"
+      }
+    ],
+    "chapters": [
+      {
+        "number": 1,
+        "title": "The Ashes of 1945",
+        "purpose": "Set the immediate post‑war context and the scale of devastation that forced a radical rethink of the city.",
+        "key_events": [
+          "Bombings and firestorms leave two‑thirds of Tokyo destroyed",
+          "Mass displacement of civilians into temporary shelters",
+          "Allied forces issue the initial demolition orders"
+        ]
+      },
+      {
+        "number": 2,
+        "title": "Occupation Blueprint",
+        "purpose": "Explain how the Allied Occupation introduced reforms that reshaped governance, land use, and infrastructure.",
+        "key_events": [
+          "1946 Land Reform redistributes tenant farms",
+          "Establishment of the Supreme Commander for the Allied Powers (SCAP) urban planning office",
+          "Introduction of fire‑break zoning and wider streets"
+        ]
+      },
+      {
+        "number": 3,
+        "title": "Designing a Modern Grid",
+        "purpose": "Show the city planners’ attempts to impose order on chaos, balancing tradition with modernist ideals.",
+        "key_events": [
+          "1949 Draft of the Tokyo Metropolitan Plan emphasizes mixed‑use districts",
+          "Construction of the first wide‑avenue thoroughfares (e.g., Shinjuku‑Gaien)",
+          "Debates over preserving historic neighborhoods versus bulldozing them"
+        ]
+      },
+      {
+        "number": 4,
+        "title": "Economic Engine Revving Up",
+        "purpose": "Detail how private entrepreneurs and the emerging “Japanese Economic Miracle” fueled rapid reconstruction.",
+        "key_events": [
+          "1950s emergence of small manufacturing firms in reclaimed districts",
+          "Government subsidies for housing cooperatives",
+          "Opening of the first subway line (Toei Line 1) in 1960"
+        ]
+      },
+      {
+        "number": 5,
+        "title": "From Ruins to Skyline",
+        "purpose": "Conclude with the tangible outcomes—Tokyo’s transformed physical and cultural landscape—while noting lingering tensions.",
+        "key_events": [
+          "1964 Olympic Games showcase the new Tokyo",
+          "Completion of high‑rise districts like Shinjuku and Marunouchi",
+          "Persistent socioeconomic gaps trace back to post‑war policies"
+        ]
+      }
+    ],
+    "ending": "By the mid‑1960s Tokyo stood not merely rebuilt but reinvented—a testament to coordinated policy, daring entrepreneurship, and a citizenry that turned ash into ambition, even as the shadows of those early choices still linger in the city’s fabric."
+  },
+  "chapters": [
+    {
+      "number": 1,
+      "summary": "Kenji continues describing the immediate aftermath, highlighting the chaotic scramble for food, the makeshift governance by local committees, and the first sparks of reconstruction as the occupation authorities begin clearing rubble and mapping new districts.",
+      "scenes": [
+        {
+          "id": "c01s001",
+          "narration": "The city was a sea of ash, with two‑thirds of Tokyo reduced to smoldering ruins, and the streets echoing with the silence of loss.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "push_in",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "ash",
+            "ruins"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s002",
+          "narration": "Civilians, now homeless, crammed into makeshift huts and temporary shelters, their faces a mix of shock and resolve.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.3,
+              "pose": "kneeling",
+              "expression": "shocked"
+            }
+          ],
+          "background": "hut",
+          "camera": "pan_left",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s003",
+          "narration": "At dawn, Allied officers issued the first demolition orders, a directive that would reshape the city’s very bones.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "room",
+          "camera": "static",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "demolition"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s004",
+          "narration": "Kenji notes that these orders were not merely punitive; they were a call to rebuild, to question whether Tokyo would simply mirror its past or chart a new course.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_right",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "call",
+            "new course"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s005",
+          "narration": "The chapter ends with Kenji’s reflection: as the city lay in ashes, the choice was clear—rebuild as it was, or reinvent itself entirely.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "battlefield",
+          "camera": "push_in",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "rebuild",
+            "reinvent"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s006",
+          "narration": "In the weeks that followed, makeshift kitchens sprouted in surviving basements, where volunteers handed out rice and tea, while neighborhood councils—formed overnight—tried to keep order amid the endless tide of displaced families.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "hut",
+          "camera": "pan_right",
+          "effects": [
+            "fade"
+          ],
+          "props": [
+            "fire"
+          ],
+          "emphasis_words": [
+            "rice",
+            "order"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c01s007",
+          "narration": "Meanwhile, Allied engineers rolled out bulldozers, clearing debris along the former Shinjuku corridor, mapping streets anew, and whispering promises of a modern grid that would soon host skyscrapers instead of shattered rooftops.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "push_in",
+          "effects": [
+            "cut"
+          ],
+          "props": [
+            "scroll"
+          ],
+          "emphasis_words": [
+            "bulldozers",
+            "grid"
+          ],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        }
+      ],
+      "word_count": 180,
+      "title": "The Ashes of 1945"
+    },
+    {
+      "number": 2,
+      "summary": "Kenji outlines the occupation’s administrative overhaul, highlighting the birth of the Housing Reconstruction Agency and the controversial demolition of slums to make way for modern infrastructure.",
+      "scenes": [
+        {
+          "id": "c02s001",
+          "narration": "The night after the last ember died, Tokyo’s streets lay half‑cobblestone, half‑rubble, a silent testimony to the war’s fury.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.3,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "silent testimony"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c02s002",
+          "narration": "In 1946, SCAP rolled out land reform, redistributing tenant farms and shattering the feudal agrarian hierarchy that had long underpinned Tokyo’s suburbs.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_left",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "land reform"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c02s003",
+          "narration": "A new SCAP urban planning office sprouted in the heart of the city, its maps littered with red‑lined streets wide enough to let a truck pass, a bold move to curb future conflagrations.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.6,
+              "pose": "pointing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "palace",
+          "camera": "push_in",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "fire"
+          ],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c02s004",
+          "narration": "Fire‑break zoning became the city’s new skin, a network of empty lots that would later cradle Tokyo’s neon skyline and keep its heart from burning again.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.4,
+              "pose": "standing",
+              "expression": "happy"
+            }
+          ],
+          "background": "street",
+          "camera": "pan_right",
+          "effects": [
+            "shake"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "fire‑break"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c02s005",
+          "narration": "Yet the blueprint carried paradoxes: while planners widened streets, they also mandated demolition of historic neighborhoods, a decision still debated in Tokyo’s streets today.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "thinking",
+              "expression": "sly"
+            }
+          ],
+          "background": "map",
+          "camera": "static",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "paradox"
+          ],
+          "source_ids": [],
+          "uncertainty": "disputed"
+        },
+        {
+          "id": "c02s006",
+          "narration": "SCAP soon established the Housing Reconstruction Agency, tasking it with rebuilding homes and public utilities, a massive effort that turned rubble into concrete neighborhoods.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.45,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "palace",
+          "camera": "push_in",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "Housing Reconstruction Agency"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c02s007",
+          "narration": "At the same time, planners ordered the clearance of dense slums, replacing them with wide avenues and parks—a move praised for safety but lamented for erasing community ties.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.55,
+              "pose": "standing",
+              "expression": "sly"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_left",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "wide avenues",
+            "parks"
+          ],
+          "source_ids": [],
+          "uncertainty": "disputed"
+        }
+      ],
+      "word_count": 181,
+      "title": "Occupation Blueprint"
+    },
+    {
+      "number": 3,
+      "summary": "Kenji continues the tour, showing how the 1949 Metropolitan Plan's grid took shape: new boulevards cut through ruins, resident protests sparked compromises, and the first modern traffic systems flickered to life.",
+      "scenes": [
+        {
+          "id": "c03s001",
+          "narration": "The map of Tokyo spreads like a wounded heart, its streets a patchwork of fire‑blackened blocks and hopeful outlines of a new grid.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "static",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "grid"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c03s002",
+          "narration": "At a modest council room, planners sketch wide avenues—Shinjuku‑Gaien and the like—promising a breath of fresh air amid the ruins.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.4,
+              "pose": "thinking",
+              "expression": "neutral"
+            },
+            {
+              "id": "occupation_forces",
+              "x": 0.6,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "room",
+          "camera": "pan_left",
+          "effects": [
+            "cut"
+          ],
+          "props": [
+            "scroll"
+          ],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c03s003",
+          "narration": "Debates flare, a silent clash between those who wish to preserve narrow lanes of old Edo and those who see them as obstacles to progress.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.3,
+              "pose": "talking",
+              "expression": "sly"
+            },
+            {
+              "id": "entrepreneurs",
+              "x": 0.7,
+              "pose": "talking",
+              "expression": "sly"
+            }
+          ],
+          "background": "street",
+          "camera": "push_in",
+          "effects": [
+            "shake"
+          ],
+          "props": [
+            "torch"
+          ],
+          "emphasis_words": [
+            "preserve"
+          ],
+          "source_ids": [],
+          "uncertainty": "disputed"
+        },
+        {
+          "id": "c03s004",
+          "narration": "By the late 1950s, the first wide avenues glittered under new streetlights, a testament to planners’ resolve and the city’s restless spirit.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "happy"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "fire"
+          ],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c03s005",
+          "narration": "The first concrete arteries—broad, sun‑bleached boulevards—sprang from the ashes, their steel ribs promising speed where wooden alleys once whispered tea‑house gossip.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.45,
+              "pose": "standing",
+              "expression": "neutral"
+            },
+            {
+              "id": "occupation_forces",
+              "x": 0.55,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "push_in",
+          "effects": [
+            "fade"
+          ],
+          "props": [
+            "spear"
+          ],
+          "emphasis_words": [
+            "concrete"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c03s006",
+          "narration": "But the grid met resistance; elders clutched lanterns, pleading for the preservation of their narrow lanes, while developers brandished blueprints like swords, insisting progress must cut clean.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.35,
+              "pose": "standing",
+              "expression": "sad"
+            },
+            {
+              "id": "entrepreneurs",
+              "x": 0.65,
+              "pose": "standing",
+              "expression": "sly"
+            }
+          ],
+          "background": "street",
+          "camera": "pan_right",
+          "effects": [
+            "shake"
+          ],
+          "props": [
+            "torch"
+          ],
+          "emphasis_words": [
+            "progress"
+          ],
+          "source_ids": [],
+          "uncertainty": "disputed"
+        },
+        {
+          "id": "c03s007",
+          "narration": "When the first traffic lights flickered green, the city breathed a new rhythm; commuters, once foot‑bound, now rode the pulse of a modern Tokyo, eyes on horizons beyond the old walls.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "happy"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "coin"
+          ],
+          "emphasis_words": [
+            "traffic lights",
+            "rhythm"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        }
+      ],
+      "word_count": 178,
+      "title": "Designing a Modern Grid"
+    },
+    {
+      "number": 4,
+      "summary": "Kenji highlights the surge of private enterprise, the launch of the Toei subway, and the ripple effects on Tokyo's economy, setting the stage for the city's rapid ascent.",
+      "scenes": [
+        {
+          "id": "c04s001",
+          "narration": "When the last ember in the city’s heart sputtered out, a quiet stillness settled over Tokyo—an uneasy pause before the engines of change would roar to life.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "stillness"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s002",
+          "narration": "By the early 1950s, a handful of modest workshops popped up in reclaimed districts, their wooden frames a stark contrast to the steel skeletons of the old shanty towns.",
+          "characters_on_screen": [
+            {
+              "id": "entrepreneurs",
+              "x": 0.2,
+              "pose": "thinking",
+              "expression": "neutral"
+            },
+            {
+              "id": "city_planners",
+              "x": 0.8,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_right",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "coin"
+          ],
+          "emphasis_words": [
+            "workshops",
+            "reclaimed"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s003",
+          "narration": "The government, wary of another housing crisis, rolled out subsidies for cooperative dwellings, turning cramped alleyways into orderly rows of modest homes.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.4,
+              "pose": "standing",
+              "expression": "happy"
+            },
+            {
+              "id": "occupation_forces",
+              "x": 0.6,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "room",
+          "camera": "push_in",
+          "effects": [
+            "cut"
+          ],
+          "props": [
+            "scroll"
+          ],
+          "emphasis_words": [
+            "subsidies"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s004",
+          "narration": "In 1960, the first Toei Subway Line sliced through the city, its trains humming beneath the streets like a second heartbeat, promising swift movement for the masses.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "pan_left",
+          "effects": [
+            "shake"
+          ],
+          "props": [
+            "torch"
+          ],
+          "emphasis_words": [
+            "subway",
+            "heartbeat"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s005",
+          "narration": "The convergence of private zeal and public policy sparked a wave of industrial output—electronics, textiles, and automobiles—propelling Tokyo onto the world stage.",
+          "characters_on_screen": [
+            {
+              "id": "entrepreneurs",
+              "x": 0.3,
+              "pose": "standing",
+              "expression": "happy"
+            },
+            {
+              "id": "city_planners",
+              "x": 0.7,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "market",
+          "camera": "push_in",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "spear"
+          ],
+          "emphasis_words": [
+            "industrial",
+            "output"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s006",
+          "narration": "By the mid‑1960s, Tokyo’s skyline had reborn itself: steel spires kissed the clouds, and the city’s pulse, once a ragged drumbeat, now thrummed with calculated rhythm—an engineered miracle born of ash and ambition.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "palace",
+          "camera": "push_in",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "miracle"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c04s007",
+          "narration": "Entrepreneurs flooded reclaimed zones, stitching together a new industrial tapestry.",
+          "characters_on_screen": [
+            {
+              "id": "entrepreneurs",
+              "x": 0.4,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        },
+        {
+          "id": "c04s008",
+          "narration": "The Toei line roared, linking factories to markets and commuters alike.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.6,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_right",
+          "effects": [
+            "cut"
+          ],
+          "props": [],
+          "emphasis_words": [],
+          "source_ids": [],
+          "uncertainty": "unverified"
+        }
+      ],
+      "word_count": 186,
+      "title": "Economic Engine Revving Up"
+    },
+    {
+      "number": 5,
+      "summary": "Kenji wraps up the chapter by spotlighting the 1964 Olympics' legacy, the emergence of high‑rise districts, and the lingering social divides that still shape Tokyo's urban fabric.",
+      "scenes": [
+        {
+          "id": "c05s001",
+          "narration": "The opening of the 1964 Olympic Stadium was less a sporting event and more a grand proclamation: Tokyo had shed its ashes and donned a gleaming, modern mantle.",
+          "characters_on_screen": [
+            {
+              "id": "narrator",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "neutral"
+            }
+          ],
+          "background": "palace",
+          "camera": "push_in",
+          "effects": [
+            "fade"
+          ],
+          "props": [],
+          "emphasis_words": [
+            "proclamation"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c05s002",
+          "narration": "Aerial footage of Shinjuku’s towering cranes, their glass facades reflecting a city that once lay in ruins, now pulsed with ambition.",
+          "characters_on_screen": [
+            {
+              "id": "city_planners",
+              "x": 0.4,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "street",
+          "camera": "pan_right",
+          "effects": [
+            "pop_in"
+          ],
+          "props": [
+            "spear"
+          ],
+          "emphasis_words": [
+            "Shinjuku",
+            "cranes"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c05s003",
+          "narration": "Marunouchi’s business district, a grid of steel and ambition, stands as a testament to the 1949 Metropolitan Plan’s vision—if only a few streets were left unpaved.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.3,
+              "pose": "praying",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "static",
+          "effects": [
+            "shake"
+          ],
+          "props": [
+            "torch"
+          ],
+          "emphasis_words": [
+            "Marunouchi",
+            "grid"
+          ],
+          "source_ids": [],
+          "uncertainty": "disputed"
+        },
+        {
+          "id": "c05s004",
+          "narration": "Yet, beneath the glitter, socioeconomic cleavages—born from wartime rationing and post‑war subsidies—continue to echo through Tokyo’s alleyways.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.6,
+              "pose": "standing",
+              "expression": "sad"
+            }
+          ],
+          "background": "street",
+          "camera": "pan_left",
+          "effects": [
+            "cut"
+          ],
+          "props": [
+            "coin"
+          ],
+          "emphasis_words": [
+            "cleavages",
+            "echo"
+          ],
+          "source_ids": [],
+          "uncertainty": "medium"
+        },
+        {
+          "id": "c05s005",
+          "narration": "By the mid‑1960s, Tokyo had not merely rebuilt; it had reinvented itself into a symbol of resilience and paradox, where progress coexists with the ghosts of its past.",
+          "characters_on_screen": [
+            {
+              "id": "entrepreneurs",
+              "x": 0.5,
+              "pose": "laughing",
+              "expression": "happy"
+            }
+          ],
+          "background": "palace",
+          "camera": "push_in",
+          "effects": [
+            "fade"
+          ],
+          "props": [
+            "scroll"
+          ],
+          "emphasis_words": [
+            "reinvented",
+            "ghosts"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c05s006",
+          "narration": "The Olympic torch lit not just the stadium but the imagination of a nation; new highways spanned the city, linking once‑isolated neighborhoods into a pulsating network of commerce and culture.",
+          "characters_on_screen": [
+            {
+              "id": "occupation_forces",
+              "x": 0.2,
+              "pose": "standing",
+              "expression": "neutral"
+            },
+            {
+              "id": "city_planners",
+              "x": 0.7,
+              "pose": "thinking",
+              "expression": "neutral"
+            }
+          ],
+          "background": "map",
+          "camera": "pan_right",
+          "effects": [
+            "fade"
+          ],
+          "props": [
+            "spear"
+          ],
+          "emphasis_words": [
+            "highways",
+            "network"
+          ],
+          "source_ids": [],
+          "uncertainty": "documented"
+        },
+        {
+          "id": "c05s007",
+          "narration": "Yet, as glass towers rose, pockets of old‑town shanties persisted, reminding us that the gleam of progress often casts shadows where inequality quietly endures.",
+          "characters_on_screen": [
+            {
+              "id": "civic_residents",
+              "x": 0.5,
+              "pose": "standing",
+              "expression": "sad"
+            }
+          ],
+          "background": "street",
+          "camera": "static",
+          "effects": [
+            "cut"
+          ],
+          "props": [
+            "coin"
+          ],
+          "emphasis_words": [
+            "shadows",
+            "inequality"
+          ],
+          "source_ids": [],
+          "uncertainty": "medium"
+        }
+      ],
+      "word_count": 181,
+      "title": "From Ruins to Skyline"
+    }
+  ],
+  "sources": [],
+  "word_count": 906,
+  "timing_status": "unmeasured_until_tts",
+  "disclosure": "Narrated with a synthetic voice; illustrated scenes are dramatizations."
+}

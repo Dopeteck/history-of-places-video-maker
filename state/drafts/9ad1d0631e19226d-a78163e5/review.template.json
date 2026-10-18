@@ -1,0 +1,243 @@
+{
+  "story_sha256": "9ad1d0631e19226dcf7d2e1dab42f4d5445b6581c76af29aa3a1fc2d19348a24",
+  "report_sha256": "a78163e5de81eb84c416963dcfacc45055f813485f072da2fdc4cc31ca064b3c",
+  "reviewer": "",
+  "full_script_reviewed": false,
+  "sources_checked": [],
+  "claims": [
+    {
+      "id": "c01s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s006q02",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c01s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c02s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c03s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c04s008q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s001q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s001q02",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s002q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s003q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s003q02",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s004q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s005q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s006q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    },
+    {
+      "id": "c05s007q01",
+      "decision": "pending",
+      "source_ids": [],
+      "note": ""
+    }
+  ]
+}

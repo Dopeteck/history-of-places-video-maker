@@ -1,0 +1,170 @@
+{
+  "number": 2,
+  "summary": "Kenji outlines the occupation’s administrative overhaul, highlighting the birth of the Housing Reconstruction Agency and the controversial demolition of slums to make way for modern infrastructure.",
+  "scenes": [
+    {
+      "id": "c02s001",
+      "narration": "The night after the last ember died, Tokyo’s streets lay half‑cobblestone, half‑rubble, a silent testimony to the war’s fury.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.3,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "silent testimony"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c02s002",
+      "narration": "In 1946, SCAP rolled out land reform, redistributing tenant farms and shattering the feudal agrarian hierarchy that had long underpinned Tokyo’s suburbs.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "land reform"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c02s003",
+      "narration": "A new SCAP urban planning office sprouted in the heart of the city, its maps littered with red‑lined streets wide enough to let a truck pass, a bold move to curb future conflagrations.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.6,
+          "pose": "pointing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "fire"
+      ],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c02s004",
+      "narration": "Fire‑break zoning became the city’s new skin, a network of empty lots that would later cradle Tokyo’s neon skyline and keep its heart from burning again.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "happy"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "shake"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "fire‑break"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c02s005",
+      "narration": "Yet the blueprint carried paradoxes: while planners widened streets, they also mandated demolition of historic neighborhoods, a decision still debated in Tokyo’s streets today.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "thinking",
+          "expression": "sly"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "paradox"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c02s006",
+      "narration": "SCAP soon established the Housing Reconstruction Agency, tasking it with rebuilding homes and public utilities, a massive effort that turned rubble into concrete neighborhoods.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.45,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "Housing Reconstruction Agency"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c02s007",
+      "narration": "At the same time, planners ordered the clearance of dense slums, replacing them with wide avenues and parks—a move praised for safety but lamented for erasing community ties.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.55,
+          "pose": "standing",
+          "expression": "sly"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_left",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "wide avenues",
+        "parks"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    }
+  ],
+  "word_count": 181,
+  "title": "Occupation Blueprint"
+}
