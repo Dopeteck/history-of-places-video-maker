@@ -12,9 +12,11 @@ import sys
 from pathlib import Path
 
 # Allow direct execution from the repository root in GitHub Actions and locally.
+REPO_ROOT = Path(__file__).resolve().parents[1]
 PROTOTYPE_DIR = Path(__file__).resolve().parent
-if str(PROTOTYPE_DIR) not in sys.path:
-    sys.path.insert(0, str(PROTOTYPE_DIR))
+for import_dir in (str(REPO_ROOT), str(PROTOTYPE_DIR)):
+    if import_dir not in sys.path:
+        sys.path.insert(0, import_dir)
 
 from PIL import Image, ImageDraw, ImageFont
 
