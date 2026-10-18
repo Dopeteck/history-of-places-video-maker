@@ -312,6 +312,17 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             if im.format not in ("JPEG","PNG","WEBP","TIFF"): continue
             if max(im.size)<MIN_LONG_SIDE or min(im.size)<600: continue
             if im.width/im.height>3.0 or im.height/im.width>3.0: continue
+            # OCR catches text-heavy scans and title-page-like assets missed by metadata.
+            try:
+                import pytesseract
+                probe=im.copy()
+                probe.thumbnail((900,900))
+                ocr=pytesseract.image_to_data(probe,output_type=pytesseract.Output.DICT)
+                words=[str(w).strip() for w in ocr.get("text",[]) if str(w).strip()]
+                conf=[float(v) for v in ocr.get("conf",[]) if str(v).replace(".","",1).isdigit() and float(v)>=35]
+                if len(words)>=14 and len(conf)>=10: continue
+            except Exception as e:
+                raise RuntimeError(f"OCR gate unavailable; cannot certify candidate {c['title']}: {type(e).__name__}: {e}") from e
             digest=hashlib.sha256(data).hexdigest()
             if digest in used or c["source_url"] in used: continue
             c["_bytes"]=data; c["_digest"]=digest; c["_size"]=im.size
