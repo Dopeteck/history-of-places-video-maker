@@ -1,0 +1,281 @@
+{
+  "title": "Tokyo Was Once Called Edo",
+  "topic": "Tokyo, Japan",
+  "layout": "framed",
+  "aspect_ratio": "9:16",
+  "target_seconds": 48,
+  "status": "needs_human_review",
+  "visual_style": "photographic travel documentary; archival assets only when license-verified; no character assets",
+  "hook_style": "historical_reveal",
+  "structure_variant": "past_to_present",
+  "script": [
+    "Tokyo was once known by another name: Edo.",
+    "Its rise accelerated when Tokugawa Ieyasu established his government here in 1603.",
+    "Edo became a political and cultural center under the Tokugawa shogunate.",
+    "By the eighteenth century, it had grown into a vast metropolis.",
+    "For centuries, the emperor's court remained in Kyoto.",
+    "Then 1868 brought a turning point in Japanese history.",
+    "Edo was renamed Tokyo, meaning eastern capital.",
+    "The city changed, but traces of Edo survived.",
+    "Look for them in historic districts, gardens, and museums.",
+    "Nihonbashi became a key bridge and commercial center.",
+    "Its old routes connected Edo with places across Japan.",
+    "The city also developed distinctive theatre, prints, and festivals.",
+    "Modern streets now sit beside older cultural landmarks.",
+    "A museum can help put those layers into context.",
+    "For a visit, choose one historic district and walk slowly.",
+    "Check official site information before planning museum entry."
+  ],
+  "source_ids": [
+    "tokyo-metropolitan-government-history",
+    "edo-tokyo-museum",
+    "gotokyo-edo-history",
+    "gotokyo-nihonbashi"
+  ],
+  "editorial_notes": [
+    "Historical claims are grounded in the official sources listed in source-registry.json; editor must verify wording before approval.",
+    "Do not imply every present-day structure dates to the Edo period.",
+    "No images or video are approved by the source registry; each media item requires a separate rights record.",
+    "Visitor tip avoids unsourced opening hours, prices, and access claims."
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "Tokyo was once known by another name: Edo.",
+      "source_ids": [
+        "edo-tokyo-museum"
+      ],
+      "asset_tags": [
+        "edo-period-map",
+        "historic-tokyo-map"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "founding",
+      "type": "map",
+      "duration_seconds": 3,
+      "narration": "In 1603, Tokugawa Ieyasu established his government here.",
+      "source_ids": [
+        "tokyo-metropolitan-government-history"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    },
+    {
+      "id": "shogunate",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "Edo grew into a political and cultural center.",
+      "source_ids": [
+        "edo-tokyo-museum"
+      ],
+      "asset_tags": [
+        "edo-castle-historical-map"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "metropolis",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "By the eighteenth century, Edo was a vast metropolis.",
+      "source_ids": [
+        "edo-tokyo-museum",
+        "tokyo-metropolitan-government-history"
+      ],
+      "asset_tags": [
+        "edo-cityscape-print"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "kyoto",
+      "type": "map",
+      "duration_seconds": 3,
+      "narration": "For centuries, the imperial court remained in Kyoto.",
+      "source_ids": [
+        "tokyo-metropolitan-government-history"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    },
+    {
+      "id": "turning-point",
+      "type": "icon_card",
+      "duration_seconds": 3,
+      "narration": "Then 1868 brought a turning point in Japanese history.",
+      "source_ids": [
+        "edo-tokyo-museum"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    },
+    {
+      "id": "renaming",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "Edo was renamed Tokyo: eastern capital.",
+      "source_ids": [
+        "edo-tokyo-museum",
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [
+        "tokyo-renaming-document"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "layers",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "The city changed, but traces of Edo survived.",
+      "source_ids": [
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [
+        "tokyo-historic-street"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "gardens",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "Find those traces in gardens, districts, and museums.",
+      "source_ids": [
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [
+        "edo-era-garden"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "nihonbashi",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "Nihonbashi became a key bridge and commercial center.",
+      "source_ids": [
+        "gotokyo-nihonbashi"
+      ],
+      "asset_tags": [
+        "nihonbashi-historic-print"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "routes",
+      "type": "map",
+      "duration_seconds": 3,
+      "narration": "Old routes connected Edo with places across Japan.",
+      "source_ids": [
+        "gotokyo-nihonbashi"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    },
+    {
+      "id": "culture",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "The city shaped theatre, prints, and festivals.",
+      "source_ids": [
+        "edo-tokyo-museum"
+      ],
+      "asset_tags": [
+        "ukiyo-e-woodblock"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "modern",
+      "type": "split_compare",
+      "duration_seconds": 3,
+      "narration": "Today, modern streets sit beside older landmarks.",
+      "source_ids": [
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [
+        "tokyo-historic-street",
+        "tokyo-modern-street"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "museum",
+      "type": "still_kenburns",
+      "duration_seconds": 3,
+      "narration": "A museum can help explain those layers of history.",
+      "source_ids": [
+        "edo-tokyo-museum"
+      ],
+      "asset_tags": [
+        "edo-tokyo-museum-exterior"
+      ],
+      "layout": "framed",
+      "review_flags": [
+        "asset_not_yet_resolved"
+      ]
+    },
+    {
+      "id": "visitor-tip",
+      "type": "icon_card",
+      "duration_seconds": 3,
+      "narration": "Choose one historic district and walk slowly.",
+      "source_ids": [
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    },
+    {
+      "id": "outro",
+      "type": "icon_card",
+      "duration_seconds": 3,
+      "narration": "Check official site information before planning museum entry.",
+      "source_ids": [
+        "gotokyo-edo-history"
+      ],
+      "asset_tags": [],
+      "layout": "framed",
+      "review_flags": []
+    }
+  ],
+  "asset_policy": "No asset may render until its source URL, author, exact rights statement, rights URL, license, retrieval date, local path, checksum, dimensions, and scene usage are recorded in assets_manifest.json. Rights must pass the commercial-use allowlist and human review.",
+  "rendering_note": "Editorial draft expanded to 48 seconds with sixteen 3-second beats. Final durations must be reconciled with actual Kokoro narration timings before preview."
+}

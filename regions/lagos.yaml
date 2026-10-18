@@ -1,0 +1,113 @@
+name: Lagos
+slug: lagos
+country: Nigeria
+languages: [Yoruba, English]
+place_names:
+  - spelling: Eko
+    pronunciation_hint: "EH-koh"
+  - spelling: Lagos
+    pronunciation_hint: "LAY-goss"
+  - spelling: Isale Eko
+    pronunciation_hint: "ee-SAH-leh EH-koh"
+  - spelling: Badagry
+    pronunciation_hint: "bah-DAHG-ree"
+period_focus: "Eko to modern Lagos, from early Yoruba settlement to the present"
+story:
+  hook: "Before the megacity called Lagos, this place was known as Eko."
+  closing_tip: "Walk historic Lagos Island with a local guide, and pair the old streets with a visit to a museum or heritage site."
+  narration: "Before Lagos became a vast coastal megacity, parts of its story were known as Eko. Yoruba communities shaped life around the lagoon and waterways, with fishing, trade, and local political traditions tying settlements together. The island and its harbour later drew Portuguese traders, and the name Lagos became widely used. In the nineteenth century, the port was pulled into the Atlantic slave trade and then British colonial rule; those histories must be remembered alongside the lives of the people who resisted and rebuilt. Lagos became a British colony in 1861, and later a major centre of Nigerian politics, commerce, music, and film. Nigeria’s independence in 1960 reshaped its national role, while the city kept expanding across islands and mainland districts. Today, traffic, markets, art, and waterfront life all speak to a city still in motion. Explore Lagos Island with a guide, and ask how Eko’s older geography survives in modern streets."
+sources:
+  - https://en.wikipedia.org/wiki/Lagos
+  - https://en.wikipedia.org/wiki/History_of_Lagos
+  - https://www.nigerianmuseums.gov.ng/
+  - https://whc.unesco.org/en/tentativelists/5173/
+claim_sources:
+  "Eko is a name associated with Lagos Island and its older Yoruba history": [https://en.wikipedia.org/wiki/History_of_Lagos, https://en.wikipedia.org/wiki/Lagos]
+  "Lagoons and waterways shaped settlement, fishing and trade": [https://en.wikipedia.org/wiki/Lagos, https://whc.unesco.org/en/tentativelists/5173/]
+  "Lagos was annexed by Britain in 1861": [https://en.wikipedia.org/wiki/History_of_Lagos]
+  "The port was involved in the Atlantic slave trade and colonial rule": [https://en.wikipedia.org/wiki/History_of_Lagos, https://whc.unesco.org/en/tentativelists/5173/]
+  "Nigeria became independent in 1960 and Lagos became a major national centre": [https://en.wikipedia.org/wiki/Lagos, https://en.wikipedia.org/wiki/History_of_Lagos]
+  "Modern Lagos is a major centre for commerce and popular culture": [https://en.wikipedia.org/wiki/Lagos]
+visual_style:
+  palette: [lagoon-teal, sand-gold, deep-indigo]
+  accent_color: "#19A7A1"
+  music_mood: "warm, rhythmic, low-key percussion with gentle lagoon ambience"
+  notes: "Contrast lagoon blues and warm sand tones for historic scenes with vivid, sunlit modern street photography."
+image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book]
+map:
+  latitude: 6.5244
+  longitude: 3.3792
+  label: "LAGOS"
+scenes:
+  - title: "Eko Before Lagos"
+    narration_intent: "Introduce the older Eko name and Yoruba communities around the lagoon."
+    image_search_terms: ["Eko Lagos Island historical Yoruba", "Isale Eko old Lagos historic photograph", "Lagos Island early history Nigeria"]
+    required_keywords: [Eko, Lagos, Nigeria]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: "Life by the Lagoon"
+    narration_intent: "Describe how waterways shaped settlement, fishing, and exchange."
+    image_search_terms: ["Lagos lagoon fishing historic Nigeria", "Lagos lagoon waterfront traditional boats", "Lagos lagoon old photograph"]
+    required_keywords: [Lagos, lagoon, Nigeria]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: "A Trading Port"
+    narration_intent: "Explain the arrival of overseas trade and the growth of the port."
+    image_search_terms: ["Lagos Nigeria old harbour historical photograph", "Lagos port 19th century historical", "Lagos Island waterfront colonial era"]
+    required_keywords: [Lagos, port]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: "A Difficult Legacy"
+    narration_intent: "Acknowledge the Atlantic slave trade and its human consequences without sensational imagery."
+    image_search_terms: ["Badagry heritage museum historic site", "Badagry Nigeria heritage historical building", "Lagos slave trade history memorial"]
+    required_keywords: [Badagry, Lagos, history]
+    banned_keywords: [cover, catalogue, report, document, statement]
+    image_type: historic
+  - title: "Colonial Lagos"
+    narration_intent: "Describe the 1861 annexation and colonial-era changes to the port city."
+    image_search_terms: ["Lagos Nigeria colonial era street photograph", "Lagos 19th century colonial architecture", "Lagos old government building historical"]
+    required_keywords: [Lagos, Nigeria, colonial]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: "Markets and Movement"
+    narration_intent: "Show the role of markets, ferries, and trade in the city's daily life."
+    image_search_terms: ["Lagos market historical photograph Nigeria", "Lagos Island market modern photo", "Lagos ferry waterfront market"]
+    required_keywords: [Lagos, market]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: modern
+  - title: "Independence"
+    narration_intent: "Connect Lagos to Nigeria's independence in 1960 and national politics."
+    image_search_terms: ["Nigeria independence 1960 Lagos historical photo", "Lagos independence celebrations 1960", "Nigeria 1960 Lagos historical"]
+    required_keywords: [Nigeria, 1960, Lagos]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: "Culture Takes the Stage"
+    narration_intent: "Highlight Lagos as a centre for music, film, art, and popular culture."
+    image_search_terms: ["Lagos Nigeria music live modern photo", "Lagos art gallery contemporary photo", "Lagos film culture city modern"]
+    required_keywords: [Lagos, Nigeria, culture]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: modern
+  - title: "Across the City"
+    narration_intent: "Show the geographic spread between Lagos Island, mainland districts, and the lagoon."
+    image_search_terms: ["Lagos city aerial lagoon modern", "Lagos Island mainland bridge photo", "Lagos Nigeria skyline aerial"]
+    required_keywords: [Lagos, lagoon, city]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: map
+  - title: "A Changing Skyline"
+    narration_intent: "Illustrate the present-day city and its continuing growth."
+    image_search_terms: ["Lagos skyline Victoria Island modern", "Lagos Nigeria contemporary skyline photo", "Lagos city waterfront skyline"]
+    required_keywords: [Lagos, Nigeria, skyline]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: modern
+  - title: "Eko in the Present"
+    narration_intent: "Connect historic Lagos Island with contemporary streets and everyday life."
+    image_search_terms: ["Isale Eko Lagos modern street photo", "Lagos Island historic district modern photo", "Lagos street life contemporary Nigeria"]
+    required_keywords: [Lagos, Eko, street]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: modern
+  - title: "Visit with Context"
+    narration_intent: "Close with a practical heritage-visiting tip that encourages respectful exploration."
+    image_search_terms: ["Lagos heritage architecture Nigeria modern photo", "Lagos museum exterior Nigeria", "Lagos historic building street view"]
+    required_keywords: [Lagos, Nigeria, heritage]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: modern
