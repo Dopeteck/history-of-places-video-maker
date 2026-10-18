@@ -184,6 +184,7 @@ def main():
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
   credit["content_sha256"]=digest; previous_digest=digest
  write_approval_board(media,credits,cfg,out)
+ if any(x.get("provider")=="fallback text card" for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene had no image above the CLIP threshold. Replace it with a verified image or configured map and rerun.")
  # Kokoro only: no silent speech-provider fallback.
  try:
   import torch
