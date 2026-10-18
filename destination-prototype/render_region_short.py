@@ -127,9 +127,9 @@ def write_approval_board(media,credits,cfg,out):
  # A standalone HTML approval board puts each real chosen image beside its narration line and rights.
  cards=[]
  for i,((scene,im),c) in enumerate(zip(media,credits),1):
-  rel=Path(c["file"]).as_posix()
-  try: rel=Path(rel).relative_to(out.relative_to(ROOT)).as_posix()
-  except Exception: pass
+   asset_path=Path(c["file"])
+   if not asset_path.is_absolute(): asset_path=ROOT/asset_path
+   rel=Path(os.path.relpath(asset_path, out)).as_posix()
   cards.append(f"""<article><img src="{html.escape(rel)}" alt="{html.escape(c['title'])}"><section><h2>{i}. {html.escape(scene['title'])}</h2><p><b>Narration intent:</b> {html.escape(scene.get('narration_intent',''))}</p><p><b>Chosen asset:</b> {html.escape(c['title'])}</p><p><b>Provider:</b> {html.escape(c.get('provider','unknown'))}</p><p><b>Rights:</b> {html.escape(c.get('rights_statement',c.get('license','unknown')))}</p><p><b>License URL:</b> <a href="{html.escape(c.get('license_url',''),quote=True)}">{html.escape(c.get('license_url','not provided'))}</a></p><p><b>Source:</b> <a href="{html.escape(c.get('source_url',''),quote=True)}">{html.escape(c.get('source_url','not provided'))}</a></p><p><b>CLIP relevance:</b> {c.get('match_score','n/a')}</p><p><b>Warnings:</b> {html.escape('; '.join(c.get('warnings',[])) or 'None')}</p></section></article>""")
  page="""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Visual approval board</title><style>body{font:16px system-ui;max-width:1200px;margin:auto;padding:24px;background:#f4f1ea;color:#20242b}h1{margin-bottom:4px}.notice{padding:14px;background:#fff0ce;border-left:5px solid #b7791f}article{display:grid;grid-template-columns:minmax(240px,38%) 1fr;gap:22px;background:white;padding:18px;margin:20px 0;border-radius:12px}img{width:100%;height:auto;max-height:520px;object-fit:contain;background:#222}a{overflow-wrap:anywhere}@media(max-width:700px){article{grid-template-columns:1fr}}</style></head><body><h1>Visual approval board — """+html.escape(cfg["name"])+"""</h1><p class="notice"><b>REVIEW ONLY — NOT APPROVED FOR PUBLISHING.</b> Verify every image against the narration and inspect the rights/source links. A text card means no candidate passed the relevance threshold.</p>"""+''.join(cards)+"</body></html>"
  (out/"approval-board.html").write_text(page,encoding="utf-8")
@@ -142,6 +142,7 @@ def write_approval_board(media,credits,cfg,out):
  for c in credits:
   rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}
   if c.get("content_sha256"): byhash[c["content_sha256"]]=rec
+  
   manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
 def smart_fit(im,progress):
  # Portrait images use focal-aware fit; wide images use blurred fill rather than cutting through the subject.
@@ -183,6 +184,7 @@ def main():
   if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
   credit["content_sha256"]=digest; previous_digest=digest
+   media.append((scene,im)); credits.append(credit)
  write_approval_board(media,credits,cfg,out)
  if any(x.get("provider")=="fallback text card" for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene had no image above the CLIP threshold. Replace it with a verified image or configured map and rerun.")
  # Kokoro only: no silent speech-provider fallback.
