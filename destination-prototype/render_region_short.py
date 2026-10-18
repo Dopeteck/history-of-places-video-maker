@@ -143,7 +143,7 @@ def write_approval_board(media,credits,cfg,out):
   rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}
   if c.get("content_sha256"): byhash[c["content_sha256"]]=rec
   
-  manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+ manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
 def smart_fit(im,progress):
  # Portrait images use focal-aware fit; wide images use blurred fill rather than cutting through the subject.
  if im.width/im.height < .78:
