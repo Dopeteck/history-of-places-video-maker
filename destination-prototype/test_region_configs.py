@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fast offline contract tests for region configs and config-draft helper."""
 import json, subprocess, sys, tempfile
+from asset_resolver import _rights_ok, BANNED, PROVIDERS
 from pathlib import Path
 import yaml
 ROOT=Path(__file__).resolve().parents[1]
@@ -35,5 +36,16 @@ def main():
   d=yaml.safe_load(out.read_text())
   assert d["name"]=="Kano" and d["country"]=="Nigeria" and "[DRAFT ONLY]" in d["story"]["narration"]
   print("PASS helper: creates explicitly unverified draft config")
+ # Rights/format gate contract: explicit permissive rights only; unknown, NC, ND and scans fail.
+ assert _rights_ok("Public Domain")
+ assert _rights_ok("CC0 1.0 Universal")
+ assert _rights_ok("CC BY 4.0")
+ assert _rights_ok("CC BY-SA 4.0")
+ for rights in ("", "Unknown", "All rights reserved", "CC BY-NC 4.0", "CC BY-ND 4.0"):
+  assert not _rights_ok(rights), f"rights must fail closed: {rights}"
+ assert BANNED.search("Book cover — 1908")
+ assert BANNED.search("scanned text page")
+ assert len(PROVIDERS) >= 10, "multi-provider registry unexpectedly incomplete"
+ print("PASS resolver contract: rights allowlist, banned scans and provider registry")
  print("ALL REGION CONTRACT TESTS PASSED")
 if __name__=="__main__": main()
