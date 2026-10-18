@@ -8,7 +8,13 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+import sys
 from pathlib import Path
+
+# Allow direct execution from the repository root in GitHub Actions and locally.
+PROTOTYPE_DIR = Path(__file__).resolve().parent
+if str(PROTOTYPE_DIR) not in sys.path:
+    sys.path.insert(0, str(PROTOTYPE_DIR)
 
 from PIL import Image, ImageDraw, ImageFont
 
