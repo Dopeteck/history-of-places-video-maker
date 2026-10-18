@@ -22,6 +22,9 @@ on:
       - 'regions/**'
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/make_region_config.py'
+      - 'destination-prototype/test_region_configs.py'
+      - 'requirements-regions.txt'
+      - 'README-regions.md'
       - '.github/workflows/region-history-shorts.yml'
 permissions:
   contents: read
@@ -47,7 +50,8 @@ jobs:
           python -m pip install PyYAML
       - name: Compile Python and validate config shape
         run: |
-          python -m py_compile destination-prototype/render_region_short.py destination-prototype/make_region_config.py
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python destination-prototype/test_region_configs.py
           python - <<'PY'
           import pathlib, yaml, os
           p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
