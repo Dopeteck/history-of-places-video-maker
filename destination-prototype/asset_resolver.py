@@ -261,10 +261,8 @@ def _load_clip(model_id):
 def _clip_scores(query, candidates, image_bytes):
     """Small CPU-only CLIP model; return cosine similarity on text/image embeddings."""
     import torch
-    from transformers import CLIPModel, CLIPProcessor
     model_id=os.getenv("ASSET_CLIP_MODEL","openai/clip-vit-base-patch32")
-    model=CLIPModel.from_pretrained(model_id).to("cpu").eval()
-    processor=CLIPProcessor.from_pretrained(model_id)
+    model, processor=_load_clip(model_id)
     images=[Image.open(io.BytesIO(b)).convert("RGB") for b in image_bytes]
     with torch.inference_mode():
         text=processor(text=[query],return_tensors="pt",padding=True,truncation=True)
