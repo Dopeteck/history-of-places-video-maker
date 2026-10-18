@@ -108,6 +108,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
           python -m pip install -r requirements-regions.txt
+      - name: Verify CLIP model can score a known image
+        if: github.event_name == 'workflow_dispatch' && inputs.visual_review_only
+        run: |
+          cd destination-prototype
+          python - <<'PY'
+          import io
+          from PIL import Image
+          from asset_resolver import _clip_scores
+          image = Image.new("RGB", (224, 224), (40, 90, 180))
+          buf = io.BytesIO()
+          image.save(buf, format="PNG")
+          scores = _clip_scores("a blue image", [{"title": "known test image"}], [buf.getvalue()])
+          assert len(scores) == 1 and isinstance(scores[0], float) and -1.0 <= scores[0] <= 1.0, scores
+          print("CLIP smoke test passed:", scores)
+          PY
       - name: Render visual approval board (no audio / not publishable)
         if: github.event_name == 'workflow_dispatch' && inputs.visual_review_only
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml --visual-review-only
