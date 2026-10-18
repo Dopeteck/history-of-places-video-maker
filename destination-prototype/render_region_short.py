@@ -179,7 +179,13 @@ def main():
      im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
   if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
    # Match must come from metadata; no quiet substitute for the present-day visual.
-   if credit["match_score"]<3: fail(f"Modern/present image relevance gate failed for scene '{scene['title']}'")
+   if credit["match_score"]<3:
+    reason=f"Modern/present image relevance gate failed for scene '{scene['title']}'"
+    if a.visual_review_only:
+     print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
+     im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
+    else:
+     fail(reason)
   digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
   if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
