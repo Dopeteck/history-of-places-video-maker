@@ -251,7 +251,7 @@ def main():
    text=pytesseract.image_to_string(im.resize((360,640))).lower()
    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
  except ImportError: warnings.append("pytesseract unavailable; OCR frame scan not run")
- qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
+ qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
  (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
  print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
