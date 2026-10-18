@@ -152,7 +152,7 @@ def smart_fit(im,progress):
  fg=im.copy(); fg.thumbnail((W-80,H-360),Image.Resampling.LANCZOS)
  bg=ImageEnhance.Brightness(bg).enhance(.48); bg.paste(fg,((W-fg.width)//2,(H-fg.height)//2)); return bg
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); a=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); a=ap.parse_args()
  cfgpath=Path(a.config); cfg=yaml.safe_load(cfgpath.read_text(encoding="utf-8"))
  if not cfg.get("name") or len(cfg.get("scenes",[]))<8 or len(cfg["scenes"])>12: fail("Config needs name and 8–12 scenes")
  if len(set(s["title"] for s in cfg["scenes"]))!=len(cfg["scenes"]): fail("Scene titles must be unique")
@@ -186,6 +186,7 @@ def main():
   credit["content_sha256"]=digest; previous_digest=digest
   media.append((scene,im)); credits.append(credit)
  write_approval_board(media,credits,cfg,out)
+ if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
  if any(x.get("provider")=="fallback text card" for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene had no image above the CLIP threshold. Replace it with a verified image or configured map and rerun.")
  # Kokoro only: no silent speech-provider fallback.
  try:
