@@ -49,12 +49,18 @@ scenes:
     narration_intent: "Explain how the castle and its surrounding town shaped Edo's growth."
     image_search_terms: ["Edo Castle historical photograph", "Edo Castle old illustration Japan", "Tokyo Imperial Palace Edo Castle historic"]
     required_keywords: [Edo, castle]
+    visual_tags: ["Edo Castle", "Edo Castle keep", "castle town Japan"]
+    named_entities: ["Edo Castle", "Tokugawa Ieyasu"]
+    period_tag: historical
     banned_keywords: [cover, catalogue, report, document]
     image_type: historic
   - title: "The Shogunate"
     narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
     image_search_terms: ["Tokugawa Ieyasu portrait", "Tokugawa Ieyasu historical painting", "Tokugawa shogunate Japan portrait"]
     required_keywords: [Tokugawa, Ieyasu]
+    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Edo period Japan"]
+    named_entities: ["Tokugawa Ieyasu"]
+    period_tag: historical
     banned_keywords: [cover, catalogue, report, document]
     image_type: historic
   - title: "Merchants and Canals"
@@ -73,6 +79,9 @@ scenes:
     narration_intent: "Highlight ukiyo-e, theatre, and popular urban culture."
     image_search_terms: ["Edo period ukiyo-e street scene", "Edo kabuki theatre historical print", "Utagawa Hiroshige Edo city print"]
     required_keywords: [Edo, ukiyo, Japan]
+    visual_tags: ["ukiyo-e", "Hiroshige", "Edo period woodblock print"]
+    named_entities: ["Utagawa Hiroshige", "Edo", "ukiyo-e"]
+    period_tag: historical
     banned_keywords: [cover, catalogue, report, document, plate list]
     image_type: historic
   - title: "Kyoto and Edo"
@@ -103,8 +112,12 @@ scenes:
     narration_intent: "Explain Nihonbashi's role as a bridge and symbolic starting point for roads."
     image_search_terms: ["Nihonbashi bridge Edo ukiyo-e", "Nihonbashi Tokyo modern bridge photo", "Nihonbashi bridge historical Japan"]
     required_keywords: [Nihonbashi, bridge]
+    visual_tags: ["Nihonbashi bridge Edo period", "Hiroshige Nihonbashi ukiyo-e", "Nihonbashi bridge historical print"]
+    named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
+    period_tag: historical
+    optional_second_beat: ["Nihonbashi modern bridge photograph"]
     banned_keywords: [cover, catalogue, report, document]
-    image_type: modern
+    image_type: historic
   - title: "The City Today"
     narration_intent: "Close the historical arc by showing contemporary Tokyo layered over its past."
     image_search_terms: ["Tokyo modern skyline city street", "Tokyo historic district modern street photo", "Tokyo contemporary city panorama"]
