@@ -20,7 +20,7 @@ on:
   pull_request:
     paths:
       - 'regions/**'
-      - 'destination-prototype/render_region_short.py'
+      - 'destination-prototype/render_region_short.py'\n      - 'destination-prototype/asset_resolver.py'
       - 'destination-prototype/make_region_config.py'
       - 'destination-prototype/test_region_configs.py'
       - 'requirements-regions.txt'
@@ -50,7 +50,7 @@ jobs:
           python -m pip install PyYAML
       - name: Compile Python and validate config shape
         run: |
-          python -m py_compile destination-prototype/render_region_short.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
           python destination-prototype/test_region_configs.py
           python - <<'PY'
           import pathlib, yaml, os
@@ -114,7 +114,7 @@ jobs:
           if-no-files-found: warn
           path: |
             output/${{ inputs.region }}-region-short/*.mp4
-            output/${{ inputs.region }}-region-short/contact-sheet.jpg
+            output/${{ inputs.region }}-region-short/contact-sheet.jpg\n            output/${{ inputs.region }}-region-short/approval-board.html\n            output/${{ inputs.region }}-region-short/images/*
             output/${{ inputs.region }}-region-short/credits.json
             output/${{ inputs.region }}-region-short/credits-description.txt
             output/${{ inputs.region }}-region-short/qa-report.json
