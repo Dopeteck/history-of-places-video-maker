@@ -29,6 +29,9 @@ on:
       - 'regions/**'
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
       - 'requirements-regions.txt'
       - '.github/workflows/region-history-shorts.yml'
   pull_request:
@@ -36,6 +39,10 @@ on:
       - 'regions/**'
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'destination-prototype/test_resolver_logic.py'
       - 'destination-prototype/make_region_config.py'
       - 'destination-prototype/test_region_configs.py'
       - 'requirements-regions.txt'
@@ -62,11 +69,12 @@ jobs:
           python-version: '3.11'
       - name: Install config and renderer dependencies
         run: |
-          python -m pip install PyYAML requests Pillow
+          python -m pip install PyYAML requests Pillow numpy pytest
       - name: Compile Python and validate config shape
         run: |
-          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
           python destination-prototype/test_region_configs.py
+          python -m pytest destination-prototype/test_resolver_logic.py -q
           python - <<'PY'
           import pathlib, yaml, os
           p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
@@ -124,13 +132,13 @@ jobs:
           python - <<'PY'
           import io
           from PIL import Image
-          from asset_resolver import _clip_scores
+          from asset_resolver import _clip_analyze
           image = Image.new("RGB", (224, 224), (40, 90, 180))
           buf = io.BytesIO()
           image.save(buf, format="PNG")
-          scores = _clip_scores("a blue image", [{"title": "known test image"}], [buf.getvalue()])
-          assert len(scores) == 1 and isinstance(scores[0], float) and -1.0 <= scores[0] <= 1.0, scores
-          print("CLIP smoke test passed:", scores)
+          r = _clip_analyze("a blue image", [buf.getvalue()])[0]
+          assert set(r) == {"score", "p_document", "p_modern"} and all(0.0 <= r[k] <= 1.0 for k in ("p_document", "p_modern")) and -1.0 <= r["score"] <= 1.0, r
+          print("CLIP smoke test passed:", r)
           PY
       - name: Render visual approval board (no audio / not publishable)
         if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
