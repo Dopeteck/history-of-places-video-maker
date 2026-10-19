@@ -526,7 +526,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     if not ranked:
         raise ResolverError(f"No candidates passed explicit-rights, image-format, size and duplicate gates for '{scene['title']}'.",diagnostics())
     # Rank all surviving candidates with a compact CLIP model on CPU.
-    text_query=scene.get("narration_intent","")+"; visual: "+scene["title"]+"; place: "+place
+    text_query="; ".join([str(scene.get("narration_intent","")), "visual: "+str(scene["title"]), "place: "+place, "subjects: "+", ".join(str(x) for x in (scene.get("named_entities",[]) or scene.get("entities",[]))), "visual tags: "+", ".join(str(x) for x in (scene.get("visual_tags",[]) or scene.get("asset_tags",[]))), "keywords: "+", ".join(str(x) for x in scene.get("required_keywords",[]))])
     try:
         started=time.perf_counter()
         results=_clip_analyze(text_query,[x["_bytes"] for x in ranked])
