@@ -162,10 +162,12 @@ def _commons_members(cat, limit=50):
     out=[]
     for p in payload.get("query",{}).get("pages",{}).values():
         ii=(p.get("imageinfo") or [{}])[0]; m=ii.get("extmetadata",{})
+        cats=[x.get("title","").removeprefix("Category:") for x in p.get("categories",[]) if x.get("title")]
+        date_text=" ".join(str(m.get(k,{}).get("value","")) for k in ("DateTimeOriginal","DateTime","ObjectDate"))
         c=_candidate("Wikimedia Commons",p.get("title",""),m.get("ImageDescription",{}).get("value",""),
             ii.get("thumburl") or ii.get("url"),ii.get("descriptionurl"),
             m.get("LicenseShortName",{}).get("value",""),m.get("LicenseUrl",{}).get("value",""),
-            m.get("Artist",{}).get("value",""),p.get("pageid",""))
+            m.get("Artist",{}).get("value",""),p.get("pageid",""),cats,date_text)
         if c: c["width"]=ii.get("width",0); c["height"]=ii.get("height",0); out.append(c)
     return out
 
@@ -200,10 +202,12 @@ def _commons_search(query):
     out=[]
     for p in payload.get("query",{}).get("pages",{}).values():
         ii=(p.get("imageinfo") or [{}])[0]; m=ii.get("extmetadata",{})
+        cats=[x.get("title","").removeprefix("Category:") for x in p.get("categories",[]) if x.get("title")]
+        date_text=" ".join(str(m.get(k,{}).get("value","")) for k in ("DateTimeOriginal","DateTime","ObjectDate"))
         c=_candidate("Wikimedia Commons",p.get("title",""),m.get("ImageDescription",{}).get("value",""),
           ii.get("thumburl") or ii.get("url"),ii.get("descriptionurl"),
           m.get("LicenseShortName",{}).get("value",""),m.get("LicenseUrl",{}).get("value",""),
-          m.get("Artist",{}).get("value",""),p.get("pageid",""))
+          m.get("Artist",{}).get("value",""),p.get("pageid",""),cats,date_text)
         if c: c["width"]=ii.get("width",0); c["height"]=ii.get("height",0); c["_from_search"]=True; out.append(c)
     return out
 
@@ -472,6 +476,12 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         return {"queries":queries,"providers_found":dict(FOUND),"rejected":dict(STATS),
                 "top_rejected":list(TOP_REJECTED),"provider_errors":dict(PROVIDER_ERRORS),
                 "ocr_available":_ocr_available()}
+    pinned=scene.get("pinned_image")
+    if pinned:
+        candidates=[c for c in candidates if c.get("source_url")==pinned or c.get("image_url")==pinned]
+        if not candidates:
+            STATS["pinned_image_not_found"]+=1
+            raise ResolverError(f"Pinned image failed: exact source URL was not returned by configured provider searches: {pinned}",diagnostics())
 
     # Deduplicate before counting rejection reasons; keyword gate applies uniformly across providers.
     required=[str(k).lower() for k in scene.get("required_keywords",[])]
