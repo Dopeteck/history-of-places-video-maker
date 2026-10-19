@@ -370,7 +370,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_aic", "_cleveland", "_loc", "_smithsonian", "_europeana", "_dpla"]
+DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_loc", "_smithsonian", "_europeana", "_dpla"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
@@ -458,6 +458,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             got=_commons_members(str(cat)); FOUND["commons_category:"+str(cat)]+=len(got); candidates.extend(got)
         except Exception as e:
             PROVIDER_ERRORS["commons_category"]=f"{type(e).__name__}: {e}"[:200]; print(f"Commons category '{cat}' unavailable: {e}")
+    provider_search_succeeded = False
     for provider in providers:
         name=provider.__name__
         # Museum APIs are noisy for place names; historical scenes search named entities and artwork terms only.
@@ -466,12 +467,12 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             if _FAILS[name]>=2: break                      # stop hammering a provider that keeps failing
             try:
                 started=time.perf_counter()
-                got=provider(query); FOUND[name]+=len(got); candidates.extend(got); _FAILS[name]=0
+                got=provider(query); FOUND[name]+=len(got); candidates.extend(got); _FAILS[name]=0; provider_search_succeeded=True
                 print(f"TIMING provider_search scene={scene.get('title')} provider={name} query={query!r} seconds={time.perf_counter()-started:.2f} found={len(got)}")
             except Exception as e:
                 _FAILS[name]+=1; PROVIDER_ERRORS[name]=f"{type(e).__name__}: {e}"[:200]
                 print(f"Provider {name} unavailable for '{query}': {type(e).__name__}: {e}")
-    if not candidates:
+    if not candidates and provider_search_succeeded:
         for query in queries[:2]:
             try: got=_commons_search(query); FOUND["commons_search"]+=len(got); candidates.extend(got)
             except Exception as e: PROVIDER_ERRORS["commons_search"]=f"{type(e).__name__}: {e}"[:200]; print(f"Commons text search unavailable: {e}")
