@@ -149,9 +149,9 @@ class ResolverFlow(unittest.TestCase):
         self.assertTrue(ar._has_term("Tokyo meetup banner", ["banner", "meetup", "event"]))
         self.assertFalse(ar._has_term("Edo eventful history", ["event"]))
         # Numeric keywords are normalized by the renderer; resolver inputs are compared as strings.
-        c = ar._candidate("Tokugawa Ieyasu portrait", "", "https://example.org/i.jpg",
-                          "https://example.org/item", "Public Domain",
-                          "https://example.org/rights", "Artist", 1,
+        c = ar._candidate("Test provider", "Tokugawa Ieyasu portrait", "Portrait",
+                          "https://example.org/i.jpg", "https://example.org/item",
+                          "Public Domain", "https://example.org/rights", "Artist", 1,
                           categories=["Portraits of Tokugawa Ieyasu"])
         self.assertIn("Tokugawa Ieyasu", " ".join(c["categories"]))
 
