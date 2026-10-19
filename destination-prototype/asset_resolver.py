@@ -544,7 +544,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         date_text=str(c.get("date_text","")+" "+c.get("description","")+" "+c.get("title",""))
         lo=scene.get("min_year"); hi=scene.get("max_year")
         if scene.get("image_type")=="historic" and (lo is not None or hi is not None):
-            years=[int(y) for y in re.findall(r"(?<!\\d)(1[0-9]{3}|20[0-2][0-9]|[0-9]{3})(?!\\d)",date_text)]
+            years=[int(y) for y in re.findall(r"(?<!\d)(1[0-9]{3}|20[0-2][0-9]|[0-9]{3})(?!\d)",date_text)]
             if years and ((lo is not None and max(years)<int(lo)) or (hi is not None and min(years)>int(hi))):
                 _note_reject("date_window",c,{"date_text":date_text[:180],"years":years,"min_year":lo,"max_year":hi}); continue
             if not years: c.setdefault("_warnings",[]).append("date unverified")
