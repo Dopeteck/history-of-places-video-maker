@@ -95,7 +95,7 @@ class ResolverFlow(unittest.TestCase):
             self.clip[hash(blob)] = clip
 
     def run_scene(self, scene, config=None):
-        cfg = {"name": "Testville"}; cfg.update(config or {})
+        cfg = {"name": "Testville", "asset_resolver": {"providers": [p.__name__ for p in ar.PROVIDERS]}}; cfg.update(config or {})
         return ar.resolve_scene_image(scene, 1, cfg, self.tmp.name, set(), Path(self.tmp.name))
 
     def test_picks_best_and_counts_every_rejection(self):
