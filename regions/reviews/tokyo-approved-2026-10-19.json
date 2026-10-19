@@ -1,0 +1,32 @@
+{
+  "region": "tokyo",
+  "approved": true,
+  "reviewer": "User-approved in ChatGPT conversation",
+  "reviewed_at": "2026-10-19",
+  "claim_sources": {
+    "Edo became a major political centre under Tokugawa rule": [
+      "https://en.wikipedia.org/wiki/Edo",
+      "https://en.wikipedia.org/wiki/Tokugawa_shogunate"
+    ],
+    "The shogunate was established in 1603": [
+      "https://en.wikipedia.org/wiki/Tokugawa_Ieyasu",
+      "https://en.wikipedia.org/wiki/Tokugawa_shogunate"
+    ],
+    "Edo developed a rich merchant, canal, print and theatre culture": [
+      "https://en.wikipedia.org/wiki/Edo",
+      "https://www.ndl.go.jp/landmarks/e/"
+    ],
+    "The imperial court remained in Kyoto before the Meiji Restoration": [
+      "https://en.wikipedia.org/wiki/Capital_of_Japan"
+    ],
+    "Edo became Tokyo during the 1868 political transition": [
+      "https://en.wikipedia.org/wiki/Tokyo",
+      "https://en.wikipedia.org/wiki/Meiji_Restoration"
+    ],
+    "Nihonbashi was a key bridge and starting point for major roads": [
+      "https://en.wikipedia.org/wiki/Nihonbashi",
+      "https://www.ndl.go.jp/landmarks/e/"
+    ]
+  },
+  "notes": "User explicitly approved the Tokyo images, narration, and historical claims in chat on 2026-10-19. Sources listed are the config's existing claim mappings. This record documents that approval; it does not claim independent fact-checking beyond the user's approval."
+}
