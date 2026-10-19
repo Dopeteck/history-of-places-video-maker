@@ -67,7 +67,7 @@ scenes:
     narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
     image_type: historic
     named_entities: ["Tokugawa Ieyasu"]
-    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate"]
+    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Tokugawa Ieyasu painted portrait", "Tokugawa Ieyasu woodblock portrait"]
     image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
     required_keywords: ["Tokugawa", "Ieyasu", "shogun"]
     banned_keywords: [cover, catalogue, report, document]
@@ -77,7 +77,7 @@ scenes:
     image_type: historic
     named_entities: ["Hiroshige"]
     visual_tags: ["Edo canal boats", "Edo merchants shop"]
-    image_search_terms: ["Edo canal boats print", "Edo merchants ukiyo-e", "Hiroshige Edo canal"]
+    image_search_terms: ["Edo canal boats print", "Edo merchants ukiyo-e", "Hiroshige Edo canal", "Edo period river boats", "Edo period shop street woodblock print"]
     required_keywords: [Edo, canal, merchant, boat, shop, Hiroshige]
     banned_keywords: [cover, catalogue, report, document, plate list]
   - title: "A City of Culture"
@@ -115,7 +115,7 @@ scenes:
     image_type: historic
     named_entities: ["Meiji Restoration"]
     visual_tags: ["Meiji Restoration 1868", "Tokugawa Yoshinobu"]
-    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War"]
+    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War", "Tokugawa Yoshinobu surrender", "Meiji Restoration historical woodblock print"]
     required_keywords: ["Meiji", "1868", "Restoration", "Yoshinobu", "Boshin"]
     banned_keywords: [cover, catalogue, report, document, statement]
   - title: "Edo Becomes Tokyo"
@@ -124,7 +124,7 @@ scenes:
     image_type: historic
     named_entities: ["Emperor Meiji"]
     visual_tags: ["Meiji era Tokyo", "Tokyo 1870s"]
-    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street"]
+    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo woodblock print"]
     required_keywords: [Meiji, Tokyo, Emperor, Edo]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Gardens Remember"
@@ -142,7 +142,7 @@ scenes:
     image_type: historic
     named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
     visual_tags: ["Hiroshige Nihonbashi", "Nihonbashi bridge Edo period"]
-    image_search_terms: ["Hiroshige Nihonbashi", "Nihonbashi bridge print", "Nihonbashi Edo Tokaido"]
+    image_search_terms: ["Hiroshige Nihonbashi", "Nihonbashi bridge print", "Nihonbashi Edo Tokaido", "Nihonbashi morning Tokaido woodblock print", "Nihonbashi bridge Edo period historical print"]
     required_keywords: [Nihonbashi]
     max_year: 1899
     banned_keywords: [cover, catalogue, report, document]
