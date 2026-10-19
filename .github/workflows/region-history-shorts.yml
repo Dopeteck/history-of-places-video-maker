@@ -29,6 +29,7 @@ on:
       - 'regions/**'
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/test_resolver_logic.py'
       - 'destination-prototype/vector_map.py'
       - 'destination-prototype/timing.py'
       - 'destination-prototype/data/**'
