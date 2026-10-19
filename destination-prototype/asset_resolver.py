@@ -7,7 +7,7 @@ documented key environment variable is configured; no key is fabricated.
 Every rejection is counted so a failed scene explains itself (see ResolverError).
 """
 from __future__ import annotations
-import hashlib, io, json, os, re, time
+import hashlib, io, json, os, re, time, datetime
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -77,7 +77,7 @@ def _has_term(text, terms):
     return any(re.search(r"(?<!\w)" + re.escape(str(x).lower()) + r"(?!\w)", t) for x in terms if str(x).strip())
 
 
-def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier=""):
+def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier="", categories=None, date_text=""):
     # Provider metadata is not schema-stable: normalize values before string operations.
     if isinstance(author, (list, tuple)):
         author = "; ".join(str(a.get("description", a) if isinstance(a, dict) else a) for a in author)
@@ -93,7 +93,7 @@ def _candidate(provider, title, description, image_url, source_url, rights, righ
         STATS["banned_metadata"] += 1; return None
     if not image_url.startswith("https://") or not source_url.startswith("https://"):
         STATS["metadata"] += 1; return None
-    return {"provider": provider, "title": title, "description": description,
+    return {"provider": provider, "title": title, "description": description, "categories": [str(x) for x in (categories or [])], "date_text": str(date_text or ""),
             "image_url": image_url.split("#")[0], "source_url": source_url, "rights_statement": rights,
             "rights_url": rights_url, "author": author or "Not stated", "identifier": identifier}
 
@@ -473,19 +473,20 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
                 "top_rejected":list(TOP_REJECTED),"provider_errors":dict(PROVIDER_ERRORS),
                 "ocr_available":_ocr_available()}
 
-    # Deduplicate; keyword hits are a ranking signal, a hard gate only for noisy free-text Commons search.
+    # Deduplicate before counting rejection reasons; keyword gate applies uniformly across providers.
     required=[str(k).lower() for k in scene.get("required_keywords",[])]
     banned_terms=list(config.get("image_banned_terms",[]))+list(scene.get("banned_keywords",[]))
-    unique={}
+    unique={}; rejected_seen=set()
     for c in candidates:
         key=c["source_url"]
-        if key in unique: continue
-        if not _rights_ok(c["rights_statement"]): _note_reject("rights",c); continue
-        text=c["title"]+" "+c["description"]
-        if BANNED.search(text) or _has_term(text,banned_terms): _note_reject("banned_term",c); continue
+        if key in unique or key in rejected_seen: continue
+        if not _rights_ok(c["rights_statement"]): _note_reject("rights",c); rejected_seen.add(key); continue
+        text=" ".join([c.get("title",""),c.get("description","")," ".join(c.get("categories",[]))])
+        if BANNED.search(text) or _has_term(text,banned_terms): _note_reject("banned_term",c); rejected_seen.add(key); continue
         hits=sum(1 for k in required if k in text.lower())
         c["_hits"]=hits
-        if required and hits==0 and c["provider"]=="Wikimedia Commons" and c.get("_from_search"): _note_reject("keywords",c); continue
+        if required and hits==0 and str(scene.get("keyword_gate","hard")).lower()!="soft":
+            _note_reject("keywords",c,{"required_keywords":required,"category_names":c.get("categories",[])}); rejected_seen.add(key); continue
         unique[key]=c
     candidates=sorted(unique.values(),key=lambda c:-c["_hits"])
     if not candidates:
@@ -520,6 +521,15 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         if r["p_document"]>0.5: _note_reject("document_like",c,{"p_document":round(r["p_document"],2)}); continue
         if scene.get("image_type")=="modern" and r["p_modern"]<0.5:
             _note_reject("present_historical",c,{"p_modern":round(r["p_modern"],2)}); continue
+        if scene.get("image_type")=="historic" and not scene.get("allow_modern_photo",False) and r["p_modern"]>=0.5:
+            _note_reject("modern_in_historic",c,{"p_modern":round(r["p_modern"],2)}); continue
+        date_text=str(c.get("date_text","")+" "+c.get("description","")+" "+c.get("title",""))
+        lo=scene.get("min_year"); hi=scene.get("max_year")
+        if scene.get("image_type")=="historic" and (lo is not None or hi is not None):
+            years=[int(y) for y in re.findall(r"(?<!\\d)(1[0-9]{3}|20[0-2][0-9]|[0-9]{3})(?!\\d)",date_text)]
+            if years and ((lo is not None and max(years)<int(lo)) or (hi is not None and min(years)>int(hi))):
+                _note_reject("date_window",c,{"date_text":date_text[:180],"years":years,"min_year":lo,"max_year":hi}); continue
+            if not years: c.setdefault("_warnings",[]).append("date unverified")
         survivors.append(c)
     threshold=float(scene.get("clip_min_score",rcfg.get("clip_min_score",0.22)))
     survivors.sort(key=lambda c:c["_score"]+0.01*min(c["_hits"],3),reverse=True)
