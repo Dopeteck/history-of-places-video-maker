@@ -151,7 +151,7 @@ def write_approval_board(media,credits,cfg,out):
    asset_path=Path(c["file"])
    if not asset_path.is_absolute(): asset_path=ROOT/asset_path
    rel=Path(os.path.relpath(asset_path, out)).as_posix()
-   cards.append(f"""<article><img src="{html.escape(rel)}" alt="{html.escape(c['title'])}"><section><h2>{i}. {html.escape(scene['title'])}</h2><p><b>Narration intent:</b> {html.escape(scene.get('narration_intent',''))}</p><p><b>Chosen asset:</b> {html.escape(c['title'])}</p><p><b>Provider:</b> {html.escape(c.get('provider','unknown'))}</p><p><b>Rights:</b> {html.escape(c.get('rights_statement',c.get('license','unknown')))}</p><p><b>License URL:</b> <a href="{html.escape(c.get('license_url',''),quote=True)}">{html.escape(c.get('license_url','not provided'))}</a></p><p><b>Source:</b> <a href="{html.escape(c.get('source_url',''),quote=True)}">{html.escape(c.get('source_url','not provided'))}</a></p><p><b>CLIP relevance:</b> {c.get('match_score') if c.get('match_score') is not None else 'not scored'}</p><p><b>Warnings:</b> {html.escape('; '.join(c.get('warnings',[])) or 'None')}</p><details><summary>Resolver diagnostics</summary><pre>{html.escape(json.dumps(c.get('diagnostics',{}),indent=2,ensure_ascii=False))}</pre></details></section></article>""")
+   cards.append(f"""<article><img src="{html.escape(rel)}" alt="{html.escape(c['title'])}"><section><h2>{i}. {html.escape(scene['title'])}</h2><p><b>Narration intent:</b> {html.escape(scene.get('narration_intent',''))}</p><p><b>Chosen asset:</b> {html.escape(c['title'])}</p><p><b>Provider:</b> {html.escape(c.get('provider','unknown'))}</p><p><b>Rights:</b> {html.escape(c.get('rights_statement',c.get('license','unknown')))}</p><p><b>License URL:</b> <a href="{html.escape(c.get('license_url',''),quote=True)}">{html.escape(c.get('license_url','not provided'))}</a></p><p><b>Source:</b> <a href="{html.escape(c.get('source_url',''),quote=True)}">{html.escape(c.get('source_url','not provided'))}</a></p><p><b>CLIP relevance:</b> {c.get('match_score') if c.get('match_score') is not None else 'not scored'}</p><p><b>Warnings:</b> {html.escape('; '.join(c.get('warnings',[])) or 'None')}</p><p><b>Author:</b> {html.escape(c.get('author','Not stated'))}</p><h3>Top candidates</h3><pre>{html.escape(json.dumps(c.get('top_candidates',[]),indent=2,ensure_ascii=False))}</pre><details><summary>Resolver diagnostics</summary><pre>{html.escape(json.dumps(c.get('diagnostics',{}),indent=2,ensure_ascii=False))}</pre></details></section></article>""")
  page="""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Visual approval board</title><style>body{font:16px system-ui;max-width:1200px;margin:auto;padding:24px;background:#f4f1ea;color:#20242b}h1{margin-bottom:4px}.notice{padding:14px;background:#fff0ce;border-left:5px solid #b7791f}article{display:grid;grid-template-columns:minmax(240px,38%) 1fr;gap:22px;background:white;padding:18px;margin:20px 0;border-radius:12px}img{width:100%;height:auto;max-height:520px;object-fit:contain;background:#222}a{overflow-wrap:anywhere}@media(max-width:700px){article{grid-template-columns:1fr}}</style></head><body><h1>Visual approval board — """+html.escape(cfg["name"])+"""</h1><p class="notice"><b>REVIEW ONLY — NOT APPROVED FOR PUBLISHING.</b> Verify every image against the narration and inspect the rights/source links. A text card means no candidate passed the relevance threshold.</p>"""+''.join(cards)+"</body></html>"
  (out/"approval-board.html").write_text(page,encoding="utf-8")
  # Persist rights/source details to the resolver manifest; existing manually supplied entries are preserved.
@@ -183,9 +183,14 @@ def smart_fit(im,progress):
  zoom=1+.06*progress; fw,fh=round(fg.width*zoom),round(fg.height*zoom)
  fg=fg.resize((fw,fh),Image.Resampling.LANCZOS)
  bg.paste(fg,((W-fw)//2,(H-fh)//2-round(14*progress))); return bg
+def _timed(label, started):
+ print(f"TIMING {label}: {time.perf_counter()-started:.2f}s", flush=True)
 def main():
+ run_started=time.perf_counter()
  ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); a=ap.parse_args()
+ step_started=time.perf_counter()
  cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
+ _timed("config_load_and_validate",step_started)
  if not cfg.get("name") or len(cfg.get("scenes",[]))<8 or len(cfg["scenes"])>12: fail("Config needs name and 8–12 scenes")
  if len(set(s["title"] for s in cfg["scenes"]))!=len(cfg["scenes"]): fail("Scene titles must be unique")
  for s in cfg["scenes"]:
@@ -200,6 +205,7 @@ def main():
   if term in script.lower() or term in cfgpath.read_text(encoding="utf-8").lower(): fail(f"Forbidden placeholder text '{term}' in narration/config")
  media=[]; credits=[]; used=set(); previous_digest=None
  for i,scene in enumerate(cfg["scenes"],1):
+  scene_started=time.perf_counter()
   if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
   else:
    local=local_image(scene,i,cfg,used)
@@ -217,6 +223,10 @@ def main():
     im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
    else:
     fail(reason)
+  if credit.get("provider")!="fallback text card" and str(credit.get("license","")).lower().find("cc by")>=0 and not str(credit.get("author","")).strip():
+   fail(f"Attribution-required asset has no author: {scene['title']}")
+  credit.setdefault("warnings",[])
+  print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
   digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
   if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
@@ -281,10 +291,13 @@ def main():
   frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
   palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
   d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
-  wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); y=H-420; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
-  d.rounded_rectangle((42,y-24,W-42,H-265),radius=26,fill=(0,0,0,210),outline=accent,width=4)
+  wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); box_top=H-450; box_bottom=H-265; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
+  bbox=d.textbbox((0,0),"Ag",font=cf); text_h=bbox[3]-bbox[1]; y=box_top+(box_bottom-box_top-text_h)//2-bbox[1]
+  d.rounded_rectangle((42,box_top,W-42,box_bottom),radius=26,fill=(0,0,0,210),outline=accent,width=4)
   # Word-by-word karaoke emphasis; active word accent colour, all other words white.
   full=" ".join(capwords); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
+  if total>W-130:
+   cf=font(40,True); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
   for j,w in enumerate(capwords):
    col=accent if lo+j==wi else "white"; d.text((x,y),w+" ",font=cf,fill=col,stroke_width=2,stroke_fill="black"); x+=widths[j]
   # Crossfade into the next scene over the final 0.4 seconds of each scene.
@@ -308,6 +321,8 @@ def main():
  (out/"credits.json").write_text(json.dumps(credits,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  block="\n".join(f"- {c['title']} — {c['author']}; {c['license']} ({c['license_url']}); source: {c['source_url']}" for c in credits)
  (out/"credits-description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ (out/"description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ _timed("total_render",run_started)
  # Automated validation: real audio, duration, format, non-silence, uniqueness and placeholder text.
  probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(video)],capture_output=True,text=True)
  if probe.returncode: fail("ffprobe failed: "+probe.stderr)
