@@ -144,6 +144,37 @@ class ResolverFlow(unittest.TestCase):
         self.assertTrue(cm.exception.diagnostics["queries"])
 
 
+
+    def test_event_banner_terms_and_historic_year_gate_helpers(self):
+        self.assertTrue(ar._has_term("Tokyo meetup banner", ["banner", "meetup", "event"]))
+        self.assertFalse(ar._has_term("Edo eventful history", ["event"]))
+        # Numeric keywords are normalized by the renderer; resolver inputs are compared as strings.
+        c = ar._candidate("Tokugawa Ieyasu portrait", "", "https://example.org/i.jpg",
+                          "https://example.org/item", "Public Domain",
+                          "https://example.org/rights", "Artist", 1,
+                          categories=["Portraits of Tokugawa Ieyasu"])
+        self.assertIn("Tokugawa Ieyasu", " ".join(c["categories"]))
+
+    def test_historic_scene_rejects_modern_photo_without_override(self):
+        items = [cand("Tokugawa Ieyasu portrait", n=71)]
+        self.specs = [(1400, 1000, 71)]
+        self.clips = [{"score": .4, "p_document": .1, "p_modern": .9}]
+        self.setup_provider(items)
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene({"title": "The Shogunate", "required_keywords": ["Tokugawa"], "image_type": "historic"})
+        self.assertEqual(cm.exception.diagnostics["rejected"].get("modern_in_historic"), 1)
+
+    def test_date_window_rejects_known_out_of_period_candidate(self):
+        items = [cand("Nihonbashi bridge 1912", n=72)]
+        items[0]["date_text"] = "1912"
+        self.specs = [(1400, 1000, 72)]
+        self.clips = [{"score": .4, "p_document": .1, "p_modern": .1}]
+        self.setup_provider(items)
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene({"title": "Nihonbashi", "required_keywords": ["Nihonbashi"],
+                            "image_type": "historic", "max_year": 1899})
+        self.assertEqual(cm.exception.diagnostics["rejected"].get("date_window"), 1)
+
 class TimingAndMap(unittest.TestCase):
     def tokyo(self):
         return yaml.safe_load((ROOT / "regions" / "tokyo.yaml").read_text(encoding="utf-8"))
