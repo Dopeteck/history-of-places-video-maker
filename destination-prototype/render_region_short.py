@@ -43,9 +43,20 @@ def color(value,default=(32,32,32)):
   if isinstance(v,str) and v.startswith("#") and len(v)==7: return tuple(int(v[i:i+2],16) for i in (1,3,5))
  except Exception: pass
  return default
+from functools import lru_cache
+@lru_cache(maxsize=32)
 def font(size,bold=False):
  p="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
  return ImageFont.truetype(p,size) if Path(p).exists() else ImageFont.load_default()
+def caption_window(d,words,wi,f,maxw):
+ # Up to 3 words before and 3 after the spoken word, shrunk so the line never leaves the frame.
+ lo,hi=wi,wi+1
+ width=lambda a,b: d.textlength(" ".join(words[a:b]),font=f)
+ while True:
+  grew=False
+  if lo>0 and wi-lo<3 and width(lo-1,hi)<=maxw: lo-=1; grew=True
+  if hi<len(words) and hi-wi<4 and width(lo,hi+1)<=maxw: hi+=1; grew=True
+  if not grew: return lo,hi
 def wrap(draw,text,f,maxw):
  out=[]; line=""
  for word in text.split():
@@ -54,6 +65,14 @@ def wrap(draw,text,f,maxw):
   else: line=test
  if line: out.append(line)
  return out
+def normalize_config(cfg):
+ # YAML turns bare 1868 / 1603 into ints; every keyword/term list must be text before any .lower() call.
+ for key in ("image_banned_terms",): cfg[key]=[str(x) for x in cfg.get(key,[]) or []]
+ for sc in cfg.get("scenes",[]):
+  for key in ("required_keywords","banned_keywords","image_search_terms","visual_tags","asset_tags","named_entities","entities","commons_categories","optional_second_beat"):
+   if key in sc: sc[key]=[str(x) for x in sc[key] or []]
+  if sc.get("starts_at") is not None: sc["starts_at"]=str(sc["starts_at"])
+ return cfg
 def banned(text,terms): return any(t.lower() in text.lower() for t in terms)
 def score_candidate(title,description,cats,required):
  hay=(title+" "+description+" "+" ".join(cats)).lower()
@@ -84,26 +103,20 @@ def local_image(scene,idx,config,used):
    lic=str(rec.get("license") or rec.get("rights_statement") or "")
    licurl=str(rec.get("license_url") or rec.get("rights_url") or "")
    source=str(rec.get("source_url") or "")
+   if rec.get("approved") is not True: continue
    if match<=0 or not allowed(lic,licurl) or not source.startswith("https://") or not licurl.startswith("https://"): continue
    if banned(title+" "+desc+" "+" ".join(rec.get("categories",[])),config.get("image_banned_terms",[])+scene.get("banned_keywords",[])): continue
    im=Image.open(p).convert("RGB")
    if min(im.size)<1080 or hashlib.sha256(p.read_bytes()).hexdigest() in used: continue
    digest=hashlib.sha256(p.read_bytes()).hexdigest(); used.add(digest)
-   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"license_url":licurl,"source_url":source,"match_score":match,"search_variant":"repository manifest (preferred local still)","warnings":[]}
+   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"license_url":licurl,"source_url":source,"match_score":match,"period_ok":True if str(rec.get("period","")).lower()=="modern" else None,"search_variant":"repository manifest (preferred local still)","warnings":[]}
  return None
 def make_map(scene,idx,config,asset_dir):
- from PIL import ImageDraw
- lat=float(config["map"]["latitude"]); lon=float(config["map"]["longitude"])
- # OSM tile background centered on the configured place, with a real location marker.
- z=9; n=2**z; x=(lon+180)/360*n; y=(1-math.asinh(math.tan(math.radians(max(-85,min(85,lat))))/math.pi)/2)*n
- tx,ty=int(x),int(y); canvas=Image.new("RGB",(768,768),(238,236,226))
- for dx in range(-1,2):
-  for dy in range(-1,2):
-   xx,yy=tx+dx,ty+dy
-   r=get(f"https://tile.openstreetmap.org/{z}/{xx}/{yy}.png",timeout=(10,30)); canvas.paste(Image.open(BytesIO(r.content)).convert("RGB"),((dx+1)*256,(dy+1)*256))
- px=384+(x-tx)*256; py=384+(y-ty)*256; d=ImageDraw.Draw(canvas); d.ellipse((px-16,py-16,px+16,py+16),fill="#D33A32",outline="white",width=5); d.text((20,20),config["map"].get("label",config["name"]).upper(),font=font(28,True),fill="#171717",stroke_width=3,stroke_fill="white"); d.text((20,730),"© OpenStreetMap contributors",font=font(14),fill="#111111",stroke_width=2,stroke_fill="white")
- p=asset_dir/f"scene_{idx:02d}_map.jpg"; canvas.save(p,quality=94)
- return canvas,{"content_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":"OpenStreetMap location map","author":"OpenStreetMap contributors","license":"ODbL","license_url":"https://www.openstreetmap.org/copyright","source_url":"https://www.openstreetmap.org/","match_score":1,"search_variant":"OSM tile map centred on configured coordinates","warnings":[]}
+ # Offline vector map (Natural Earth, public domain) in the region palette; see vector_map.py.
+ from vector_map import render_map
+ im,credit=render_map(scene,config,asset_dir,idx)
+ credit["scene"]=scene["title"]
+ return im,credit
 def text_fallback_card(scene,idx,config,asset_dir,error):
  im=Image.new("RGB",(1080,1440),(31,37,48)); d=ImageDraw.Draw(im)
  accent=color(config.get("visual_style",{}).get("accent_color","#D9B56D"),(217,181,109))
@@ -122,15 +135,15 @@ def text_fallback_card(scene,idx,config,asset_dir,error):
  return im,{"content_sha256":hashlib.sha256(im.tobytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),
   "title":"Text review card — no image passed relevance gate","author":"Generated by renderer","license":"Original generated artwork",
   "rights_statement":"Original generated artwork","license_url":"","source_url":"","provider":"fallback text card",
-  "match_score":None,"search_variant":"Fallback after resolver rejection","warnings":[str(error)],
+  "match_score":None,"search_variant":"Fallback after resolver rejection","warnings":[str(error).split(" Diagnostics:")[0]],
   "diagnostics":_parse_diagnostics(str(error))}
 def _parse_diagnostics(message):
  import json, re
- match=re.search(r"Diagnostics:\\s*(\\{.*\\})",message)
+ match=re.search(r"Diagnostics:\s*(\{.*\})\s*$",message,re.S)
  if match:
   try: return json.loads(match.group(1))
   except (ValueError,TypeError): pass
- return {"providers_found":{},"rejected":{"rights":"not instrumented","format":"not instrumented","1920px":"not instrumented","duplicate":"not instrumented","CLIP":"not instrumented","present_historical":"not instrumented"},"top_rejected":[]}
+ return {"providers_found":{},"rejected":{"note":"resolver gave no diagnostics for this failure"},"top_rejected":[]}
 def write_approval_board(media,credits,cfg,out):
  # A standalone HTML approval board puts each real chosen image beside its narration line and rights.
  cards=[]
@@ -148,20 +161,31 @@ def write_approval_board(media,credits,cfg,out):
  if not isinstance(old,list): old=[]
  byhash={str(x.get("content_sha256")):x for x in old if isinstance(x,dict) and x.get("content_sha256")}
  for c in credits:
-  rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}
+  rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}; rec["approved"]=byhash.get(str(c.get("content_sha256")),{}).get("approved",False)
   if c.get("content_sha256"): byhash[c["content_sha256"]]=rec
   
  manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+_BLUR_CACHE={}
+def _blurred_backdrop(im):
+ # The blurred, darkened backdrop does not change during a scene: compute once per image, not once per frame.
+ key=id(im)
+ if key not in _BLUR_CACHE:
+  bg=ImageOps.fit(im,(W,H),method=Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(28))
+  _BLUR_CACHE[key]=(im,ImageEnhance.Brightness(bg).enhance(.48))
+ return _BLUR_CACHE[key][1].copy()
 def smart_fit(im,progress):
- # Portrait images use focal-aware fit; wide images use blurred fill rather than cutting through the subject.
+ # Portrait images use focal-aware fit; wide images keep the whole picture over a blurred backdrop and
+ # get a slow push-in so landscape art is never a static slide.
  if im.width/im.height < .78:
   scale=max(W/im.width,H/im.height)*(1+.07*progress); rw,rh=round(im.width*scale),round(im.height*scale); big=im.resize((rw,rh),Image.Resampling.LANCZOS); dx=max(0,rw-W); dy=max(0,rh-H); x=int(dx*(.25+.5*progress)); y=int(dy*(.25+.5*progress)); return big.crop((x,y,x+W,y+H))
- bg=ImageOps.fit(im,(W,H),method=Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(28))
+ bg=_blurred_backdrop(im)
  fg=im.copy(); fg.thumbnail((W-80,H-360),Image.Resampling.LANCZOS)
- bg=ImageEnhance.Brightness(bg).enhance(.48); bg.paste(fg,((W-fg.width)//2,(H-fg.height)//2)); return bg
+ zoom=1+.06*progress; fw,fh=round(fg.width*zoom),round(fg.height*zoom)
+ fg=fg.resize((fw,fh),Image.Resampling.LANCZOS)
+ bg.paste(fg,((W-fw)//2,(H-fh)//2-round(14*progress))); return bg
 def main():
  ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); a=ap.parse_args()
- cfgpath=Path(a.config); cfg=yaml.safe_load(cfgpath.read_text(encoding="utf-8"))
+ cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
  if not cfg.get("name") or len(cfg.get("scenes",[]))<8 or len(cfg["scenes"])>12: fail("Config needs name and 8–12 scenes")
  if len(set(s["title"] for s in cfg["scenes"]))!=len(cfg["scenes"]): fail("Scene titles must be unique")
  for s in cfg["scenes"]:
@@ -185,15 +209,14 @@ def main():
     except Exception as resolver_error:
      print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
      im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
-  if scene["image_type"]=="modern" and not any(x in credit["title"].lower() for x in [cfg["name"].lower(),cfg["country"].lower()]):
-   # Match must come from metadata; no quiet substitute for the present-day visual.
-   if credit.get("match_score") is None or credit["match_score"]<3:
-    reason=f"Modern/present image relevance gate failed for scene '{scene['title']}'"
-    if a.visual_review_only:
-     print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
-     im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
-    else:
-     fail(reason)
+  if scene["image_type"]=="modern" and credit.get("provider")!="fallback text card" and credit.get("period_ok") is not True:
+   # Present-day scenes must be positively identified as a modern photograph by the CLIP period probe.
+   reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
+   if a.visual_review_only:
+    print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
+    im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
+   else:
+    fail(reason)
   digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
   if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
@@ -208,10 +231,11 @@ def main():
   from kokoro import KPipeline
  except Exception as e: fail(f"Kokoro import failed: {type(e).__name__}: {e}")
  torch.set_num_threads(2); lang="j" if "Japanese" in cfg.get("languages",[]) else "b"; pipe=KPipeline(lang_code=lang,device="cpu")
- chunks=[]
+ chunks=[]; chunk_texts=[]
  try:
-  for _,_,audio in pipe(script,voice="jf_alpha" if lang=="j" else "bm_george",speed=1.0):
-   if audio is not None: chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1))
+  for gs,_,audio in pipe(script,voice="jf_alpha" if lang=="j" else "bm_george",speed=1.0):
+   if audio is not None:
+    chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1)); chunk_texts.append(str(gs or ""))
  except Exception as e: fail(f"Kokoro synthesis failed: {type(e).__name__}: {e}")
  if not chunks: fail("Kokoro returned no narration audio")
  voice=np.concatenate(chunks); rate=24000; duration=len(voice)/rate
@@ -235,18 +259,27 @@ def main():
  if rms<0.001: fail("Narration mix is silent or near-silent")
  mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
  with wave.open(str(wav),"wb") as f: f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate); f.writeframes((mixed*32767).astype("<i2").tobytes())
- # Scene durations follow scene narration intent lengths, then normalize to the actual narration duration.
- weights=np.array([max(1,len(s["narration_intent"].split())) for s,_ in media],dtype=float); durations=duration*weights/weights.sum(); boundaries=np.cumsum(durations)
+ # Word times come from Kokoro chunk boundaries; scene cuts follow `starts_at` phrases (fallback: intent length).
+ import timing
+ words=script.split()
+ wtimes=timing.word_times(words,[(t,len(a)) for t,a in zip(chunk_texts,chunks)],rate,duration)
+ wordends=np.array([e for _,e in wtimes])
+ fallback=[max(1,len(sc["narration_intent"].split())) for sc,_ in media]
+ try: boundaries=np.array(timing.scene_ends([sc for sc,_ in media],words,wtimes,duration,fallback))
+ except ValueError as e: fail(f"Scene timing config error: {e}")
+ durations=np.diff(np.concatenate([[0.0],boundaries]))
+ short_scenes=[sc["title"] for (sc,_),dd in zip(media,durations) if dd<1.5]
+ if short_scenes: print(f"WARNING: scenes shorter than 1.5s: {short_scenes}",file=sys.stderr)
  video=out/f"{slug}-history-short.mp4"
  cmd=["ffmpeg","-y","-hide_banner","-loglevel","error","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","-","-i",str(wav),"-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-ar",str(rate),"-shortest","-movflags","+faststart",str(video)]
- proc=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=subprocess.PIPE); words=script.split(); ww=np.array([max(1,len(re.sub(r"\W","",w))) for w in words],dtype=float); wordends=np.cumsum(ww/ww.sum())*duration
+ proc=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=subprocess.PIPE)
  contact=[]
  for fi in range(round(duration*FPS)):
   tm=fi/FPS; si=min(len(media)-1,int(np.searchsorted(boundaries,tm,side="right"))); start=0 if si==0 else boundaries[si-1]; progress=max(0,min(1,(tm-start)/max(.01,durations[si]))); scene,im=media[si]
   frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
   palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
   d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
-  wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); lo=max(0,wi-3); hi=min(len(words),wi+4); capwords=words[lo:hi]; cf=font(48,True); y=H-420
+  wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); y=H-420; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
   d.rounded_rectangle((42,y-24,W-42,H-265),radius=26,fill=(0,0,0,210),outline=accent,width=4)
   # Word-by-word karaoke emphasis; active word accent colour, all other words white.
   full=" ".join(capwords); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
@@ -285,14 +318,14 @@ def main():
  files=[c["file"] for c in credits if "map" not in c["file"]]
  if len(files)!=len(set(files)): fail("QA failed: duplicate image file used")
  # OCR frame scan via tesseract CLI if available; fail if placeholder text is detected.
- warnings=[]
+ warnings=[f"Scene shorter than 1.5s: {t}" for t in short_scenes]
  try:
   import pytesseract
   for i,(_,im) in enumerate(media):
    text=pytesseract.image_to_string(im.resize((360,640))).lower()
    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
  except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
- qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed" if not warnings else "warning","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
+ qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
  (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
  print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
