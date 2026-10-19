@@ -33,7 +33,7 @@ visual_style:
   accent_color: "#19A7A1"
   music_mood: "warm, rhythmic, low-key percussion with gentle lagoon ambience"
   notes: "Contrast lagoon blues and warm sand tones for historic scenes with vivid, sunlit modern street photography."
-image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book]
+image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book, banner, poster, logo, flyer, signage, conference, meetup, event]
 map:
   latitude: 6.5244
   longitude: 3.3792
