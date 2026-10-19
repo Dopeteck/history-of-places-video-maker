@@ -43,19 +43,19 @@ class ResolverError(RuntimeError):
         super().__init__(f"{message} Diagnostics: {json.dumps(diagnostics, ensure_ascii=False)}")
 
 
-def _get(url, params=None, timeout=25):
+def _get(url, params=None, timeout=12):
     last = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             r = S.get(url, params=params, timeout=timeout)
             if r.status_code == 429 or 500 <= r.status_code < 600:
-                time.sleep(2 * (attempt + 1)); last = requests.HTTPError(f"HTTP {r.status_code}"); continue
+                time.sleep(1.5 * (attempt + 1)); last = requests.HTTPError(f"HTTP {r.status_code}"); continue
             r.raise_for_status()
             return r.json()
         except requests.RequestException as e:
             last = e
-            if attempt == 2: break
-            time.sleep(1.5 * (attempt + 1))
+            if attempt == 1: break
+            time.sleep(1.0)
     raise last
 
 
@@ -370,7 +370,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_loc", "_smithsonian", "_europeana", "_dpla"]
+DEFAULT_PROVIDERS = ["_aic", "_cleveland", "_loc", "_smithsonian", "_europeana", "_dpla"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
@@ -447,7 +447,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     entities=[str(e) for e in (scene.get("named_entities",[]) or scene.get("entities",[]))]
     candidates=[]
     # Commons categories: place-aware first, then entity categories (e.g. "Edo Castle").
-    for name in dict.fromkeys([place]+entities[:2]):
+    for name in dict.fromkeys(([place] if scene.get("image_type") == "modern" else []) + entities[:2]):
         if not name: continue
         try:
             got=_commons_category(name); FOUND["commons_category:"+name]+=len(got); candidates.extend(got)
@@ -460,15 +460,19 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             PROVIDER_ERRORS["commons_category"]=f"{type(e).__name__}: {e}"[:200]; print(f"Commons category '{cat}' unavailable: {e}")
     for provider in providers:
         name=provider.__name__
-        for query in queries:
+        # Museum APIs are noisy for place names; historical scenes search named entities and artwork terms only.
+        provider_queries = queries[:int(rcfg.get("max_queries_per_provider", 3))]
+        for query in provider_queries:
             if _FAILS[name]>=2: break                      # stop hammering a provider that keeps failing
             try:
+                started=time.perf_counter()
                 got=provider(query); FOUND[name]+=len(got); candidates.extend(got); _FAILS[name]=0
+                print(f"TIMING provider_search scene={scene.get('title')} provider={name} query={query!r} seconds={time.perf_counter()-started:.2f} found={len(got)}")
             except Exception as e:
                 _FAILS[name]+=1; PROVIDER_ERRORS[name]=f"{type(e).__name__}: {e}"[:200]
                 print(f"Provider {name} unavailable for '{query}': {type(e).__name__}: {e}")
-    if not [c for c in candidates]:
-        for query in queries[:3]:
+    if not candidates:
+        for query in queries[:2]:
             try: got=_commons_search(query); FOUND["commons_search"]+=len(got); candidates.extend(got)
             except Exception as e: PROVIDER_ERRORS["commons_search"]=f"{type(e).__name__}: {e}"[:200]; print(f"Commons text search unavailable: {e}")
 
@@ -505,7 +509,9 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     use_ocr=_ocr_available(); ranked=[]
     for c in candidates:
         try:
+            started=time.perf_counter()
             data=_download(c)
+            print(f"TIMING image_download scene={scene.get('title')} provider={c.get('provider')} seconds={time.perf_counter()-started:.2f}")
             if len(data)<30000 or data[:4] in (b"%PDF",b"AT&TD",b"FORM"): _note_reject("format",c); continue
             im=Image.open(io.BytesIO(data))
             if im.format not in ("JPEG","PNG","WEBP","TIFF"): _note_reject("format",c); continue
@@ -522,7 +528,9 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     # Rank all surviving candidates with a compact CLIP model on CPU.
     text_query=scene.get("narration_intent","")+"; visual: "+scene["title"]+"; place: "+place
     try:
+        started=time.perf_counter()
         results=_clip_analyze(text_query,[x["_bytes"] for x in ranked])
+        print(f"TIMING clip_analysis scene={scene.get('title')} candidates={len(ranked)} seconds={time.perf_counter()-started:.2f}")
     except Exception as e:
         raise ResolverError(f"CLIP relevance gate unavailable; refusing keyword-only image selection: {type(e).__name__}: {e}",diagnostics()) from e
     survivors=[]
