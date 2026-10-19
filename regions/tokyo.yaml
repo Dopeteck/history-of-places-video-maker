@@ -33,7 +33,7 @@ visual_style:
   accent_color: "#E65A45"
   music_mood: "restrained, reflective plucked strings and soft city ambience"
   notes: "Use Edo-period print warmth for historic scenes and cooler steel-blue contrast for contemporary Tokyo."
-image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book]
+image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book, banner, poster, logo, flyer, signage, conference, meetup, event]
 map:
   latitude: 35.6762
   longitude: 139.6503
@@ -60,6 +60,7 @@ scenes:
     visual_tags: ["Edo Castle keep", "Edo Castle Tokyo"]
     image_search_terms: ["Edo Castle", "Edo Castle old photograph", "Tokyo Imperial Palace Edo Castle"]
     required_keywords: [Edo, castle]
+    allow_modern_photo: true
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Shogunate"
     starts_at: "In 1603"
@@ -68,7 +69,7 @@ scenes:
     named_entities: ["Tokugawa Ieyasu"]
     visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate"]
     image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
-    required_keywords: [Tokugawa, Ieyasu]
+    required_keywords: ["Tokugawa", "Ieyasu", "shogun"]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Merchants and Canals"
     starts_at: "Merchants filled"
@@ -105,6 +106,8 @@ scenes:
     visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho"]
     image_search_terms: ["Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph"]
     required_keywords: [Kyoto, imperial, palace, court]
+    max_year: 1867
+    allow_modern_photo: true
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Turning Point"
     starts_at: "Then came 1868"
@@ -113,7 +116,7 @@ scenes:
     named_entities: ["Meiji Restoration"]
     visual_tags: ["Meiji Restoration 1868", "Tokugawa Yoshinobu"]
     image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War"]
-    required_keywords: [Meiji, 1868, Restoration, Yoshinobu, Boshin]
+    required_keywords: ["Meiji", "1868", "Restoration", "Yoshinobu", "Boshin"]
     banned_keywords: [cover, catalogue, report, document, statement]
   - title: "Edo Becomes Tokyo"
     starts_at: "the emperor’s government moved east"
@@ -122,7 +125,7 @@ scenes:
     named_entities: ["Emperor Meiji"]
     visual_tags: ["Meiji era Tokyo", "Tokyo 1870s"]
     image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street"]
-    required_keywords: [Meiji, Tokyo, Emperor]
+    required_keywords: [Meiji, Tokyo, Emperor, Edo]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Gardens Remember"
     starts_at: "Look closely at gardens"
@@ -140,7 +143,8 @@ scenes:
     named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
     visual_tags: ["Hiroshige Nihonbashi", "Nihonbashi bridge Edo period"]
     image_search_terms: ["Hiroshige Nihonbashi", "Nihonbashi bridge print", "Nihonbashi Edo Tokaido"]
-    required_keywords: [Nihonbashi, bridge]
+    required_keywords: [Nihonbashi]
+    max_year: 1899
     banned_keywords: [cover, catalogue, report, document]
   - title: "The City Today"
     starts_at: "Today, Tokyo layers"
