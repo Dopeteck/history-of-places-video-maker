@@ -230,7 +230,9 @@ def main():
   import torch
   from kokoro import KPipeline
  except Exception as e: fail(f"Kokoro import failed: {type(e).__name__}: {e}")
- torch.set_num_threads(2); lang="j" if "Japanese" in cfg.get("languages",[]) else "b"; pipe=KPipeline(lang_code=lang,device="cpu")
+ narration_language=str(cfg.get("story",{}).get("narration_language","English")).strip().lower(); lang="j" if narration_language.startswith("japan") else "b" if narration_language.startswith("english") else None
+ if lang is None: fail(f"Unsupported narration_language {narration_language!r}; configure English or Japanese explicitly")
+ torch.set_num_threads(2); print(f"Kokoro narration language: {narration_language} (pipeline={lang})"); pipe=KPipeline(lang_code=lang,device="cpu")
  chunks=[]; chunk_texts=[]
  try:
   for gs,_,audio in pipe(script,voice="jf_alpha" if lang=="j" else "bm_george",speed=1.0):
