@@ -38,89 +38,116 @@ map:
   latitude: 35.6762
   longitude: 139.6503
   label: "TOKYO"
+  country: "Japan"
+  span_deg: 9
+  connect: true
+  places:
+    - {label: "Kyoto", latitude: 35.0116, longitude: 135.7681}
+# Scene order follows the narration. `starts_at` is the phrase in the narration where the cut lands.
+# Search: named_entities and visual_tags are tried first; keep queries short (museum APIs match few words best).
+# required_keywords only rank candidates (and hard-filter free-text Commons search); CLIP decides relevance.
 scenes:
-  - title: "Edo Before Tokyo"
-    narration_intent: "Introduce Edo as a settlement that became a major city before it was called Tokyo."
-    image_search_terms: ["Edo historical cityscape", "Edo period Japan city woodblock print", "Edo Tokyo historical panorama"]
-    required_keywords: [Edo, Japan, city]
-    banned_keywords: [cover, catalogue, report, document, manuscript]
-    image_type: historic
-  - title: "The Castle Town"
-    narration_intent: "Explain how the castle and its surrounding town shaped Edo's growth."
-    image_search_terms: ["Edo Castle historical photograph", "Edo Castle old illustration Japan", "Tokyo Imperial Palace Edo Castle historic"]
-    required_keywords: [Edo, castle]
-    visual_tags: ["Edo Castle", "Edo Castle keep", "castle town Japan"]
-    named_entities: ["Edo Castle", "Tokugawa Ieyasu"]
-    period_tag: historical
-    banned_keywords: [cover, catalogue, report, document]
-    image_type: historic
-  - title: "The Shogunate"
-    narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
-    image_search_terms: ["Tokugawa Ieyasu portrait", "Tokugawa Ieyasu historical painting", "Tokugawa shogunate Japan portrait"]
-    required_keywords: [Tokugawa, Ieyasu]
-    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Edo period Japan"]
-    named_entities: ["Tokugawa Ieyasu"]
-    period_tag: historical
-    banned_keywords: [cover, catalogue, report, document]
-    image_type: historic
-  - title: "Merchants and Canals"
-    narration_intent: "Show the commerce, waterways, and daily life that made Edo thrive."
-    image_search_terms: ["Edo period Nihonbashi bridge ukiyo-e", "Edo merchants canal historical print", "Edo period marketplace Japan woodblock"]
-    required_keywords: [Edo, bridge, merchants]
-    banned_keywords: [cover, catalogue, report, document, plate list]
-    image_type: historic
-  - title: "Roads Across Japan"
-    narration_intent: "Connect Edo to the national road network and journeys to the capital."
-    image_search_terms: ["Edo period Tokaido road print", "Nihonbashi starting point roads Japan", "Edo Japan historical road woodblock"]
-    required_keywords: [Edo, Japan, road]
-    banned_keywords: [cover, catalogue, report, document]
+  - title: "Edo on the Map"
+    narration_intent: "Show where Tokyo and Kyoto sit in Japan, introducing Edo as Tokyo's earlier name."
     image_type: map
-  - title: "A City of Culture"
-    narration_intent: "Highlight ukiyo-e, theatre, and popular urban culture."
-    image_search_terms: ["Edo period ukiyo-e street scene", "Edo kabuki theatre historical print", "Utagawa Hiroshige Edo city print"]
-    required_keywords: [Edo, ukiyo, Japan]
-    visual_tags: ["ukiyo-e", "Hiroshige", "Edo period woodblock print"]
-    named_entities: ["Utagawa Hiroshige", "Edo", "ukiyo-e"]
-    period_tag: historical
-    banned_keywords: [cover, catalogue, report, document, plate list]
-    image_type: historic
-  - title: "Kyoto and Edo"
-    narration_intent: "Contrast the imperial court in Kyoto with Edo's political power."
-    image_search_terms: ["Kyoto imperial palace historical photo", "Edo Kyoto historical painting Japan", "Kyoto Edo historical illustration"]
-    required_keywords: [Kyoto, Edo, Japan]
-    banned_keywords: [cover, catalogue, report, document]
-    image_type: historic
-  - title: "The Turning Point"
-    narration_intent: "Describe the 1868 political transition that ended shogunate rule."
-    image_search_terms: ["Meiji Restoration 1868 historical photograph", "Japan 1868 Edo historical image", "Meiji era Tokyo early photograph"]
-    required_keywords: [Japan, 1868, Meiji]
-    banned_keywords: [cover, catalogue, report, document, statement]
-    image_type: historic
-  - title: "Edo Becomes Tokyo"
-    narration_intent: "Explain the renaming and move of the emperor's government east."
-    image_search_terms: ["Tokyo early Meiji era photograph", "Edo Tokyo historical street photograph", "Tokyo 19th century city historical"]
+    image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
     required_keywords: [Tokyo, Edo, Japan]
-    banned_keywords: [cover, catalogue, report, document]
+  - title: "The Castle Town"
+    starts_at: "a castle town that changed"
+    narration_intent: "Explain how Edo Castle and its surrounding town shaped Edo's growth."
     image_type: historic
+    named_entities: ["Edo Castle"]
+    visual_tags: ["Edo Castle keep", "Edo Castle Tokyo"]
+    image_search_terms: ["Edo Castle", "Edo Castle old photograph", "Tokyo Imperial Palace Edo Castle"]
+    required_keywords: [Edo, castle]
+    banned_keywords: [cover, catalogue, report, document]
+  - title: "The Shogunate"
+    starts_at: "In 1603"
+    narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
+    image_type: historic
+    named_entities: ["Tokugawa Ieyasu"]
+    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate"]
+    image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
+    required_keywords: [Tokugawa, Ieyasu]
+    banned_keywords: [cover, catalogue, report, document]
+  - title: "Merchants and Canals"
+    starts_at: "Merchants filled"
+    narration_intent: "Show the commerce, waterways, boats and daily life that made Edo thrive."
+    image_type: historic
+    named_entities: ["Hiroshige"]
+    visual_tags: ["Edo canal boats", "Edo merchants shop"]
+    image_search_terms: ["Edo canal boats print", "Edo merchants ukiyo-e", "Hiroshige Edo canal"]
+    required_keywords: [Edo, canal, merchant, boat, shop, Hiroshige]
+    banned_keywords: [cover, catalogue, report, document, plate list]
+  - title: "A City of Culture"
+    starts_at: "and artists turned"
+    narration_intent: "Highlight ukiyo-e woodblock prints, theatre, and popular urban culture."
+    image_type: historic
+    named_entities: ["Utagawa Hiroshige", "ukiyo-e"]
+    visual_tags: ["Famous Views of Edo", "ukiyo-e Edo"]
+    image_search_terms: ["Hiroshige Famous Views of Edo", "ukiyo-e Edo street scene", "kabuki theatre Edo print"]
+    required_keywords: [Edo, ukiyo, Hiroshige, kabuki]
+    banned_keywords: [cover, catalogue, report, document, plate list]
+  - title: "A Great City"
+    starts_at: "By the eighteenth century"
+    narration_intent: "Show Edo as a vast eighteenth-century city, one of the largest in the world."
+    image_type: historic
+    named_entities: ["Edo"]
+    visual_tags: ["Edo panorama", "Edo bird's-eye view"]
+    image_search_terms: ["Edo panorama print", "Edo bird's-eye view", "Edo period Tokyo view"]
+    required_keywords: [Edo, panorama, view, city]
+    banned_keywords: [cover, catalogue, report, document]
+  - title: "Kyoto and Edo"
+    starts_at: "even while the imperial court"
+    narration_intent: "Contrast the imperial court in Kyoto with Edo's political power."
+    image_type: historic
+    named_entities: ["Kyoto Imperial Palace"]
+    visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho"]
+    image_search_terms: ["Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph"]
+    required_keywords: [Kyoto, imperial, palace, court]
+    banned_keywords: [cover, catalogue, report, document]
+  - title: "The Turning Point"
+    starts_at: "Then came 1868"
+    narration_intent: "Describe the 1868 political transition that ended shogunate rule."
+    image_type: historic
+    named_entities: ["Meiji Restoration"]
+    visual_tags: ["Meiji Restoration 1868", "Tokugawa Yoshinobu"]
+    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War"]
+    required_keywords: [Meiji, 1868, Restoration, Yoshinobu, Boshin]
+    banned_keywords: [cover, catalogue, report, document, statement]
+  - title: "Edo Becomes Tokyo"
+    starts_at: "the emperor’s government moved east"
+    narration_intent: "Explain the renaming and the move of the emperor's government east, and how the city was transformed."
+    image_type: historic
+    named_entities: ["Emperor Meiji"]
+    visual_tags: ["Meiji era Tokyo", "Tokyo 1870s"]
+    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street"]
+    required_keywords: [Meiji, Tokyo, Emperor]
+    banned_keywords: [cover, catalogue, report, document]
   - title: "Gardens Remember"
+    starts_at: "Look closely at gardens"
     narration_intent: "Use surviving gardens and temple grounds as traces of older Tokyo."
-    image_search_terms: ["Tokyo historic Japanese garden photo", "Edo period garden Tokyo historic", "Koishikawa Korakuen garden Tokyo"]
-    required_keywords: [Tokyo, garden, Japan]
-    banned_keywords: [cover, catalogue, report, document]
     image_type: modern
+    named_entities: ["Koishikawa Korakuen", "Rikugien"]
+    visual_tags: ["Koishikawa Korakuen garden", "Tokyo Japanese garden"]
+    image_search_terms: ["Koishikawa Korakuen", "Rikugien garden Tokyo", "Tokyo Japanese garden photo"]
+    required_keywords: [garden, Korakuen, Rikugien, Tokyo]
+    banned_keywords: [cover, catalogue, report, document]
   - title: "Nihonbashi"
-    narration_intent: "Explain Nihonbashi's role as a bridge and symbolic starting point for roads."
-    image_search_terms: ["Nihonbashi bridge Edo ukiyo-e", "Nihonbashi Tokyo modern bridge photo", "Nihonbashi bridge historical Japan"]
-    required_keywords: [Nihonbashi, bridge]
-    visual_tags: ["Nihonbashi bridge Edo period", "Hiroshige Nihonbashi ukiyo-e", "Nihonbashi bridge historical print"]
-    named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
-    period_tag: historical
-    optional_second_beat: ["Nihonbashi modern bridge photograph"]
-    banned_keywords: [cover, catalogue, report, document]
+    starts_at: "Nihonbashi, once a vital bridge"
+    narration_intent: "Explain Nihonbashi's role as a bridge and the symbolic starting point for roads."
     image_type: historic
-  - title: "The City Today"
-    narration_intent: "Close the historical arc by showing contemporary Tokyo layered over its past."
-    image_search_terms: ["Tokyo modern skyline city street", "Tokyo historic district modern street photo", "Tokyo contemporary city panorama"]
-    required_keywords: [Tokyo, Japan, city]
+    named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
+    visual_tags: ["Hiroshige Nihonbashi", "Nihonbashi bridge Edo period"]
+    image_search_terms: ["Hiroshige Nihonbashi", "Nihonbashi bridge print", "Nihonbashi Edo Tokaido"]
+    required_keywords: [Nihonbashi, bridge]
     banned_keywords: [cover, catalogue, report, document]
+  - title: "The City Today"
+    starts_at: "Today, Tokyo layers"
+    narration_intent: "Close the historical arc by showing contemporary Tokyo layered over its past."
     image_type: modern
+    named_entities: ["Tokyo Skytree", "Shinjuku"]
+    visual_tags: ["Tokyo skyline", "Tokyo modern street"]
+    image_search_terms: ["Tokyo skyline", "Shinjuku skyscrapers", "Tokyo street at night"]
+    required_keywords: [Tokyo, Shinjuku, Skytree, skyline]
+    banned_keywords: [cover, catalogue, report, document]
