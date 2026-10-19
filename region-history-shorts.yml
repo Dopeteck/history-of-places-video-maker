@@ -1,0 +1,164 @@
+name: Region-driven history shorts
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Region slug under regions/"
+        type: choice
+        options: [tokyo, lagos]
+        default: tokyo
+        required: true
+      approved_review:
+        description: "Path to reviewed JSON with approved=true and claim_sources for every factual claim"
+        type: string
+        required: false
+      visual_review_only:
+        description: "Fetch/rank scene images and upload an approval board without producing a publishable video"
+        type: boolean
+        default: false
+        required: true
+      render_approved:
+        description: "Render only after the named review file passes the approval gate"
+        type: boolean
+        default: false
+        required: true
+  push:
+    branches:
+      - feature/destination-history-shorts
+    paths:
+      - 'regions/**'
+      - 'destination-prototype/render_region_short.py'
+      - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'requirements-regions.txt'
+      - '.github/workflows/region-history-shorts.yml'
+  pull_request:
+    paths:
+      - 'regions/**'
+      - 'destination-prototype/render_region_short.py'
+      - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'destination-prototype/test_resolver_logic.py'
+      - 'destination-prototype/make_region_config.py'
+      - 'destination-prototype/test_region_configs.py'
+      - 'requirements-regions.txt'
+      - 'README-regions.md'
+      - '.github/workflows/region-history-shorts.yml'
+permissions:
+  contents: read
+concurrency:
+  group: region-history-${{ github.event.inputs.region || 'config-tests' }}
+  cancel-in-progress: false
+jobs:
+  config-check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        region: ${{ github.event_name == 'pull_request' && fromJSON('["tokyo","lagos"]') || fromJSON(format('["{0}"]', inputs.region || 'tokyo')) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install config and renderer dependencies
+        run: |
+          python -m pip install PyYAML requests Pillow numpy pytest
+      - name: Compile Python and validate config shape
+        run: |
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python destination-prototype/test_region_configs.py
+          python -m pytest destination-prototype/test_resolver_logic.py -q
+          python - <<'PY'
+          import pathlib, yaml, os
+          p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
+          d=yaml.safe_load(p.read_text())
+          assert d.get("name") and d.get("country") and d.get("sources"), "missing region identity/sources"
+          assert len(d.get("claim_sources",{})) >= 5, "each region needs a claim_sources map for historical assertions"
+          assert 8 <= len(d.get("scenes",[])) <= 12, "expected 8–12 scenes"
+          assert len(d.get("story",{}).get("narration","").split()) in range(110,156), "narration must be 110–155 words"
+          assert all(s.startswith("https://") for s in d["sources"]), "source URLs must be HTTPS"
+          for s in d["scenes"]:
+            assert len(s.get("image_search_terms",[])) >= 3, s["title"]+" needs 3+ search variants"
+            assert s.get("required_keywords"), s["title"]+" needs required keywords"
+            assert s.get("image_type") in ("historic","modern","map"), s["title"]+" has invalid image_type"
+          print("Config structure OK:", d["name"], "scenes=",len(d["scenes"]))
+          PY
+        env:
+          REGION: ${{ matrix.region }}
+      - name: Require explicit story approval before rendering
+        if: github.event_name == 'workflow_dispatch' && inputs.render_approved
+        env:
+          REVIEW_PATH: ${{ inputs.approved_review }}
+          REGION: ${{ inputs.region }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, yaml
+          p=os.environ.get("REVIEW_PATH","")
+          region=os.environ["REGION"]
+          if not p or not pathlib.Path(p).is_file(): raise SystemExit("APPROVAL GATE FAILED: provide a reviewed JSON file committed in this branch")
+          review=json.loads(pathlib.Path(p).read_text())
+          cfg=yaml.safe_load(pathlib.Path("regions",region+".yaml").read_text())
+          if review.get("region") != region or review.get("approved") is not True:
+            raise SystemExit("APPROVAL GATE FAILED: review JSON must match region and set approved=true")
+          mapping=review.get("claim_sources")
+          expected=cfg.get("claim_sources",{})
+          if not isinstance(mapping,dict) or not set(expected).issubset(mapping):
+            raise SystemExit("APPROVAL GATE FAILED: review must map every config factual claim to reviewed source URLs")
+          for claim in expected:
+            urls=mapping[claim]
+            if not isinstance(urls,list) or not urls or any(not str(u).startswith("https://") for u in urls):
+              raise SystemExit("APPROVAL GATE FAILED: every factual claim needs one or more HTTPS sources: "+claim)
+          if not review.get("reviewer") or not review.get("reviewed_at"):
+            raise SystemExit("APPROVAL GATE FAILED: reviewer and reviewed_at are required")
+          print("Review gate passed: all config claims have explicit source mappings and reviewer metadata.")
+          PY
+      - name: Install rendering dependencies
+        if: (github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
+          python -m pip install -r requirements-regions.txt
+      - name: Verify CLIP model can score a known image
+        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
+        run: |
+          cd destination-prototype
+          python - <<'PY'
+          import io
+          from PIL import Image
+          from asset_resolver import _clip_analyze
+          image = Image.new("RGB", (224, 224), (40, 90, 180))
+          buf = io.BytesIO()
+          image.save(buf, format="PNG")
+          r = _clip_analyze("a blue image", [buf.getvalue()])[0]
+          assert set(r) == {"score", "p_document", "p_modern"} and all(0.0 <= r[k] <= 1.0 for k in ("p_document", "p_modern")) and -1.0 <= r["score"] <= 1.0, r
+          print("CLIP smoke test passed:", r)
+          PY
+      - name: Render visual approval board (no audio / not publishable)
+        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
+        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region || 'tokyo' }}.yaml --visual-review-only
+      - name: Render approved region short
+        if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
+        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
+      - name: Upload reviewable region outputs
+        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
+        uses: actions/upload-artifact@v4
+        with:
+          name: region-review-${{ inputs.region || 'tokyo' }}-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/${{ inputs.region || 'tokyo' }}-region-short/*.mp4
+            output/${{ inputs.region || 'tokyo' }}-region-short/contact-sheet.jpg
+            output/${{ inputs.region || 'tokyo' }}-region-short/approval-board.html
+            output/${{ inputs.region || 'tokyo' }}-region-short/images/*
+            output/${{ inputs.region || 'tokyo' }}-region-short/credits.json
+            output/${{ inputs.region || 'tokyo' }}-region-short/credits-description.txt
+            output/${{ inputs.region || 'tokyo' }}-region-short/qa-report.json
+            output/${{ inputs.region || 'tokyo' }}-region-short/narration.txt

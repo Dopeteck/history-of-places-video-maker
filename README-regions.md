@@ -16,8 +16,19 @@ The renderer is shared: regional differences belong in `regions/<slug>.yaml`, no
 6. Run **Region-driven history shorts** via Actions → Run workflow, select the region, enter the committed review JSON path, and set `render_approved` to true.
 7. Review the MP4, contact sheet, credits, narration and QA report artifacts. A successful config check alone is not a rendered-video QA pass.
 
+## Scene timing (`starts_at`)
+
+List scenes **in narration order**. Give each scene after the first a `starts_at:` phrase copied from the narration; the cut lands where that phrase is spoken (word times come from Kokoro's per-sentence chunk boundaries). A phrase that is missing or out of order stops the render with a clear error. Scenes without `starts_at` are spaced evenly between their neighbours; if no scene has it, the old intent-length weighting is used.
+
 ## Asset rules
 
-The renderer searches Wikimedia Commons API results, rejects explicitly disallowed licenses and banned terms, requires metadata keyword matches, minimum dimensions and size, and records per-image credits. Existing repository assets are eligible only when `destination-prototype/assets_manifest.json` records a verifiable source, license URL, attribution and matching keywords. Maps use OpenStreetMap tiles with attribution.
+Scene images are found, in order, from: Commons categories (the place, each `named_entities` entry, and optional `commons_categories`), then museum/library APIs (Met, Art Institute of Chicago, Cleveland, Library of Congress; Smithsonian, Europeana and DPLA when their API-key env vars are set). NGA, NYPL, Rijksmuseum and Getty are off by default because their endpoints were not verified; enable with `asset_resolver.providers`.
+
+- Queries come from `named_entities`, then `visual_tags`, then `image_search_terms`, plus short forms. Keep them short: museum APIs match a few words best.
+- `required_keywords` rank candidates (and hard-filter only free-text Commons search). Relevance is decided by CLIP.
+- Gates: explicit permissive rights, banned terms (whole words), size checked against how the renderer will actually display the image, OCR text-density (when tesseract is installed), no duplicates, CLIP document-vs-picture probe, CLIP relevance threshold, and for `image_type: modern` a CLIP "modern photograph" probe.
+- When a scene fails, the approval board shows a **Resolver diagnostics** section: queries tried, candidates found per provider, how many were rejected by each gate, the top rejected items, and provider errors.
+- Existing repository stills are reused only if `assets_manifest.json` records a verifiable source and license **and** `"approved": true`.
+- Maps are drawn offline from vendored Natural Earth data (public domain) in the region palette (`map.span_deg`, `map.places`, `map.connect`); no tile servers are called.
 
 The workflow intentionally does not send, publish or merge anything. Review outputs before publishing. A generated ambient bed is procedural, not a licensed music recording; if a real region-specific licensed music track is required, add a verified source/license field and a corresponding validation step before using it.
