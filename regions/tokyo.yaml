@@ -33,7 +33,7 @@ visual_style:
   accent_color: "#E65A45"
   music_mood: "restrained, reflective plucked strings and soft city ambience"
   notes: "Use Edo-period print warmth for historic scenes and cooler steel-blue contrast for contemporary Tokyo."
-image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book, banner, poster, logo, flyer, signage, conference, meetup, event]
+image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list, exhibition, book, banner, poster, logo, flyer, signage, conference, meetup, event, collage, montage, "composite image"]
 map:
   latitude: 35.6762
   longitude: 139.6503
@@ -91,8 +91,9 @@ scenes:
     image_search_terms: ["Hiroshige Famous Views of Edo", "ukiyo-e Edo street scene", "kabuki theatre Edo print"]
     required_keywords: [Edo, ukiyo, Hiroshige, kabuki]
     required_keyword_groups:
-      - [ukiyo, kabuki, theatre, theater, actor, actors, performance, festival]
-    banned_keywords: [cover, catalogue, report, document, plate list]
+      - [kabuki, theatre, theater, actor, actors, performance, festival]
+      - [ukiyo, woodblock, print, theatre, theater, actor, actors]
+    banned_keywords: [cover, catalogue, report, document, plate list, collage, montage]
   - title: "A Great City"
     starts_at: "By the eighteenth century"
     narration_intent: "Show Edo as a vast eighteenth-century city, one of the largest in the world."
