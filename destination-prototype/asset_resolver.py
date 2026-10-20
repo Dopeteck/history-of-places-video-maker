@@ -359,9 +359,11 @@ def _europeana(query):
         if isinstance(providers,str): providers=[providers]
         dates=x.get("year") or x.get("dcDate") or []
         if isinstance(dates,(str,int)): dates=[str(dates)]
-        source=x.get("guid") or (x.get("edmIsShownAt") or [None])[0]
+        shown_at=x.get("edmIsShownAt") or []
+        if isinstance(shown_at,str): shown_at=[shown_at]
+        source=x.get("guid") or next((str(u) for u in shown_at if str(u).startswith("https://")), None)
         if not isinstance(source,str) or not source.startswith("https://"):
-            source=(x.get("edmIsShownAt") or [None])[0]
+            source=next((str(u) for u in shown_at if str(u).startswith("https://")), None)
         c=_candidate("Europeana", title[0] if title else "",
           " ".join(str(v) for v in (desc+subjects+types+providers)),
           image,source,rights,rights[0] if rights else "",
