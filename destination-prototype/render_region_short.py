@@ -264,7 +264,7 @@ def main():
   media.append((scene,im)); credits.append(credit)
  write_approval_board(media,credits,cfg,out)
  if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
- if any(x.get("provider")=="fallback text card" for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene had no image above the CLIP threshold. Replace it with a verified image or configured map and rerun.")
+ if any(x.get("provider") in ("fallback text card", "procedural illustration") for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene required a procedural illustration because no licensed image passed the relevance gate. Review and replace those scenes with verified assets before final rendering.")
  # Kokoro only: no silent speech-provider fallback.
  try:
   import torch
