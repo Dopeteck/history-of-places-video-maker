@@ -388,7 +388,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_commons_search"]
+DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
