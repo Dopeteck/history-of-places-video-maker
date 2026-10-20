@@ -60,7 +60,6 @@ scenes:
     visual_tags: ["Edo Castle keep", "Edo Castle Tokyo"]
     image_search_terms: ["Edo Castle", "Edo Castle old photograph", "Tokyo Imperial Palace Edo Castle"]
     required_keywords: [Edo, castle]
-    allow_modern_photo: true
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Shogunate"
     starts_at: "In 1603"
@@ -79,6 +78,9 @@ scenes:
     visual_tags: ["Edo canal boats", "Edo merchants shop"]
     image_search_terms: ["Edo canal boats print", "Edo merchants ukiyo-e", "Hiroshige Edo canal", "Edo period river boats", "Edo period shop street woodblock print"]
     required_keywords: [Edo, canal, merchant, boat, shop, Hiroshige]
+    required_keyword_groups:
+      - [canal, canals, boat, boats, river, waterway]
+      - [merchant, merchants, shop, shops, market, commerce]
     banned_keywords: [cover, catalogue, report, document, plate list]
   - title: "A City of Culture"
     starts_at: "and artists turned"
@@ -88,6 +90,8 @@ scenes:
     visual_tags: ["Famous Views of Edo", "ukiyo-e Edo"]
     image_search_terms: ["Hiroshige Famous Views of Edo", "ukiyo-e Edo street scene", "kabuki theatre Edo print"]
     required_keywords: [Edo, ukiyo, Hiroshige, kabuki]
+    required_keyword_groups:
+      - [ukiyo, kabuki, theatre, theater, actor, actors, performance, festival]
     banned_keywords: [cover, catalogue, report, document, plate list]
   - title: "A Great City"
     starts_at: "By the eighteenth century"
@@ -97,6 +101,8 @@ scenes:
     visual_tags: ["Edo panorama", "Edo bird's-eye view"]
     image_search_terms: ["Edo panorama print", "Edo bird's-eye view", "Edo period Tokyo view"]
     required_keywords: [Edo, panorama, view, city]
+    required_keyword_groups:
+      - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Kyoto and Edo"
     starts_at: "even while the imperial court"
