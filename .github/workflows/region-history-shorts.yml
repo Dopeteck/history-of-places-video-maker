@@ -143,9 +143,13 @@ jobs:
           PY
       - name: Render visual approval board (no audio / not publishable)
         if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
+        env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region || 'tokyo' }}.yaml --visual-review-only
       - name: Render approved region short
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
+        env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
       - name: Upload reviewable region outputs
         if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
