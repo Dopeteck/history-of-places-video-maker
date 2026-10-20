@@ -241,15 +241,20 @@ def _loc(query):
     return out
 
 def _met(query):
-    ids=_get("https://collectionapi.metmuseum.org/public/collection/v1/search",
-             {"q":query,"hasImages":"true"}).get("objectIDs") or []
+    # The Met retired /v1/search on 2026-10-01. Use the paginated v1.1 API.
+    ids=_get("https://collectionapi.metmuseum.org/public/collection/v1.1/search",
+             {"q":query,"hasImages":"true","limit":100,"offset":0}).get("objectIDs") or []
     out=[]
-    for oid in ids[:15]:
-        x=_get(f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{oid}")
+    for oid in ids[:25]:
+        try:
+            x=_get(f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{oid}")
+        except Exception as e:
+            print(f"Met object lookup failed for {oid}: {type(e).__name__}: {e}")
+            continue
         if x.get("isPublicDomain") is not True: continue
         c=_candidate("The Metropolitan Museum of Art",x.get("title",""),x.get("objectDate",""),
           x.get("primaryImage") or x.get("primaryImageSmall"),x.get("objectURL"),
-          "Public Domain", "https://www.metmuseum.org/about-the-met/policies-and-documents/open-access",
+          "Public Domain (CC0)", "https://www.metmuseum.org/about-the-met/policies-and-documents/open-access",
           x.get("artistDisplayName",""),oid)
         if c: out.append(c)
     return out
@@ -383,7 +388,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_aic", "_cleveland", "_smithsonian", "_europeana", "_dpla"]
+DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_commons_search"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
