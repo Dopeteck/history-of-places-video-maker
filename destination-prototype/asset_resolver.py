@@ -34,6 +34,7 @@ FOUND = Counter()          # candidates discovered per provider
 TOP_REJECTED = []          # a few rejected candidates with reasons
 PROVIDER_ERRORS = {}       # provider -> last error text (whole run)
 _LAST_API_REQUEST = 0.0
+_LAST_MET_REQUEST = 0.0
 _FAILS = Counter()         # consecutive failures per provider (whole run)
 
 
@@ -45,17 +46,28 @@ class ResolverError(RuntimeError):
 
 
 def _get(url, params=None, timeout=10):
-    """Request with polite Wikimedia pacing and Retry-After-aware transient retries."""
-    global _LAST_API_REQUEST
+    """Request with provider pacing and Retry-After-aware transient retries.
+
+    The Met API has returned 403 bot-protection pages during bursts. Pace every
+    Met request, including object lookups, and do not retry deterministic 403s.
+    """
+    global _LAST_API_REQUEST, _LAST_MET_REQUEST
     last = None
     for attempt in range(2):
         try:
-            if "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url:
+            is_wikimedia = "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url
+            is_met = "collectionapi.metmuseum.org/public/collection/" in url
+            if is_wikimedia:
                 wait = 0.65 - (time.monotonic() - _LAST_API_REQUEST)
                 if wait > 0: time.sleep(wait)
+            elif is_met:
+                wait = 1.0 - (time.monotonic() - _LAST_MET_REQUEST)
+                if wait > 0: time.sleep(wait)
             r = S.get(url, params=params, timeout=timeout)
-            if "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url:
+            if is_wikimedia:
                 _LAST_API_REQUEST = time.monotonic()
+            elif is_met:
+                _LAST_MET_REQUEST = time.monotonic()
             if r.status_code == 429 or 500 <= r.status_code < 600:
                 retry_after = r.headers.get("Retry-After", "")
                 try: delay = min(8.0, max(1.0, float(retry_after)))
@@ -67,6 +79,10 @@ def _get(url, params=None, timeout=10):
             return r.json()
         except requests.RequestException as e:
             last = e
+            # 403 usually indicates access/bot protection, not a transient network
+            # failure. Retrying immediately makes the block more likely to persist.
+            if isinstance(e, requests.HTTPError) and getattr(e.response, "status_code", None) == 403:
+                break
             if attempt == 1: break
             time.sleep(1.0)
     raise last
@@ -245,7 +261,9 @@ def _met(query):
     ids=_get("https://collectionapi.metmuseum.org/public/collection/v1.1/search",
              {"q":query,"hasImages":"true","limit":100,"offset":0}).get("objectIDs") or []
     out=[]
-    for oid in ids[:25]:
+    # Each object lookup is a separate API request; keep the per-query budget small
+    # and paced to avoid bursts that trigger upstream bot protection.
+    for oid in ids[:8]:
         try:
             x=_get(f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{oid}")
         except Exception as e:
