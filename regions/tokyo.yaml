@@ -118,7 +118,10 @@ scenes:
     named_entities: ["Kyoto Imperial Palace"]
     visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho"]
     image_search_terms: ["Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph", "Kyoto Imperial Palace historical painting", "Kyoto Gosho before 1868"]
-    required_keywords: [Kyoto, imperial, palace, court]
+    required_keywords: [Kyoto, imperial, palace, gosho]
+    required_keyword_groups:
+      - [Kyoto, "Kyoto Gosho", "Kyoto Imperial Palace"]
+      - [imperial, palace, emperor, gosho]
     max_year: 1867
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Turning Point"
