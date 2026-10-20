@@ -69,6 +69,30 @@ class ResolverUnits(unittest.TestCase):
         self.assertEqual((c["title"], c["author"], c["image_url"]), ("123", "Artist", "https://e.org/i.jpg"))
 
 
+    def test_met_uses_current_paginated_search_endpoint(self):
+        calls = []
+        def fake_get(url, params=None, **kwargs):
+            calls.append((url, params or {}))
+            if url.endswith("/v1.1/search"):
+                return {"objectIDs": [123]}
+            if url.endswith("/objects/123"):
+                return {"objectID": 123, "isPublicDomain": True, "title": "Edo bridge print",
+                        "objectDate": "1850", "primaryImage": "https://images.example/edo.jpg",
+                        "objectURL": "https://www.metmuseum.org/art/collection/search/123",
+                        "artistDisplayName": "Hiroshige"}
+            raise AssertionError("Unexpected Met endpoint: " + url)
+        original = ar._get
+        ar._get = fake_get
+        try:
+            got = ar._met("Edo bridge")
+        finally:
+            ar._get = original
+        self.assertEqual(len(got), 1)
+        self.assertIn("/v1.1/search", calls[0][0])
+        self.assertEqual(got[0]["title"], "Edo bridge print")
+        self.assertIn("CC0", got[0]["rights_statement"])
+
+
 class ResolverFlow(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
