@@ -112,6 +112,18 @@ class ResolverFlow(unittest.TestCase):
         self.assertAlmostEqual(credit["match_score"], .29)
         self.assertIn("OCR gate unavailable", credit["warnings"][0])
 
+    def test_subject_groups_reject_artist_match_without_narrated_subject(self):
+        items = [cand("Cherry Trees along Gokacho by Hiroshige", n=91)]
+        self.specs = [(1400, 1000, 91)]
+        self.clips = [{"score": .5, "p_document": .1, "p_modern": .1}]
+        self.setup_provider(items)
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene({"title": "Merchants and Canals",
+                            "required_keywords": ["Edo", "Hiroshige"],
+                            "required_keyword_groups": [["canal", "boat", "river", "waterway"]],
+                            "image_type": "historic"})
+        self.assertEqual(cm.exception.diagnostics["rejected"].get("subject_groups"), 1)
+
     def test_failure_raises_resolver_error_with_parseable_diagnostics(self):
         items = [cand("Edo castle weak", n=1)]
         self.specs = [(1400, 1000, 1)]; self.clips = [{"score": .05, "p_document": .1, "p_modern": .1}]
