@@ -469,7 +469,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     """Discover across providers, filter rights/format/size, rank with CLIP, save best."""
     STATS.clear(); FOUND.clear(); TOP_REJECTED.clear()
     rcfg=config.get("asset_resolver",{}) or {}
-    queries=build_queries(scene,config,int(rcfg.get("max_queries",6)))
+    queries=build_queries(scene,config,int(scene.get("max_queries",rcfg.get("max_queries",6))))
     enabled=set(rcfg.get("providers") or DEFAULT_PROVIDERS)
     providers=[p for p in PROVIDERS if p.__name__ in enabled]
     place=config.get("name","")
