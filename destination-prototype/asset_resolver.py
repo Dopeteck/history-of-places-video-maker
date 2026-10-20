@@ -491,7 +491,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     for provider in providers:
         name=provider.__name__
         # Museum APIs are noisy for place names; historical scenes search named entities and artwork terms only.
-        provider_queries = queries[:int(rcfg.get("max_queries_per_provider", 3))]
+        provider_queries = queries[:int(scene.get("max_queries_per_provider", rcfg.get("max_queries_per_provider", 3)))]
         for query in provider_queries:
             if _FAILS[name]>=2: break                      # stop hammering a provider that keeps failing
             try:
@@ -503,7 +503,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
                 print(f"Provider {name} unavailable for '{query}': {type(e).__name__}: {e}")
     # Always add one tightly targeted Commons text search. Category results alone
     # are often generic and can win CLIP on superficial style instead of subject.
-    commons_queries = queries[:1]
+    commons_queries = queries[:min(3, int(scene.get("max_queries_per_provider", rcfg.get("max_queries_per_provider", 3))))]
     for query in commons_queries:
         try:
             started=time.perf_counter()
