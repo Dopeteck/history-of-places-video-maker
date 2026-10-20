@@ -69,6 +69,29 @@ class ResolverUnits(unittest.TestCase):
         self.assertEqual((c["title"], c["author"], c["image_url"]), ("123", "Artist", "https://e.org/i.jpg"))
 
 
+    def test_met_403_is_not_retried(self):
+        calls = []
+        class Response:
+            status_code = 403
+            headers = {}
+            def raise_for_status(self):
+                err = ar.requests.HTTPError("403 Forbidden")
+                err.response = self
+                raise err
+            def json(self):
+                raise AssertionError("403 response must not be parsed")
+        original_get = ar.S.get
+        original_last = ar._LAST_MET_REQUEST
+        ar._LAST_MET_REQUEST = 0.0
+        ar.S.get = lambda *args, **kwargs: (calls.append(args[0]) or Response())
+        try:
+            with self.assertRaises(ar.requests.HTTPError):
+                ar._get("https://collectionapi.metmuseum.org/public/collection/v1.1/search", {"q": "Edo"})
+        finally:
+            ar.S.get = original_get
+            ar._LAST_MET_REQUEST = original_last
+        self.assertEqual(len(calls), 1, "deterministic 403 must not trigger a second request")
+
     def test_met_uses_current_paginated_search_endpoint(self):
         calls = []
         def fake_get(url, params=None, **kwargs):
