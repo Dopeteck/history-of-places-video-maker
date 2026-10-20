@@ -539,6 +539,17 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         c["_hits"]=hits
         if required and hits==0 and str(scene.get("keyword_gate","hard")).lower()!="soft":
             _note_reject("keywords",c,{"required_keywords":required,"category_names":c.get("categories",[])}); rejected_seen.add(key); continue
+        # Optional grouped subject gate: every group must have at least one metadata match.
+        # This blocks artist/style matches from substituting for the narrated subject.
+        groups=scene.get("required_keyword_groups",[]) or []
+        missing_groups=[]
+        for gi, group in enumerate(groups):
+            terms=[str(term).lower() for term in (group if isinstance(group,list) else [group])]
+            if not any(term in text.lower() for term in terms):
+                missing_groups.append(gi)
+        if missing_groups:
+            _note_reject("subject_groups",c,{"missing_group_indexes":missing_groups,"required_keyword_groups":groups})
+            rejected_seen.add(key); continue
         unique[key]=c
     candidates=sorted(unique.values(),key=lambda c:-c["_hits"])
     if not candidates:
