@@ -62,6 +62,7 @@ scenes:
     required_keywords: [Edo, castle]
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Shogunate"
+    max_queries_per_provider: 6
     starts_at: "In 1603"
     narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
     image_type: historic
@@ -71,6 +72,7 @@ scenes:
     required_keywords: ["Tokugawa", "Ieyasu", "shogun"]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Merchants and Canals"
+    max_queries_per_provider: 6
     starts_at: "Merchants filled"
     narration_intent: "Show the commerce, waterways, boats and daily life that made Edo thrive."
     image_type: historic
@@ -106,6 +108,7 @@ scenes:
       - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Kyoto and Edo"
+    max_queries_per_provider: 6
     starts_at: "even while the imperial court"
     narration_intent: "Contrast the imperial court in Kyoto with Edo's political power."
     image_type: historic
@@ -117,6 +120,7 @@ scenes:
     allow_modern_photo: true
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Turning Point"
+    max_queries_per_provider: 6
     starts_at: "Then came 1868"
     narration_intent: "Describe the 1868 political transition that ended shogunate rule."
     image_type: historic
