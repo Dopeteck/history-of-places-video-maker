@@ -140,11 +140,15 @@ scenes:
     starts_at: "the emperor’s government moved east"
     narration_intent: "Explain the renaming and the move of the emperor's government east, and how the city was transformed."
     image_type: historic
-    named_entities: ["Emperor Meiji"]
-    visual_tags: ["Meiji era Tokyo", "Tokyo 1870s"]
-    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo woodblock print", "Tokyo 1870s street photograph", "Edo Tokyo transition 1868"]
+    named_entities: ["Edo to Tokyo", "Meiji era Tokyo"]
+    visual_tags: ["Edo renamed Tokyo 1868", "Tokyo 1870s street", "Emperor Meiji in Tokyo"]
+    image_search_terms: ["Edo became Tokyo 1868", "Edo Tokyo renaming Meiji Restoration", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo street", "Emperor Meiji Tokyo 1868", "Tokyo capital 1868 Edo", "Tokyo 1870s street photograph"]
     required_keywords: [Meiji, Tokyo, Emperor, Edo]
-    banned_keywords: [cover, catalogue, report, document]
+    required_keyword_groups:
+      - [Edo, Tokyo, "Edo became Tokyo", "Edo to Tokyo", "東京"]
+      - [Meiji, "Emperor Meiji", "1868", capital, renaming, renamed]
+    max_year: 1889
+    banned_keywords: [cover, catalogue, report, document, "Sino-Japanese", "Sino Japanese", commander, "war scene"]
   - title: "Gardens Remember"
     starts_at: "Look closely at gardens"
     narration_intent: "Use surviving gardens and temple grounds as traces of older Tokyo."
