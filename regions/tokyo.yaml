@@ -69,7 +69,7 @@ scenes:
     named_entities: ["Tokugawa Ieyasu"]
     visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Tokugawa Ieyasu painted portrait", "Tokugawa Ieyasu woodblock portrait"]
     image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
-    required_keywords: ["Tokugawa", "Ieyasu", "shogun"]
+    required_keywords: ["Tokugawa", "Ieyasu", "shogun", "徳川家康", "徳川", "家康"]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Merchants and Canals"
     max_queries_per_provider: 6
@@ -78,11 +78,10 @@ scenes:
     image_type: historic
     named_entities: ["Hiroshige"]
     visual_tags: ["Edo canal boats", "Edo merchants shop"]
-    image_search_terms: ["Edo canal boats print", "Edo merchants ukiyo-e", "Hiroshige Edo canal", "Edo period river boats", "Edo period shop street woodblock print"]
+    image_search_terms: ["Hauling Canal Boats Yotsugi Road", "Towboats on the Yotsugi Road Canal", "Pleasure Parties in Boats Sumida River", "Edo canal boats print", "Hiroshige Edo canal", "Edo period river boats", "Edo merchants ukiyo-e"]
     required_keywords: [Edo, canal, merchant, boat, shop, Hiroshige]
     required_keyword_groups:
       - [canal, canals, boat, boats, river, waterway]
-      - [merchant, merchants, shop, shops, market, commerce]
     banned_keywords: [cover, catalogue, report, document, plate list]
   - title: "A City of Culture"
     starts_at: "and artists turned"
@@ -93,8 +92,7 @@ scenes:
     image_search_terms: ["Hiroshige Famous Views of Edo", "ukiyo-e Edo street scene", "kabuki theatre Edo print"]
     required_keywords: [Edo, ukiyo, Hiroshige, kabuki]
     required_keyword_groups:
-      - [kabuki, theatre, theater, actor, actors, performance, festival]
-      - [ukiyo, woodblock, print, theatre, theater, actor, actors]
+      - [ukiyo, ukiyo-e, woodblock, print]
     banned_keywords: [cover, catalogue, report, document, plate list, collage, montage]
   - title: "A Great City"
     starts_at: "By the eighteenth century"
@@ -102,7 +100,7 @@ scenes:
     image_type: historic
     named_entities: ["Edo"]
     visual_tags: ["Edo panorama", "Edo bird's-eye view"]
-    image_search_terms: ["Edo panorama print", "Edo bird's-eye view", "Edo period Tokyo view"]
+    image_search_terms: ["Edo panorama print", "Edo bird's-eye view", "Edo period Tokyo view", "Edo meisho panorama woodblock", "Edo city map eighteenth century"]
     required_keywords: [Edo, panorama, view, city]
     required_keyword_groups:
       - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
@@ -115,10 +113,9 @@ scenes:
     image_type: historic
     named_entities: ["Kyoto Imperial Palace"]
     visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho"]
-    image_search_terms: ["Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph"]
+    image_search_terms: ["Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph", "Kyoto Imperial Palace historical painting", "Kyoto Gosho before 1868"]
     required_keywords: [Kyoto, imperial, palace, court]
     max_year: 1867
-    allow_modern_photo: true
     banned_keywords: [cover, catalogue, report, document]
   - title: "The Turning Point"
     max_queries_per_provider: 6
@@ -127,7 +124,7 @@ scenes:
     image_type: historic
     named_entities: ["Meiji Restoration"]
     visual_tags: ["Meiji Restoration 1868", "Tokugawa Yoshinobu"]
-    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War", "Tokugawa Yoshinobu surrender", "Meiji Restoration historical woodblock print"]
+    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War", "Tokugawa Yoshinobu surrender", "Meiji Restoration historical woodblock print", "Tokugawa Yoshinobu portrait 1868", "Battle of Toba Fushimi woodblock print"]
     required_keywords: ["Meiji", "1868", "Restoration", "Yoshinobu", "Boshin"]
     banned_keywords: [cover, catalogue, report, document, statement]
   - title: "Edo Becomes Tokyo"
@@ -136,7 +133,7 @@ scenes:
     image_type: historic
     named_entities: ["Emperor Meiji"]
     visual_tags: ["Meiji era Tokyo", "Tokyo 1870s"]
-    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo woodblock print"]
+    image_search_terms: ["Emperor Meiji", "Meiji era Tokyo photograph", "Tokyo 19th century street", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo woodblock print", "Tokyo 1870s street photograph", "Edo Tokyo transition 1868"]
     required_keywords: [Meiji, Tokyo, Emperor, Edo]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Gardens Remember"
