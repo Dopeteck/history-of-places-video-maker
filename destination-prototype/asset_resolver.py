@@ -33,6 +33,7 @@ STATS = Counter()          # per-scene rejection counters, reset in resolve_scen
 FOUND = Counter()          # candidates discovered per provider
 TOP_REJECTED = []          # a few rejected candidates with reasons
 PROVIDER_ERRORS = {}       # provider -> last error text (whole run)
+_LAST_API_REQUEST = 0.0
 _FAILS = Counter()         # consecutive failures per provider (whole run)
 
 
@@ -43,13 +44,25 @@ class ResolverError(RuntimeError):
         super().__init__(f"{message} Diagnostics: {json.dumps(diagnostics, ensure_ascii=False)}")
 
 
-def _get(url, params=None, timeout=12):
+def _get(url, params=None, timeout=10):
+    """Request with polite Wikimedia pacing and Retry-After-aware transient retries."""
+    global _LAST_API_REQUEST
     last = None
     for attempt in range(2):
         try:
+            if "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url:
+                wait = 0.65 - (time.monotonic() - _LAST_API_REQUEST)
+                if wait > 0: time.sleep(wait)
             r = S.get(url, params=params, timeout=timeout)
+            if "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url:
+                _LAST_API_REQUEST = time.monotonic()
             if r.status_code == 429 or 500 <= r.status_code < 600:
-                time.sleep(1.5 * (attempt + 1)); last = requests.HTTPError(f"HTTP {r.status_code}"); continue
+                retry_after = r.headers.get("Retry-After", "")
+                try: delay = min(8.0, max(1.0, float(retry_after)))
+                except (TypeError, ValueError): delay = 2.0 * (attempt + 1)
+                last = requests.HTTPError(f"HTTP {r.status_code}")
+                if attempt == 0: time.sleep(delay); continue
+                break
             r.raise_for_status()
             return r.json()
         except requests.RequestException as e:
@@ -370,7 +383,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_loc", "_smithsonian", "_europeana", "_dpla"]
+DEFAULT_PROVIDERS = ["_aic", "_cleveland", "_smithsonian", "_europeana", "_dpla"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
@@ -432,9 +445,25 @@ def _round_robin(cands, cap):
     return out
 
 def _download(c):
-    r=S.get(c["image_url"],timeout=(10,40),stream=True); r.raise_for_status()
-    if int(r.headers.get("Content-Length") or 0)>35_000_000: raise ValueError("file larger than 35 MB")
-    return r.content
+    last = None
+    for attempt in range(2):
+        try:
+            r=S.get(c["image_url"],timeout=(8,18),stream=True)
+            if r.status_code == 429 or 500 <= r.status_code < 600:
+                last = requests.HTTPError(f"HTTP {r.status_code} downloading image")
+                if attempt == 0:
+                    try: delay = min(8.0, max(1.0, float(r.headers.get("Retry-After", "2"))))
+                    except ValueError: delay = 2.0
+                    time.sleep(delay); continue
+                break
+            r.raise_for_status()
+            if int(r.headers.get("Content-Length") or 0)>35_000_000: raise ValueError("file larger than 35 MB")
+            return r.content
+        except requests.RequestException as e:
+            last=e
+            if attempt == 0: time.sleep(1.0); continue
+            break
+    raise last
 
 def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     """Discover across providers, filter rights/format/size, rank with CLIP, save best."""
@@ -472,10 +501,18 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             except Exception as e:
                 _FAILS[name]+=1; PROVIDER_ERRORS[name]=f"{type(e).__name__}: {e}"[:200]
                 print(f"Provider {name} unavailable for '{query}': {type(e).__name__}: {e}")
-    if not candidates and provider_search_succeeded:
-        for query in queries[:2]:
-            try: got=_commons_search(query); FOUND["commons_search"]+=len(got); candidates.extend(got)
-            except Exception as e: PROVIDER_ERRORS["commons_search"]=f"{type(e).__name__}: {e}"[:200]; print(f"Commons text search unavailable: {e}")
+    # Always add one tightly targeted Commons text search. Category results alone
+    # are often generic and can win CLIP on superficial style instead of subject.
+    commons_queries = queries[:1]
+    for query in commons_queries:
+        try:
+            started=time.perf_counter()
+            got=_commons_search(query)
+            FOUND["commons_search"]+=len(got); candidates.extend(got)
+            print(f"TIMING provider_search scene={scene.get('title')} provider=commons_search query={query!r} seconds={time.perf_counter()-started:.2f} found={len(got)}")
+        except Exception as e:
+            PROVIDER_ERRORS["commons_search"]=f"{type(e).__name__}: {e}"[:200]
+            print(f"Commons text search unavailable for {query!r}: {e}")
 
     def diagnostics():
         return {"queries":queries,"providers_found":dict(FOUND),"rejected":dict(STATS),
