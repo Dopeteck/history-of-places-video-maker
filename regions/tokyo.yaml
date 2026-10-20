@@ -106,6 +106,7 @@ scenes:
     required_keywords: [Edo, panorama, view, city]
     required_keyword_groups:
       - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
+      - [Edo, Tokyo, cityscape, city view, capital]
     banned_keywords: [cover, catalogue, report, document]
   - title: "Kyoto and Edo"
     max_queries_per_provider: 6
