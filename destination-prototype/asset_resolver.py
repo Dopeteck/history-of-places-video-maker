@@ -325,17 +325,48 @@ def _smithsonian(query):
     return out
 
 def _europeana(query):
+    """Search Europeana for openly reusable, directly viewable, high-resolution collection images.
+
+    Keep the key in the query params (never logs); exclude closed/restricted rights at
+    the API and independently re-check the item rights locally before accepting it.
+    """
     key=os.getenv("EUROPEANA_API_KEY")
     if not key: return []
     payload=_get("https://api.europeana.eu/record/v2/search.json",
-       {"wskey":key,"query":query,"media":"true","rows":50,"profile":"rich"})
+       {"wskey":key,"query":query,"media":"true","reusability":"open",
+        "qf":"IMAGE_SIZE:extra_large","rows":50,"profile":"rich"})
     out=[]
     for x in payload.get("items",[]):
-        rights=x.get("rights",[])
-        rights=rights[0] if rights else ""
-        c=_candidate("Europeana", (x.get("title") or [""])[0],
-          " ".join(x.get("dcDescription") or []), (x.get("edmIsShownBy") or [None])[0],
-          (x.get("guid") or ""),rights,rights,(x.get("dcCreator") or [""])[0],x.get("id"))
+        rights=x.get("rights") or []
+        if isinstance(rights,str): rights=[rights]
+        rights=next((str(r) for r in rights if _rights_ok(r)), "")
+        # Prefer the original item media URL; never promote a tiny Europeana preview
+        # to production quality. The downstream pixel/upscale gate remains authoritative.
+        media=x.get("edmIsShownBy") or []
+        if isinstance(media,str): media=[media]
+        image=next((str(u) for u in media if str(u).startswith("https://")), None)
+        title=x.get("title") or [""]
+        if isinstance(title,str): title=[title]
+        desc=x.get("dcDescription") or []
+        if isinstance(desc,str): desc=[desc]
+        creators=x.get("dcCreator") or []
+        if isinstance(creators,str): creators=[creators]
+        subjects=x.get("dcSubject") or []
+        if isinstance(subjects,str): subjects=[subjects]
+        types=x.get("type") or []
+        if isinstance(types,str): types=[types]
+        providers=x.get("dataProvider") or x.get("edmDataProvider") or []
+        if isinstance(providers,str): providers=[providers]
+        dates=x.get("year") or x.get("dcDate") or []
+        if isinstance(dates,(str,int)): dates=[str(dates)]
+        source=x.get("guid") or (x.get("edmIsShownAt") or [None])[0]
+        if not isinstance(source,str) or not source.startswith("https://"):
+            source=(x.get("edmIsShownAt") or [None])[0]
+        c=_candidate("Europeana", title[0] if title else "",
+          " ".join(str(v) for v in (desc+subjects+types+providers)),
+          image,source,rights,rights[0] if rights else "",
+          creators[0] if creators else "",x.get("id"),
+          categories=subjects+types+providers,date_text=" ".join(str(v) for v in dates))
         if c: out.append(c)
     return out
 
@@ -406,7 +437,7 @@ def _getty(query):
 
 PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
 # Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
-DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_smithsonian"]
+DEFAULT_PROVIDERS = ["_met", "_aic", "_cleveland", "_smithsonian", "_europeana"]
 
 @lru_cache(maxsize=1)
 def _load_clip(model_id):
