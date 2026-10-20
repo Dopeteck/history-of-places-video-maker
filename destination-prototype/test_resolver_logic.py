@@ -69,6 +69,38 @@ class ResolverUnits(unittest.TestCase):
         self.assertEqual((c["title"], c["author"], c["image_url"]), ("123", "Artist", "https://e.org/i.jpg"))
 
 
+    def test_europeana_uses_open_high_resolution_search_and_preserves_metadata(self):
+        calls = []
+        payload = {"items": [{
+            "id": "abc/123", "title": ["Edo period Nihonbashi woodblock print"],
+            "dcDescription": ["Bridge in Edo, Japan"], "dcCreator": ["Utagawa Hiroshige"],
+            "dcSubject": ["Nihonbashi", "Edo"], "type": ["IMAGE"],
+            "dataProvider": ["Example Museum"], "year": ["1857"],
+            "edmIsShownBy": ["https://images.example/nihonbashi.jpg"],
+            "guid": "https://www.europeana.eu/item/abc/123",
+            "rights": ["http://creativecommons.org/publicdomain/mark/1.0/"]
+        }]}
+        original_get, original_env = ar._get, __import__("os").environ.get("EUROPEANA_API_KEY")
+        ar._get = lambda url, params=None, **kwargs: (calls.append((url, params or {})) or payload)
+        __import__("os").environ["EUROPEANA_API_KEY"] = "test-key"
+        try:
+            got = ar._europeana("Nihonbashi Edo")
+        finally:
+            ar._get = original_get
+            if original_env is None: __import__("os").environ.pop("EUROPEANA_API_KEY", None)
+            else: __import__("os").environ["EUROPEANA_API_KEY"] = original_env
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["provider"], "Europeana")
+        self.assertEqual(got[0]["date_text"], "1857")
+        self.assertIn("Nihonbashi", got[0]["categories"])
+        self.assertEqual(got[0]["source_url"], "https://www.europeana.eu/item/abc/123")
+        self.assertEqual(calls[0][1]["reusability"], "open")
+        self.assertEqual(calls[0][1]["qf"], "IMAGE_SIZE:extra_large")
+        self.assertNotIn("test-key", str(calls[0][0]))
+
+    def test_europeana_is_in_default_provider_set(self):
+        self.assertIn("_europeana", ar.DEFAULT_PROVIDERS)
+
     def test_met_403_is_not_retried(self):
         calls = []
         class Response:
