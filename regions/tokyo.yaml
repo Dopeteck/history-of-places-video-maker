@@ -177,3 +177,8 @@ scenes:
     image_search_terms: ["Tokyo skyline", "Shinjuku skyscrapers", "Tokyo street at night"]
     required_keywords: [Tokyo, Shinjuku, Skytree, skyline]
     banned_keywords: [cover, catalogue, report, document]
+
+# Explicitly enable every verified, rights-first source for the next review pass.
+# Europeana is enabled only through the EUROPEANA_API_KEY Actions secret.
+asset_resolver:
+  providers: [_loc, _met, _aic, _cleveland, _smithsonian, _europeana]
