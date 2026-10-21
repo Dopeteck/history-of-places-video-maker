@@ -655,7 +655,8 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             if not years: c.setdefault("_warnings",[]).append("date unverified")
         survivors.append(c)
     threshold=float(scene.get("clip_min_score",rcfg.get("clip_min_score",0.22)))
-    survivors.sort(key=lambda c:c["_score"]+0.01*min(c["_hits"],3),reverse=True)
+    # Semantic image relevance must dominate metadata keyword frequency. Keyword hits are a discovery filter, not a score bonus.
+    survivors.sort(key=lambda c:c["_score"],reverse=True)
     top=survivors[:int(rcfg.get("top_candidates",5))]
     print(f"CLIP candidates for {scene['title']}: "+", ".join(f"{x['provider']}={x['_score']:.3f}" for x in top))
     winner=next((c for c in top if c["_score"]>=threshold),None)
