@@ -738,7 +738,9 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             if im.format not in ("JPEG", "PNG", "WEBP", "TIFF"): _note_reject("format", c); continue
             if not _size_ok(im, rcfg): _note_reject("size", c, {"pixels": list(im.size)}); continue
             if use_ocr and _text_heavy(im): _note_reject("ocr_text_heavy", c); continue
-            digest = hashlib.sha256(data).hexdigest()
+            # Normalize by decoded RGB pixels, not compressed file bytes. The same image
+            # can arrive from two providers with different JPEG encodings.
+            digest = hashlib.sha256(im.convert("RGB").tobytes()).hexdigest()
             if digest in used or c["source_url"] in used: _note_reject("duplicate", c); continue
             c["_bytes"] = data; c["_digest"] = digest; c["_size"] = im.size
             ranked.append(c)
