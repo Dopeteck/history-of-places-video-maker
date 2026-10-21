@@ -222,7 +222,7 @@ def main():
   digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
   if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
   if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
-  credit["content_sha256"]=digest; previous_digest=digest
+  credit["content_sha256"]=digest; previous_digest=digest; used.add(digest)
   media.append((scene,im)); credits.append(credit)
  write_approval_board(media,credits,cfg,out)
  if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
