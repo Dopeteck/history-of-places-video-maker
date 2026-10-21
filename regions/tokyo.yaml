@@ -181,4 +181,6 @@ scenes:
 # Explicitly enable every verified, rights-first source for the next review pass.
 # Europeana is enabled only through the EUROPEANA_API_KEY Actions secret.
 asset_resolver:
+  # Require a meaningful semantic match; keyword overlap alone must not approve an image.
+  clip_min_score: 0.30
   providers: [_loc, _met, _aic, _cleveland, _smithsonian, _europeana]
