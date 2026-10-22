@@ -221,6 +221,29 @@ class ResolverFlow(unittest.TestCase):
         self.assertGreaterEqual(cm.exception.diagnostics["rejected"].get("identity_groups", 0), 1)
         self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
 
+    def test_kyoto_scene_rejects_palace_named_group_photo_without_visual_evidence(self):
+        items = [cand("Japanese Imperial families in Kyoto Imperial Palace", n=94)]
+        self.specs = [(1400, 1000, 94)]
+        self.clips = [{"score": .99, "p_document": .05, "p_modern": .05}]
+        self.setup_provider(items)
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene({
+                "title": "Kyoto and Edo",
+                "required_keywords": ["Kyoto", "imperial", "palace"],
+                "required_keyword_groups": [
+                    ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑"],
+                    ["painting", "woodblock", "print", "drawing", "illustration", "view", "grounds", "garden", "architecture"],
+                ],
+                "identity_keyword_groups": [
+                    ["Kyoto", "京都"],
+                    ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "京都御所"],
+                ],
+                "image_type": "historic",
+                "max_year": 1867,
+            })
+        self.assertGreaterEqual(cm.exception.diagnostics["rejected"].get("subject_groups", 0), 1)
+        self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
+
     def test_identity_metadata_gate_accepts_explicitly_identified_shogun_portrait(self):
         items = [cand("Portrait of Tokugawa Ieyasu, Japanese shogun", n=93)]
         self.specs = [(1400, 1000, 93)]
