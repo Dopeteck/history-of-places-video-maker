@@ -72,6 +72,10 @@ scenes:
     visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Tokugawa Ieyasu painted portrait", "Tokugawa Ieyasu woodblock portrait"]
     image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
     required_keywords: ["Tokugawa", "Ieyasu", "shogun", "徳川家康", "徳川", "家康"]
+    # Each group is mandatory evidence in the collection record, not a search hint.
+    identity_keyword_groups:
+      - ["Tokugawa Ieyasu", "徳川家康", "Tokugawa"]
+      - ["portrait", "shogun", "shogunate", "徳川家康"]
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "Merchants and Canals"
     max_queries: 8
@@ -122,6 +126,10 @@ scenes:
     required_keywords: [Kyoto, "Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑", "imperial", palace]
     required_keyword_groups:
       - ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑"]
+    # Require both the named place and palace/court context in source metadata.
+    identity_keyword_groups:
+      - ["Kyoto", "京都"]
+      - ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "京都御所"]
     allow_modern_photo: true
     max_year: 1867
     banned_keywords: [Omuro, "Ninna-ji", "book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster"]
