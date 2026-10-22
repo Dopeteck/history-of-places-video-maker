@@ -149,7 +149,7 @@ scenes:
       - [Edo, Tokyo, "Edo became Tokyo", "Edo to Tokyo", "東京"]
       - [Meiji, "Emperor Meiji", "1868", capital, renaming, renamed]
     max_year: 1889
-    banned_keywords: [cover, catalogue, report, document, "Sino-Japanese", "Sino Japanese", commander, "war scene", donkey, animal, "prints of animals", "animal print", courtesan, courtisane, "young man", smoking, tobacco, "pleasure party"]
+    banned_keywords: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster", "report cover", "document scan", "Sino-Japanese", "Sino Japanese", commander, "war scene", donkey, animal, "prints of animals", "animal print", courtesan, courtisane, "young man", smoking, tobacco, "pleasure party"]
   - title: "Gardens Remember"
     starts_at: "Look closely at gardens"
     narration_intent: "Use surviving gardens and temple grounds as traces of older Tokyo."
