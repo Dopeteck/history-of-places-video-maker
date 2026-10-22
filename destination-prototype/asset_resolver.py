@@ -21,7 +21,7 @@ ALLOWED = ("public domain", "public domain mark", "cc0", "cc by", "cc-by",
            "cc by-sa", "cc-by-sa", "creative commons attribution",
            "creative commons zero", "no known copyright restrictions",
            "no known restrictions on publication")
-BANNED = re.compile(r"book cover|front cover|back cover|cover art|title page|frontispiece|scanned page|text page|catalogue page|exhibition poster|plate list|contents page|pdf|djvu|document scan|report cover", re.I)
+BANNED = re.compile(r"book cover|front cover|back cover|cover art|title page|frontispiece|scanned page|text page|page scan|catalogue page|exhibition poster|plate list|contents page|pdf|djvu|document scan|report cover", re.I)
 # Zero-shot CLIP probes (two-way softmax, so absolute cosine scale does not matter).
 DOC_PAIR = ("a scanned page of printed text, a book cover, or a document",
             "a painting, photograph, map, or illustration")
