@@ -14,21 +14,21 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-UA = "RegionHistoryShort/2.1 (educational historical video; contact via GitHub)"
+UA = "RegionHistoryShort/2.2 (https://github.com/Dopeteck/history-of-places-video-maker)"
 S = requests.Session()
 S.headers.update({"User-Agent": UA})
 ALLOWED = ("public domain", "public domain mark", "cc0", "cc by", "cc-by",
            "cc by-sa", "cc-by-sa", "creative commons attribution",
            "creative commons zero", "no known copyright restrictions",
            "no known restrictions on publication")
-BANNED = re.compile(r"book.?cover|cover.?art|title.?page|frontispiece|text.?scan|scanned text|manuscript page|page scan|catalogue|catalog|plate list|contents page|pdf|djvu|document scan|report cover", re.I)
+BANNED = re.compile(r"book cover|front cover|back cover|cover art|title page|frontispiece|scanned page|text page|catalogue page|exhibition poster|plate list|contents page|pdf|djvu|document scan|report cover", re.I)
 # Zero-shot CLIP probes (two-way softmax, so absolute cosine scale does not matter).
 DOC_PAIR = ("a scanned page of printed text, a book cover, or a document",
             "a painting, photograph, map, or illustration")
 MODERN_PAIR = ("a modern colour photograph taken in recent years",
                "an old painting, woodblock print, drawing, or historical black and white photograph")
 GENERIC_WORDS = {"historical", "historic", "history", "photograph", "photo", "illustration", "old",
-                 "image", "images", "panorama", "period", "early", "modern", "contemporary", "of", "the", "and", "in"}
+                 "image", "images", "panorama", "period", "early", "modern", "contemporary", "of", "the", "and", "in", "before", "after", "during", "from", "with", "near"}
 STATS = Counter()          # per-scene rejection counters, reset in resolve_scene_image
 FOUND = Counter()          # candidates discovered per provider
 TOP_REJECTED = []          # a few rejected candidates with reasons
@@ -249,14 +249,20 @@ def build_queries(scene, config=None, limit=6):
     for a, b in zip(short_q + [None] * len(long_q), long_q + [None] * len(short_q)):
         for x in (a, b):
             if x and x not in merged: merged.append(x)
-    return merged[:limit]
+    merged = [q for q in merged if q.split() and q.split()[-1].lower() not in GENERIC_WORDS]
+    # Collapse near-identical variants without discarding the longer, entity-specific query.
+    unique = []
+    for q in merged:
+        norm = _norm(q)
+        if norm and not any(norm == _norm(x) or (len(norm.split()) >= 2 and norm in _norm(x)) for x in unique): unique.append(q)
+    return unique[:limit]
 
 
 def _commons_members(cat, limit=50):
     """Files of a Commons category as candidates (rights and metadata gates applied)."""
     payload=_get("https://commons.wikimedia.org/w/api.php", {"action":"query","format":"json",
       "generator":"categorymembers","gcmtitle":"Category:"+cat.replace("Category:",""),"gcmtype":"file","gcmlimit":limit,
-      "prop":"imageinfo|categories","cllimit":30,"iiprop":"url|extmetadata|size","iiurlwidth":2400})
+      "prop":"imageinfo|categories","cllimit":30,"iiprop":"url|extmetadata|size","iiurlwidth":1920})
     out=[]
     for p in payload.get("query",{}).get("pages",{}).values():
         ii=(p.get("imageinfo") or [{}])[0]; m=ii.get("extmetadata",{})
@@ -770,7 +776,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             _note_reject("present_historical", c, {"p_modern": round(c["_p_modern"], 2)}); continue
         if scene.get("image_type") == "historic" and not scene.get("allow_modern_photo", False) and c["_p_modern"] >= 0.5:
             _note_reject("modern_in_historic", c, {"p_modern": round(c["_p_modern"], 2)}); continue
-        if scene.get("image_type") == "historic" and (lo is not None or hi is not None):
+        if scene.get("image_type") == "historic" and c["_p_modern"] < 0.5 and (lo is not None or hi is not None):
             yr = c.get("year_range")
             if not yr:
                 ys = _years(" ".join([c.get("date_text", ""), c.get("description", ""), c.get("title", "")]))
@@ -781,7 +787,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         survivors.append(c)
     threshold = float(scene.get("clip_min_score", rcfg.get("clip_min_score", 0.22)))
     # Semantic image relevance must dominate metadata keyword frequency. Keyword hits are a discovery filter, not a score bonus.
-    survivors.sort(key=lambda c: c["_score"], reverse=True)
+    survivors.sort(key=lambda c: (c["_p_modern"] < 0.5, c["_score"]), reverse=True) if scene.get("image_type") == "historic" else survivors.sort(key=lambda c: c["_score"], reverse=True)
     top = survivors[:int(rcfg.get("top_candidates", 5))]
     print(f"CLIP candidates for {scene['title']}: " + ", ".join(f"{x['provider']}={x['_score']:.3f}" for x in top))
     winner = next((c for c in top if c["_score"] >= threshold), None)
