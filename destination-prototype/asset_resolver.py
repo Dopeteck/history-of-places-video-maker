@@ -707,6 +707,9 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     required = [str(k) for k in scene.get("required_keywords", [])]
     banned_terms = list(config.get("image_banned_terms", [])) + list(scene.get("banned_keywords", []))
     groups = scene.get("required_keyword_groups", []) or []
+    # Identity groups are hard source-metadata evidence requirements. Every
+    # group must match; CLIP similarity cannot compensate for a wrong subject.
+    identity_groups = scene.get("identity_keyword_groups", []) or []
     soft = str(scene.get("keyword_gate", "hard")).lower() == "soft"
     unique = {}; seen = set()
     for c in candidates:
