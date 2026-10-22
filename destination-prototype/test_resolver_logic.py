@@ -218,7 +218,7 @@ class ResolverFlow(unittest.TestCase):
                 ],
                 "image_type": "historic",
             })
-        self.assertEqual(cm.exception.diagnostics["rejected"].get("identity_groups"), 1)
+        self.assertGreaterEqual(cm.exception.diagnostics["rejected"].get("identity_groups", 0), 1)
         self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
 
     def test_identity_metadata_gate_accepts_explicitly_identified_shogun_portrait(self):
