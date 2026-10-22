@@ -124,7 +124,7 @@ def text_fallback_card(scene,idx,config,asset_dir,error):
   bg=color(config.get("visual_style",{}).get("palette",["warm-ivory"])[0],(242,230,206))
   im=Image.new("RGB",(W0,H0),bg)
   p=asset_dir/f"scene_{idx:02d}_missing.jpg"; im.save(p,quality=94)
-  return im,{"content_sha256":hashlib.sha256(im.tobytes()).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),
+  return im,{"content_sha256":hashlib.sha256(f"missing:{idx}:{scene.get('title','Scene')}".encode("utf-8")).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),
    "title":"NO APPROVED SOURCE IMAGE — "+str(scene.get("title","Scene")),"author":"","license":"","license_url":"","source_url":"",
    "provider":"missing asset","match_score":None,"search_variant":"No candidate passed rights, quality and relevance checks",
    "warnings":[str(error).split(" Diagnostics:")[0]],"diagnostics":_parse_diagnostics(str(error))}
@@ -179,7 +179,7 @@ def _timed(label, started):
  print(f"TIMING {label}: {time.perf_counter()-started:.2f}s", flush=True)
 def main():
  run_started=time.perf_counter()
- ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); a=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); a=ap.parse_args()
  step_started=time.perf_counter()
  cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
  _timed("config_load_and_validate",step_started)
@@ -196,34 +196,52 @@ def main():
  for term in ("pending","placeholder","archival asset"):
   if term in script.lower() or term in cfgpath.read_text(encoding="utf-8").lower(): fail(f"Forbidden placeholder text '{term}' in narration/config")
  media=[]; credits=[]; used=set(); previous_digest=None
- for i,scene in enumerate(cfg["scenes"],1):
+ selected={x.strip() for x in a.only_scenes.split(",") if x.strip()}
+ unknown=selected-{str(x.get("title","")) for x in cfg["scenes"]}
+ if unknown: fail("Unknown --only-scenes title(s): "+", ".join(sorted(unknown)))
+ scene_rows=[(i,sc) for i,sc in enumerate(cfg["scenes"],1) if not selected or sc.get("title") in selected]
+ for i,scene in scene_rows:
   scene_started=time.perf_counter()
-  if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
-  else:
-   local=local_image(scene,i,cfg,used)
-   if local: im,credit=local
-   else:
-    try: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
-    except Exception as resolver_error:
-     print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
-     im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
-  if scene["image_type"]=="modern" and credit.get("provider")!="procedural illustration" and credit.get("period_ok") is not True:
-   # Present-day scenes must be positively identified as a modern photograph by the CLIP period probe.
-   reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
-   if a.visual_review_only:
-    print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
-    im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
-   else:
-    fail(reason)
-  if credit.get("provider")!="fallback text card" and str(credit.get("license","")).lower().find("cc by")>=0 and not str(credit.get("author","")).strip():
-   fail(f"Attribution-required asset has no author: {scene['title']}")
-  credit.setdefault("warnings",[])
-  print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
-  digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
-  if digest in {c.get("content_sha256") for c in credits}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
-  if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
-  credit["content_sha256"]=digest; previous_digest=digest; used.add(digest)
-  media.append((scene,im)); credits.append(credit)
+  try:
+      scene_started=time.perf_counter()
+      if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
+      else:
+       local=local_image(scene,i,cfg,used)
+       if local: im,credit=local
+       else:
+        try: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
+        except Exception as resolver_error:
+         print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
+         im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
+      if scene["image_type"]=="modern" and credit.get("provider")!="procedural illustration" and credit.get("period_ok") is not True:
+       # Present-day scenes must be positively identified as a modern photograph by the CLIP period probe.
+       reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
+       if a.visual_review_only:
+        print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
+        im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
+       else:
+        fail(reason)
+      if credit.get("provider")!="fallback text card" and str(credit.get("license","")).lower().find("cc by")>=0 and not str(credit.get("author","")).strip():
+       fail(f"Attribution-required asset has no author: {scene['title']}")
+      credit.setdefault("warnings",[])
+      print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
+      digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
+      if credit.get("provider") != "missing asset":
+       if digest in {c.get("content_sha256") for c in credits if c.get("provider") != "missing asset"}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
+       if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
+       previous_digest=digest
+      credit["content_sha256"]=digest; used.add(digest)
+      media.append((scene,im)); credits.append(credit)
+  except Exception as scene_error:
+   if not a.visual_review_only: raise
+   print(f"REVIEW SCENE ERROR [{scene.get('title')}]: {type(scene_error).__name__}: {scene_error}",file=sys.stderr)
+   im,credit=text_fallback_card(scene,i,cfg,asset_dir,scene_error)
+   credit.setdefault("diagnostics",{}).setdefault("scene_exception",f"{type(scene_error).__name__}: {scene_error}")
+   credit["content_sha256"]=hashlib.sha256(f"missing:{i}:{scene.get('title','Scene')}".encode("utf-8")).hexdigest()
+   credit.setdefault("warnings",[])
+   media.append((scene,im)); credits.append(credit)
+  finally:
+   print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
  write_approval_board(media,credits,cfg,out)
  if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
  if any(x.get("provider") in ("fallback text card", "procedural illustration", "missing asset") for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene has no approved source image. Replace every missing scene with a verified, rights-cleared, relevant image before final rendering.")
