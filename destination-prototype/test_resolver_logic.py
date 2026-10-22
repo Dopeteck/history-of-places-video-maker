@@ -203,6 +203,40 @@ class ResolverFlow(unittest.TestCase):
                             "image_type": "historic"})
         self.assertEqual(cm.exception.diagnostics["rejected"].get("subject_groups"), 1)
 
+    def test_identity_metadata_gate_rejects_unrelated_image_even_with_high_clip_score(self):
+        items = [cand("Travellers fording the Abe river at Fuchu by Hiroshige", n=92)]
+        self.specs = [(1400, 1000, 92)]
+        self.clips = [{"score": .95, "p_document": .05, "p_modern": .05}]
+        self.setup_provider(items)
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene({
+                "title": "The Shogunate",
+                "required_keywords": ["Hiroshige"],
+                "identity_keyword_groups": [
+                    ["Tokugawa Ieyasu", "徳川家康", "Tokugawa"],
+                    ["portrait", "shogun", "shogunate", "徳川家康"],
+                ],
+                "image_type": "historic",
+            })
+        self.assertEqual(cm.exception.diagnostics["rejected"].get("identity_groups"), 1)
+        self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
+
+    def test_identity_metadata_gate_accepts_explicitly_identified_shogun_portrait(self):
+        items = [cand("Portrait of Tokugawa Ieyasu, Japanese shogun", n=93)]
+        self.specs = [(1400, 1000, 93)]
+        self.clips = [{"score": .31, "p_document": .05, "p_modern": .05}]
+        self.setup_provider(items)
+        _, credit = self.run_scene({
+            "title": "The Shogunate",
+            "required_keywords": ["Tokugawa"],
+            "identity_keyword_groups": [
+                ["Tokugawa Ieyasu", "徳川家康", "Tokugawa"],
+                ["portrait", "shogun", "shogunate", "徳川家康"],
+            ],
+            "image_type": "historic",
+        })
+        self.assertIn("Portrait of Tokugawa Ieyasu", credit["title"])
+
     def test_failure_raises_resolver_error_with_parseable_diagnostics(self):
         items = [cand("Edo castle weak", n=1)]
         self.specs = [(1400, 1000, 1)]; self.clips = [{"score": .05, "p_document": .1, "p_modern": .1}]
