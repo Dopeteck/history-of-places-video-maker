@@ -72,10 +72,9 @@ scenes:
     visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Tokugawa Ieyasu painted portrait", "Tokugawa Ieyasu woodblock portrait"]
     image_search_terms: ["Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
     required_keywords: ["Tokugawa", "Ieyasu", "shogun", "徳川家康", "徳川", "家康"]
-    # Each group is mandatory evidence in the collection record, not a search hint.
+    # The named historical figure must be explicitly identified in source metadata.
     identity_keyword_groups:
-      - ["Tokugawa Ieyasu", "徳川家康", "Tokugawa"]
-      - ["portrait", "shogun", "shogunate", "徳川家康"]
+      - ["Tokugawa Ieyasu", "徳川家康"]
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "Merchants and Canals"
     max_queries: 8
