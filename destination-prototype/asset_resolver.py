@@ -724,6 +724,15 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         matched = m.group(0) if m else _find_term(text, banned_terms)
         if matched: _note_reject("banned_term", c, {"matched": matched}); continue
         hay = _norm(text + " " + " ".join(_as_list(c.get("facets"))))
+        missing_identity = [gi for gi, group in enumerate(identity_groups)
+                            if not any(_kw_hit(str(term), hay) for term in (group if isinstance(group, list) else [group]))]
+        if missing_identity:
+            _note_reject("identity_groups", c, {
+                "missing_group_indexes": missing_identity,
+                "identity_groups": identity_groups,
+                "checked_text": hay[:200],
+            })
+            continue
         hits = sum(1 for k in required if _kw_hit(k, hay))
         c["_hits"] = hits
         if required and hits == 0 and not soft:
