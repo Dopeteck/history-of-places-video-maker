@@ -411,6 +411,16 @@ class TimingAndMap(unittest.TestCase):
 
 
 class ConfigTypes(unittest.TestCase):
+    def test_tokyo_bridge_scenes_have_distinct_subjects(self):
+        cfg = yaml.safe_load((ROOT / "regions" / "tokyo.yaml").read_text(encoding="utf-8"))
+        general = next(s for s in cfg["scenes"] if s["title"] == "Bridges and Waterways")
+        specific = next(s for s in cfg["scenes"] if s["title"] == "Nihonbashi")
+        self.assertNotIn("Edo Castle", general.get("named_entities", []))
+        self.assertTrue(any("bridge" in term.lower() or "waterway" in term.lower()
+                            for term in general["image_search_terms"]))
+        self.assertIn("Nihonbashi", specific["named_entities"])
+        self.assertNotEqual(general["title"], specific["title"])
+
     def test_numeric_keywords_do_not_crash_local_matching(self):
         import render_region_short as rr
         cfg = rr.normalize_config(yaml.safe_load((ROOT / "regions" / "tokyo.yaml").read_text(encoding="utf-8")))
