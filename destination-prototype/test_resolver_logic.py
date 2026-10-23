@@ -382,7 +382,7 @@ class TimingAndMap(unittest.TestCase):
         self.assertTrue(all(d >= 1.5 for d in durs), dict(zip([s["title"] for s in cfg["scenes"]], durs.round(1))))
         # the Nihonbashi scene must begin where Nihonbashi is spoken, not at an even split
         i = [s["title"] for s in cfg["scenes"]].index("Nihonbashi")
-        start = ends[i - 1]; j = timing.find_phrase(words, "Nihonbashi, once a vital bridge")
+        start = ends[i - 1]; j = timing.find_phrase(words, "Nihonbashi was more than a crossing")
         self.assertAlmostEqual(start, wt[j][0], places=3)
 
     def test_vector_map_renders_land_sea_and_labels(self):
@@ -414,8 +414,8 @@ class ConfigTypes(unittest.TestCase):
     def test_numeric_keywords_do_not_crash_local_matching(self):
         import render_region_short as rr
         cfg = rr.normalize_config(yaml.safe_load((ROOT / "regions" / "tokyo.yaml").read_text(encoding="utf-8")))
-        turning = next(s for s in cfg["scenes"] if s["title"] == "The Turning Point")
-        self.assertIn("1868", turning["required_keywords"])
+        turning = next(s for s in cfg["scenes"] if s["title"] == "The Shogunate")
+        self.assertIn("Tokugawa", turning["required_keywords"])
         self.assertTrue(all(isinstance(k, str) for s in cfg["scenes"] for k in s["required_keywords"]))
         # this call raised "'int' object has no attribute 'lower'" before normalisation
         rr.score_candidate("Meiji 1868 print", "", [], turning["required_keywords"])
