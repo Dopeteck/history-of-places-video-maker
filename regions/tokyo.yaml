@@ -119,22 +119,22 @@ scenes:
     max_queries: 8
     max_queries_per_provider: 6
     starts_at: "even while the imperial court"
-    narration_intent: "Contrast the imperial court in Kyoto with Edo's political power."
+    narration_intent: "Contrast Kyoto's historic imperial capital and courtly cityscape with Edo's political power."
     image_type: historic
-    named_entities: ["Kyoto Imperial Palace", "Palace of the Emperor in Kyoto"]
-    visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho", "Palace of the Emperor in Kyoto"]
-    image_search_terms: ["Palais du dairo a Miaco", "Palace of the Emperor in Kyoto 1680", "Kyoto Imperial Palace historical engraving", "Kyoto Imperial Palace", "Kyoto imperial court painting", "Kyoto Gosho old photograph", "Kyoto Gosho before 1868"]
-    required_keywords: [Kyoto, "Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑", "imperial", palace]
+    named_entities: ["Kyoto Imperial Palace", "Kyoto in the 17th century", "Scenes in and around Kyoto"]
+    visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho", "Palace of the Emperor in Kyoto", "Kyoto in the 17th century", "Scenes in and around Kyoto"]
+    image_search_terms: ["Palais du dairo a Miaco", "Palace of the Emperor in Kyoto 1680", "Kyoto Imperial Palace historical engraving", "Kyoto in the 17th century", "Scenes in and around Kyoto early 17th century", "Temples in Eastern Kyoto c. 1600", "Views in and around the City of Kyoto Edo artist", "Kyoto Imperial Palace"]
+    required_keywords: [Kyoto, "Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑", imperial, palace, "17th century", "early 17th century"]
     required_keyword_groups:
-      - ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑"]
-      - ["painting", "woodblock", "print", "engraving", "copper engraving", "etching", "drawing", "illustration", "view", "grounds", "garden", "architecture"]
+      - ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
+      - ["painting", "woodblock", "print", "engraving", "copper engraving", "etching", "drawing", "illustration", "view", "screen", "temples", "cityscape", "17th century", "early 17th century"]
     clip_min_score: 0.32
-    # Require both the named place and palace/court context in source metadata and reject generic group portraits.
+    # Require Kyoto identity plus explicit palace/court OR documented historic Kyoto city artwork; CLIP and period gates still apply.
     identity_keyword_groups:
-      - ["Kyoto", "京都"]
-      - ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所"]
+      - ["Kyoto", "京都", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
+      - ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
     max_year: 1867
-    banned_keywords: [Omuro, "Ninna-ji", "book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster"]
+    banned_keywords: [Omuro, "Ninna-ji", "book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "catalogue page", "exhibition poster"]
   - title: "The Turning Point"
     max_queries: 8
     max_queries_per_provider: 6
