@@ -53,7 +53,6 @@ scenes:
     image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
     required_keywords: [Tokyo, Edo, Japan]
   - title: "A Bridge Through Edo"
-    starts_at: "The city grew through its waterways"
     narration_intent: "Show an Edo-period bridge and waterway as a grounded view of how people and goods moved through the city."
     image_type: historic
     named_entities: ["Edo Castle"]
