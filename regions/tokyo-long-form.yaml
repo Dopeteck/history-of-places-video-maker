@@ -1,0 +1,260 @@
+name: Tokyo: From Edo to a World City
+slug: tokyo-long-form-pilot
+country: Japan
+narration_language: English
+story:
+  narration_language: English
+  narration: >-
+    Before Tokyo became one of the world’s largest cities, it was known as Edo,
+    a settlement beside the waters and inlets of eastern Japan. Its location
+    connected local routes, fishing communities, and the broad plain around
+    what would become the capital. The story of Tokyo is not a simple tale of
+    one city suddenly appearing. It is a sequence of political choices,
+    commercial growth, cultural invention, and repeated rebuilding.
+
+    In 1603, Tokugawa Ieyasu established his shogunate in Edo. The emperor and
+    imperial court remained in Kyoto, while Edo became the centre of the
+    shogun’s military government. Lords from across Japan were drawn into a
+    political system that helped make Edo a major administrative city. Roads,
+    waterways, bridges, and markets connected the growing settlement. By the
+    eighteenth century, Edo had become a huge urban centre, supported by
+    merchants, craftsmen, servants, performers, and travellers.
+
+    Daily life gave Edo its distinctive character. Boats moved goods through
+    canals and rivers; bridges joined crowded districts; shops and workshops
+    served residents whose work sustained the city. Woodblock prints carried
+    views of streets, theatres, famous places, and changing seasons far beyond
+    the people who could visit them. Artists such as Utagawa Hiroshige made
+    landscapes and journeys part of a shared visual imagination. These images
+    are not photographs, but they preserve details of how artists represented
+    the city and its surroundings.
+
+    The city’s history also survives in places that invite a slower look.
+    Traditional gardens preserve carefully composed landscapes, while the
+    Nihonbashi area recalls the importance of bridges, merchants, and national
+    travel routes. Nihonbashi Bridge was established in the early Tokugawa
+    period and became a key reference point for major roads. Such landmarks
+    help connect the everyday city to wider networks of trade and movement.
+
+    In 1868, amid the political transformation known as the Meiji Restoration,
+    Edo was renamed Tokyo. The imperial court moved from Kyoto, and the city
+    entered a new era of institutions, infrastructure, and urban change. Fires,
+    earthquakes, war, and reconstruction repeatedly altered its appearance.
+    Modern towers and rail lines now rise above a landscape still shaped by
+    older routes, gardens, and memories. Tokyo is not one preserved historical
+    scene; it is a layered city, where each era has left traces for the next.
+chapters:
+  - title: Before Tokyo
+    narration: >-
+      Before Tokyo became one of the world’s largest cities, it was known as Edo,
+      a settlement beside the waters and inlets of eastern Japan. Its location
+      connected local routes, fishing communities, and the broad plain around
+      what would become the capital. The story of Tokyo is not a simple tale of
+      one city suddenly appearing. It is a sequence of political choices,
+      commercial growth, cultural invention, and repeated rebuilding.
+  - title: The Shogun’s City
+    narration: >-
+      In 1603, Tokugawa Ieyasu established his shogunate in Edo. The emperor and
+      imperial court remained in Kyoto, while Edo became the centre of the
+      shogun’s military government. Lords from across Japan were drawn into a
+      political system that helped make Edo a major administrative city. Roads,
+      waterways, bridges, and markets connected the growing settlement. By the
+      eighteenth century, Edo had become a huge urban centre, supported by
+      merchants, craftsmen, servants, performers, and travellers.
+  - title: Streets, Canals, and Prints
+    narration: >-
+      Daily life gave Edo its distinctive character. Boats moved goods through
+      canals and rivers; bridges joined crowded districts; shops and workshops
+      served residents whose work sustained the city. Woodblock prints carried
+      views of streets, theatres, famous places, and changing seasons far beyond
+      the people who could visit them. Artists such as Utagawa Hiroshige made
+      landscapes and journeys part of a shared visual imagination. These images
+      are not photographs, but they preserve details of how artists represented
+      the city and its surroundings.
+  - title: From Edo to Tokyo
+    narration: >-
+      The city’s history also survives in places that invite a slower look.
+      Traditional gardens preserve carefully composed landscapes, while the
+      Nihonbashi area recalls the importance of bridges, merchants, and national
+      travel routes. Nihonbashi Bridge was established in the early Tokugawa
+      period and became a key reference point for major roads. Such landmarks
+      help connect the everyday city to wider networks of trade and movement.
+      In 1868, amid the political transformation known as the Meiji Restoration,
+      Edo was renamed Tokyo. The imperial court moved from Kyoto, and the city
+      entered a new era of institutions, infrastructure, and urban change. Fires,
+      earthquakes, war, and reconstruction repeatedly altered its appearance.
+      Modern towers and rail lines now rise above a landscape still shaped by
+      older routes, gardens, and memories. Tokyo is not one preserved historical
+      scene; it is a layered city, where each era has left traces for the next.
+claim_sources:
+  "Edo was the name used before Tokyo":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+    - https://www.gotokyo.org/en/see-and-do/history/index.html
+  "Tokugawa Ieyasu established the shogunate in Edo in 1603":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+    - https://www.gotokyo.org/en/see-and-do/history/index.html
+  "The imperial court remained in Kyoto before the Meiji Restoration":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+  "Edo grew into a major urban and commercial centre":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+    - https://www.ndl.go.jp/landmarks/e/
+  "Woodblock prints depicted Edo streets, landscapes, and culture":
+    - https://www.ndl.go.jp/landmarks/e/
+    - https://www.gotokyo.org/en/see-and-do/history/index.html
+  "Nihonbashi became an important bridge and road reference point":
+    - https://www.gotokyo.org/en/see-and-do/history/index.html
+    - https://www.nihonbashi-tokyo.jp/en/revitalization/history/
+  "Edo was renamed Tokyo in 1868":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+  "Modern Tokyo has been shaped by repeated rebuilding":
+    - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+sources:
+  - https://www.english.metro.tokyo.lg.jp/w/000-101-007591
+  - https://www.gotokyo.org/en/see-and-do/history/index.html
+  - https://www.ndl.go.jp/landmarks/e/
+  - https://www.nihonbashi-tokyo.jp/en/revitalization/history/
+visual_style:
+  palette: [deep-indigo, warm-ivory, vermilion]
+  accent_color: "#CC5533"
+  music_mood: "reflective Japanese plucked strings"
+scenes:
+  - title: Eastern Japan
+    chapter: Before Tokyo
+    image_type: map
+    narration_intent: Locate Edo on the eastern side of Japan and establish the geographic setting.
+    image_search_terms: ["Japan east coast historical map", "Kanto plain Japan map", "Tokyo Bay Japan map"]
+    required_keywords: ["Japan", "map"]
+    banned_keywords: ["fantasy", "fictional"]
+  - title: Edo Before the Capital
+    chapter: Before Tokyo
+    image_type: historic
+    narration_intent: Show an historically grounded view of Edo before its later growth.
+    image_search_terms: ["Edo Japan historical view", "Edo period early city print", "old Edo settlement illustration ukiyo-e"]
+    required_keywords: ["Edo", "Japan"]
+    banned_keywords: ["modern skyline", "Cleveland", "Lake Biwa"]
+  - title: Rivers and Inlets
+    chapter: Before Tokyo
+    image_type: historic
+    narration_intent: Illustrate the waterways and coastal setting that shaped movement around Edo.
+    image_search_terms: ["Edo river ukiyo-e", "Edo canal historical print", "Tokyo Bay Edo period print"]
+    required_keywords: ["Edo", "river"]
+    banned_keywords: ["modern marina", "fantasy"]
+  - title: The Kanto Plain
+    chapter: Before Tokyo
+    image_type: map
+    narration_intent: Show the broader plain and regional connections around the city.
+    image_search_terms: ["Kanto region topographic map", "Kanto plain historical map", "Tokyo region relief map"]
+    required_keywords: ["Kanto", "map"]
+    banned_keywords: ["fictional map"]
+  - title: Tokugawa Ieyasu
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Show a sourced historical portrait of Tokugawa Ieyasu.
+    image_search_terms: ["Tokugawa Ieyasu portrait museum", "Tokugawa Ieyasu historical portrait", "Tokugawa Ieyasu Japanese painting"]
+    required_keywords: ["Tokugawa Ieyasu"]
+    banned_keywords: ["modern actor", "cosplay"]
+  - title: Edo Castle
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Depict Edo Castle or a documented historical representation of it.
+    image_search_terms: ["Edo Castle historical painting", "Edo Castle old Japanese print", "Edo Castle historical map"]
+    required_keywords: ["Edo Castle"]
+    banned_keywords: ["Osaka Castle", "Himeji Castle"]
+  - title: The Shogunate
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Show a documented Tokugawa-era political or ceremonial scene.
+    image_search_terms: ["Tokugawa shogunate historical painting", "Edo period daimyo procession", "Tokugawa era samurai procession ukiyo-e"]
+    required_keywords: ["Edo period"]
+    banned_keywords: ["modern costume", "Cleveland"]
+  - title: Roads into Edo
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Illustrate travel routes and movement into the growing city.
+    image_search_terms: ["Edo period road ukiyo-e", "Tokaido road historical print", "Edo period travelers road painting"]
+    required_keywords: ["Edo period"]
+    banned_keywords: ["modern highway", "motorway"]
+  - title: Boats and Trade
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Show boats transporting goods through Edo's waterways.
+    image_search_terms: ["Edo period canal boats ukiyo-e", "Edo river transport historical print", "Edo merchant boats painting"]
+    required_keywords: ["Edo"]
+    banned_keywords: ["modern cargo ship"]
+  - title: Merchants and Workshops
+    chapter: The Shogun’s City
+    image_type: historic
+    narration_intent: Show commerce and craft work in Edo with a period-appropriate source.
+    image_search_terms: ["Edo period merchant shop print", "Edo craftsman workshop ukiyo-e", "Edo merchant district historical illustration"]
+    required_keywords: ["Edo period"]
+    banned_keywords: ["modern shop", "office"]
+  - title: Bridges and Canals
+    chapter: Streets, Canals, and Prints
+    image_type: historic
+    narration_intent: Show a documented Edo-era bridge and waterway scene distinct from Nihonbashi.
+    image_search_terms: ["Edo period bridge canal ukiyo-e", "Edo waterways historical print", "Edo river bridge Japanese woodblock"]
+    required_keywords: ["Edo", "bridge"]
+    banned_keywords: ["Nihonbashi", "modern skyline"]
+  - title: Streets of Edo
+    chapter: Streets, Canals, and Prints
+    image_type: historic
+    narration_intent: Depict street life in Edo from a period source.
+    image_search_terms: ["Edo period street scene ukiyo-e", "Edo city street historical print", "Edo merchants street Japanese woodblock"]
+    required_keywords: ["Edo"]
+    banned_keywords: ["modern street"]
+  - title: The Theatre District
+    chapter: Streets, Canals, and Prints
+    image_type: historic
+    narration_intent: Illustrate Edo's theatre and entertainment culture.
+    image_search_terms: ["Edo kabuki theatre ukiyo-e", "Edo period kabuki district print", "Edo theatre historical woodblock"]
+    required_keywords: ["Edo", "theatre"]
+    banned_keywords: ["modern stage", "anime"]
+  - title: Hiroshige’s Edo
+    chapter: Streets, Canals, and Prints
+    image_type: historic
+    narration_intent: Show a verified work by Utagawa Hiroshige that depicts Edo or a relevant route.
+    image_search_terms: ["Hiroshige Edo famous places print", "Utagawa Hiroshige Edo city view", "Hiroshige One Hundred Famous Views of Edo"]
+    required_keywords: ["Hiroshige"]
+    banned_keywords: ["Kai Province", "monkey bridge", "Cleveland"]
+  - title: A City in Prints
+    chapter: Streets, Canals, and Prints
+    image_type: historic
+    narration_intent: Show a historical woodblock print depicting urban life, not an unrelated artist or place.
+    image_search_terms: ["Edo urban life woodblock print", "Edo period cityscape ukiyo-e", "Edo people street scene woodblock"]
+    required_keywords: ["Edo"]
+    banned_keywords: ["Lady Murasaki", "Lake Biwa"]
+  - title: Garden Paths
+    chapter: From Edo to Tokyo
+    image_type: modern
+    narration_intent: Show a real present-day historic Japanese garden with verified modern photo provenance.
+    image_search_terms: ["Koishikawa Korakuen garden Tokyo", "Rikugien garden Tokyo pond", "Tokyo historic Japanese garden photograph"]
+    required_keywords: ["garden", "Tokyo"]
+    banned_keywords: ["office", "event banner", "Geekcon"]
+  - title: Nihonbashi
+    chapter: From Edo to Tokyo
+    image_type: historic
+    narration_intent: Show the historically documented Nihonbashi bridge or a relevant period depiction.
+    image_search_terms: ["Nihonbashi bridge Hiroshige print", "Edo period Nihonbashi historical woodblock", "Nihonbashi Edo historical painting"]
+    required_keywords: ["Nihonbashi"]
+    banned_keywords: ["cherry blossoms modern", "Cleveland"]
+  - title: Edo Becomes Tokyo
+    chapter: From Edo to Tokyo
+    image_type: historic
+    narration_intent: Illustrate the 1868 transition with an historically relevant source, not an unrelated province landscape.
+    image_search_terms: ["Edo renamed Tokyo 1868 historical print", "Meiji Restoration Tokyo historical image", "early Meiji Tokyo historical photograph"]
+    required_keywords: ["Tokyo", "Meiji"]
+    banned_keywords: ["Kai Province", "monkey bridge", "Cleveland"]
+  - title: Tokyo’s Modern Skyline
+    chapter: From Edo to Tokyo
+    image_type: modern
+    narration_intent: Show a verified current Tokyo skyline photograph.
+    image_search_terms: ["Tokyo skyline modern photograph", "Tokyo Skytree skyline city photo", "Tokyo city skyline from above"]
+    required_keywords: ["Tokyo"]
+    banned_keywords: ["Cleveland", "Lake Biwa", "illustration"]
+  - title: Layers of Memory
+    chapter: From Edo to Tokyo
+    image_type: modern
+    narration_intent: Close on a real modern Tokyo street or landmark that visibly coexists with older urban history.
+    image_search_terms: ["Tokyo old street modern city photograph", "Tokyo historic district modern streets", "Tokyo city historic and modern architecture photo"]
+    required_keywords: ["Tokyo"]
+    banned_keywords: ["office event", "text banner", "illustration"]
