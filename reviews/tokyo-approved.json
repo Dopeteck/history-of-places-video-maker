@@ -1,0 +1,32 @@
+{
+  "region": "tokyo",
+  "approved": true,
+  "reviewer": "Source-checked for this render; visual selection approved by user",
+  "reviewed_at": "2026-10-23",
+  "claim_sources": {
+    "Edo became a major political centre under Tokugawa rule": [
+      "https://www.english.metro.tokyo.lg.jp/w/000-101-007591",
+      "https://www.gotokyo.org/en/see-and-do/history/index.html"
+    ],
+    "The shogunate was established in 1603": [
+      "https://www.english.metro.tokyo.lg.jp/w/000-101-007591",
+      "https://www.gotokyo.org/en/see-and-do/history/index.html"
+    ],
+    "Edo developed a rich merchant, canal, print and theatre culture": [
+      "https://www.ndl.go.jp/landmarks/e/",
+      "https://www.gotokyo.org/en/see-and-do/history/index.html",
+      "https://www.nihonbashi-tokyo.jp/en/revitalization/history/"
+    ],
+    "The imperial court remained in Kyoto before the Meiji Restoration": [
+      "https://www.english.metro.tokyo.lg.jp/w/000-101-007591"
+    ],
+    "Edo became Tokyo during the 1868 political transition": [
+      "https://www.english.metro.tokyo.lg.jp/w/000-101-007591",
+      "https://www.jacar.go.jp/english/"
+    ],
+    "Nihonbashi was a key bridge and starting point for major roads": [
+      "https://www.gotokyo.org/en/see-and-do/history/index.html",
+      "https://www.nihonbashi-tokyo.jp/en/revitalization/history/"
+    ]
+  }
+}
