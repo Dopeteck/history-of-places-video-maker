@@ -147,7 +147,7 @@ jobs:
           print("CLIP smoke test passed:", r)
           PY
       - name: Render visual approval board (no audio / not publishable)
-        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || (github.event_name == 'push' && (contains(github.event.head_commit.modified, 'regions/tokyo.yaml') || contains(github.event.head_commit.modified, '.github/workflows/region-history-shorts.yml')))
+        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
@@ -159,7 +159,7 @@ jobs:
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
         run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
       - name: Upload reviewable region outputs
-        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || (github.event_name == 'push' && contains(github.event.head_commit.modified, 'regions/tokyo.yaml')))
+        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
         with:
           name: region-review-${{ inputs.region || 'tokyo' }}-${{ github.run_id }}
