@@ -52,13 +52,15 @@ scenes:
     image_type: map
     image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
     required_keywords: [Tokyo, Edo, Japan]
-  - title: "A Bridge Through Edo"
-    narration_intent: "Show an Edo-period bridge and waterway as a grounded view of how people and goods moved through the city."
+  - title: "Bridges and Waterways"
+    narration_intent: "Show an Edo-period bridge, canal, or river crossing to illustrate how boats and bridges connected busy neighborhoods; do not require the specific Nihonbashi landmark."
     image_type: historic
-    named_entities: ["Edo Castle"]
-    visual_tags: ["Edo Castle keep", "Edo Castle Tokyo"]
-    image_search_terms: ["Nihonbashi in Edo Hokusai", "Edo Nihonbashi bridge woodblock print", "Edo period bridge canal city"]
-    required_keywords: [Edo, 江戸, Nihonbashi, bridge, 日本橋]
+    visual_tags: ["Edo period bridge over canal", "Edo river crossing with boats", "Edo city waterway woodblock print"]
+    image_search_terms: ["Edo period bridge canal woodblock print", "Edo river crossing boats historical print", "Edo city waterways bridge ukiyo-e", "Edo bridge daily life print"]
+    required_keywords: [Edo, 江戸, bridge, 橋, canal, waterway]
+    required_keyword_groups:
+      - [bridge, bridges, 橋, crossing]
+      - [Edo, 江戸, Edo period]
     allow_modern_photo: false
     banned_keywords: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster"]
   - title: "The Shogunate"
