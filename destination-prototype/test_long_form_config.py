@@ -1,4 +1,3 @@
-import copy
 import unittest
 
 from long_form_config import LongFormConfigError, validate_long_form_config
@@ -7,7 +6,7 @@ from long_form_config import LongFormConfigError, validate_long_form_config
 class LongFormConfigTests(unittest.TestCase):
     def valid_config(self):
         chapter_texts = [
-            " ".join([f"Chapter{i} tells the history of this place and its people."] * 22)
+            " ".join([f"Chapter{i} tells the history of this place and its people."] * 10)
             for i in range(1, 5)
         ]
         narration = " ".join(chapter_texts)
