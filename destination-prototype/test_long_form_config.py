@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+import yaml
 
 from long_form_config import LongFormConfigError, validate_long_form_config
 
@@ -36,6 +38,15 @@ class LongFormConfigTests(unittest.TestCase):
                 for i in range(1, 6)
             },
         }
+
+    def test_real_tokyo_long_form_config(self):
+        config_path = Path(__file__).resolve().parents[1] / "regions" / "tokyo-long-form.yaml"
+        cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        result = validate_long_form_config(cfg)
+        self.assertEqual(result["scene_count"], 20)
+        self.assertEqual(result["chapter_count"], 4)
+        self.assertGreaterEqual(result["word_count"], 350)
+        self.assertLessEqual(result["word_count"], 500)
 
     def test_valid_three_minute_pilot_config(self):
         result = validate_long_form_config(self.valid_config())
