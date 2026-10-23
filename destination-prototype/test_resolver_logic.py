@@ -244,6 +244,31 @@ class ResolverFlow(unittest.TestCase):
         self.assertGreaterEqual(cm.exception.diagnostics["rejected"].get("subject_groups", 0), 1)
         self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
 
+    def test_kyoto_scene_accepts_historically_identified_1680_palace_engraving(self):
+        item = cand("File:Jacob van Meurs - Palais du dairo a Miaco - Palace of the Emperor in Kyoto - 1680.jpg", n=95)
+        item["description"] = "Copper engraving of the palace of the Japanese emperor in Kyoto by Jacob van Meurs"
+        item["date_text"] = "1680"
+        items = [item]
+        self.specs = [(1600, 1200, 95)]
+        self.clips = [{"score": .35, "p_document": .05, "p_modern": .05}]
+        self.setup_provider(items)
+        _, credit = self.run_scene({
+            "title": "Kyoto and Edo",
+            "required_keywords": ["Kyoto", "imperial", "palace"],
+            "required_keyword_groups": [
+                ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "Palace of the Emperor in Kyoto", "京都御所"],
+                ["painting", "woodblock", "print", "engraving", "copper engraving", "etching", "drawing", "illustration", "view", "grounds", "garden", "architecture"],
+            ],
+            "identity_keyword_groups": [
+                ["Kyoto", "京都"],
+                ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所"],
+            ],
+            "image_type": "historic",
+            "max_year": 1867,
+            "clip_min_score": .32,
+        })
+        self.assertIn("Palace of the Emperor in Kyoto", credit["title"])
+
     def test_identity_metadata_gate_accepts_explicitly_identified_shogun_portrait(self):
         items = [cand("Portrait of Tokugawa Ieyasu, Japanese shogun", n=93)]
         self.specs = [(1400, 1000, 93)]
