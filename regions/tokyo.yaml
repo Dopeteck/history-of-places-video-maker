@@ -53,7 +53,7 @@ scenes:
     image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
     required_keywords: [Tokyo, Edo, Japan]
   - title: "A Bridge Through Edo"
-    starts_at: "A map places it"
+    starts_at: "The city grew through its waterways"
     narration_intent: "Show an Edo-period bridge and waterway as a grounded view of how people and goods moved through the city."
     image_type: historic
     named_entities: ["Edo Castle"]
@@ -81,7 +81,7 @@ scenes:
   - title: "Merchants and Canals"
     max_queries: 8
     max_queries_per_provider: 6
-    starts_at: "Merchants filled"
+    starts_at: "The city grew through its waterways"
     narration_intent: "Show the commerce, waterways, boats and daily life that made Edo thrive."
     image_type: historic
     named_entities: ["Hiroshige"]
@@ -92,7 +92,7 @@ scenes:
       - [canal, canals, boat, boats, river, waterway]
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "A City of Culture"
-    starts_at: "and artists turned"
+    starts_at: "Artists recorded these streets"
     narration_intent: "Show an Edo-period woodblock print as evidence of how artists recorded everyday places and scenes."
     image_type: historic
     named_entities: ["Utagawa Hiroshige", "ukiyo-e"]
@@ -104,7 +104,7 @@ scenes:
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list", collage, montage]
   - title: "A Great City"
     max_queries: 8
-    starts_at: "By the eighteenth century"
+    starts_at: "Panoramic views suggest"
     narration_intent: "Use a panoramic historical view to convey the scale of Edo, without claiming the image depicts every part of the city."
     image_type: historic
     named_entities: ["Edo"]
