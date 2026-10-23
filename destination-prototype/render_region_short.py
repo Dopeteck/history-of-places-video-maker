@@ -107,8 +107,12 @@ def local_image(scene,idx,config,used):
    if match<=0 or not allowed(lic,licurl) or not source.startswith("https://") or not licurl.startswith("https://"): continue
    if banned(title+" "+desc+" "+" ".join(rec.get("categories",[])),config.get("image_banned_terms",[])+scene.get("banned_keywords",[])): continue
    im=Image.open(p).convert("RGB")
-   if min(im.size)<1080 or hashlib.sha256(p.read_bytes()).hexdigest() in used: continue
-   digest=hashlib.sha256(p.read_bytes()).hexdigest(); used.add(digest)
+   if min(im.size)<1080: continue
+   # Use decoded RGB pixels for identity, matching the online resolver. File-byte
+   # hashes differ when the same photograph is re-encoded as JPEG/PNG.
+   digest=hashlib.sha256(im.tobytes()).hexdigest()
+   if digest in used or source in used: continue
+   used.add(digest); used.add(source)
    return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"license_url":licurl,"source_url":source,"match_score":match,"period_ok":True if str(rec.get("period","")).lower()=="modern" else None,"search_variant":"repository manifest (preferred local still)","warnings":[]}
  return None
 def make_map(scene,idx,config,asset_dir):
