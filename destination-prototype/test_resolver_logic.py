@@ -411,6 +411,16 @@ class TimingAndMap(unittest.TestCase):
 
 
 class ConfigTypes(unittest.TestCase):
+    def test_commons_public_domain_items_get_a_nonempty_rights_reference(self):
+        import asset_resolver as ar
+        item = ar._candidate(
+            "Wikimedia Commons", "Historic portrait", "Portrait", "https://example.org/image.jpg",
+            "https://commons.wikimedia.org/wiki/File:Historic_portrait.jpg", "Public domain", "",
+            author="Unknown"
+        )
+        self.assertIsNotNone(item)
+        self.assertIn("Commons:Public_domain", item["rights_url"])
+
     def test_tokyo_bridge_scenes_have_distinct_subjects(self):
         cfg = yaml.safe_load((ROOT / "regions" / "tokyo.yaml").read_text(encoding="utf-8"))
         general = next(s for s in cfg["scenes"] if s["title"] == "Bridges and Waterways")
