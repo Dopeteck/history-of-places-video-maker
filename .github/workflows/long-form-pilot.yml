@@ -1,0 +1,36 @@
+name: Long-form history pilot checks
+
+on:
+  push:
+    branches:
+      - feature/long-form-history-pilot
+    paths:
+      - 'destination-prototype/long_form_config.py'
+      - 'destination-prototype/test_long_form_config.py'
+      - '.github/workflows/long-form-pilot.yml'
+      - 'LONG-FORM-PILOT.md'
+  pull_request:
+    paths:
+      - 'destination-prototype/long_form_config.py'
+      - 'destination-prototype/test_long_form_config.py'
+      - '.github/workflows/long-form-pilot.yml'
+      - 'LONG-FORM-PILOT.md'
+
+permissions:
+  contents: read
+
+jobs:
+  long-form-config-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile and test isolated long-form validator
+        run: |
+          python -m py_compile destination-prototype/long_form_config.py destination-prototype/test_long_form_config.py
+          cd destination-prototype
+          python -m unittest -v test_long_form_config.py
