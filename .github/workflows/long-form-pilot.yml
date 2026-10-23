@@ -7,6 +7,8 @@ on:
     paths:
       - 'destination-prototype/long_form_config.py'
       - 'destination-prototype/test_long_form_config.py'
+      - 'destination-prototype/render_long_form.py'
+      - 'regions/tokyo-long-form.yaml'
       - '.github/workflows/long-form-pilot.yml'
       - 'LONG-FORM-PILOT.md'
   pull_request:
@@ -31,6 +33,7 @@ jobs:
           python-version: '3.11'
       - name: Compile and test isolated long-form validator
         run: |
-          python -m py_compile destination-prototype/long_form_config.py destination-prototype/test_long_form_config.py
+          python -m pip install --disable-pip-version-check pyyaml
+          python -m py_compile destination-prototype/long_form_config.py destination-prototype/test_long_form_config.py destination-prototype/render_long_form.py
           cd destination-prototype
           python -m unittest -v test_long_form_config.py
