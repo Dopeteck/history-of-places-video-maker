@@ -147,7 +147,7 @@ jobs:
           print("CLIP smoke test passed:", r)
           PY
       - name: Render visual approval board (no audio / not publishable)
-        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || (github.event_name == 'push' && contains(github.event.head_commit.modified, 'regions/tokyo.yaml'))
+        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || (github.event_name == 'push' && (contains(github.event.head_commit.modified, 'regions/tokyo.yaml') || contains(github.event.head_commit.modified, '.github/workflows/region-history-shorts.yml')))
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
