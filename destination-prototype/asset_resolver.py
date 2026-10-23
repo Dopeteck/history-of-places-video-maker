@@ -174,6 +174,11 @@ def _candidate(provider, title, description, image_url, source_url, rights, righ
     title, description, author, rights = _clean(title), _clean(description), _clean(author), _clean(rights)
     image_url, source_url = _https(image_url), _https(source_url)
     rights_url = _https(rights_url) if str(rights_url or "").startswith(("http://", "//")) else str(rights_url or "")
+    # Commons sometimes supplies an explicit Public domain rights statement but
+    # leaves LicenseUrl empty. Preserve the item page as source_url and provide
+    # a real Commons public-domain guidance URL rather than an empty license link.
+    if not rights_url and str(provider).lower() == "wikimedia commons" and "public domain" in rights.lower():
+        rights_url = "https://commons.wikimedia.org/wiki/Commons:Public_domain"
     identifier = str(identifier or "")
     if not title:
         STATS["no_title"] += 1; return None
