@@ -15,7 +15,7 @@ period_focus: "Edo to Tokyo, 1603 to the present"
 story:
   hook: "Tokyo was once a different city with a different name: Edo."
   closing_tip: "Visit Nihonbashi and a nearby garden, then look for Edo’s street pattern beneath modern Tokyo."
-  narration: "Tokyo was once known as Edo, a castle town that changed Japan’s future. In 1603, Tokugawa Ieyasu established his shogunate here, and Edo grew into a powerful political center. Merchants filled its streets, boats moved goods along canals, and artists turned everyday life into celebrated woodblock prints. By the eighteenth century, Edo was one of the world’s great cities, even while the imperial court remained in Kyoto. Then came 1868: the shogunate ended, the emperor’s government moved east, and Edo became Tokyo, the eastern capital. Fires, earthquakes, and war transformed the city, but its older story never disappeared completely. Look closely at gardens, temple grounds, street plans, and Nihonbashi, once a vital bridge for journeys across Japan. Today, Tokyo layers modern towers over centuries of history. Choose one historic district, walk slowly, and let the old city emerge between the new."
+  narration: "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridges connected busy neighborhoods. Artists recorded these streets and canals in woodblock prints, making everyday Edo part of Japan’s visual memory. Panoramic views suggest how large the city became, though no single image can capture its whole past. Some traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes offer a quieter link to earlier eras. Nihonbashi was more than a crossing; it became a key starting point for roads across the country. Edo later took the name Tokyo, and today towers rise above a city still layered with older routes, gardens, and memories."
 sources:
   - https://en.wikipedia.org/wiki/Tokyo
   - https://en.wikipedia.org/wiki/Edo
@@ -52,15 +52,15 @@ scenes:
     image_type: map
     image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
     required_keywords: [Tokyo, Edo, Japan]
-  - title: "The Castle Town"
-    starts_at: "a castle town that changed"
-    narration_intent: "Explain how Edo Castle and its surrounding town shaped Edo's growth."
+  - title: "A Bridge Through Edo"
+    starts_at: "A map places it"
+    narration_intent: "Show an Edo-period bridge and waterway as a grounded view of how people and goods moved through the city."
     image_type: historic
     named_entities: ["Edo Castle"]
     visual_tags: ["Edo Castle keep", "Edo Castle Tokyo"]
-    image_search_terms: ["Edo Castle", "Edo Castle old photograph", "Tokyo Imperial Palace Edo Castle"]
-    required_keywords: [Edo, 江戸, castle, "Edo Castle", 江戸城]
-    allow_modern_photo: true
+    image_search_terms: ["Nihonbashi in Edo Hokusai", "Edo Nihonbashi bridge woodblock print", "Edo period bridge canal city"]
+    required_keywords: [Edo, 江戸, Nihonbashi, bridge, 日本橋]
+    allow_modern_photo: false
     banned_keywords: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster"]
   - title: "The Shogunate"
     max_queries: 8
@@ -93,7 +93,7 @@ scenes:
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "A City of Culture"
     starts_at: "and artists turned"
-    narration_intent: "Highlight ukiyo-e woodblock prints, theatre, and popular urban culture."
+    narration_intent: "Show an Edo-period woodblock print as evidence of how artists recorded everyday places and scenes."
     image_type: historic
     named_entities: ["Utagawa Hiroshige", "ukiyo-e"]
     visual_tags: ["Famous Views of Edo", "ukiyo-e Edo"]
@@ -105,7 +105,7 @@ scenes:
   - title: "A Great City"
     max_queries: 8
     starts_at: "By the eighteenth century"
-    narration_intent: "Show Edo as a vast eighteenth-century city, one of the largest in the world."
+    narration_intent: "Use a panoramic historical view to convey the scale of Edo, without claiming the image depicts every part of the city."
     image_type: historic
     named_entities: ["Edo"]
     visual_tags: ["Edo panorama", "Edo bird's-eye view"]
@@ -115,53 +115,8 @@ scenes:
       - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
       - [Edo, Tokyo, cityscape, city view, capital]
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "Kyoto and Edo"
-    max_queries: 8
-    max_queries_per_provider: 6
-    starts_at: "even while the imperial court"
-    narration_intent: "Contrast Kyoto's historic imperial capital and courtly cityscape with Edo's political power."
-    image_type: historic
-    named_entities: ["Kyoto Imperial Palace", "Kyoto in the 17th century", "Scenes in and around Kyoto"]
-    visual_tags: ["Kyoto Imperial Palace", "Kyoto Gosho", "Palace of the Emperor in Kyoto", "Kyoto in the 17th century", "Scenes in and around Kyoto"]
-    image_search_terms: ["Palais du dairo a Miaco", "Palace of the Emperor in Kyoto 1680", "Kyoto Imperial Palace historical engraving", "Kyoto in the 17th century", "Scenes in and around Kyoto early 17th century", "Temples in Eastern Kyoto c. 1600", "Views in and around the City of Kyoto Edo artist", "Kyoto Imperial Palace"]
-    required_keywords: [Kyoto, "Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "京都御所", "京都御苑", imperial, palace, "17th century", "early 17th century"]
-    required_keyword_groups:
-      - ["Kyoto Gosho", "Kyoto Imperial Palace", "Kyoto Imperial", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
-      - ["painting", "woodblock", "print", "engraving", "copper engraving", "etching", "drawing", "illustration", "view", "screen", "temples", "cityscape", "17th century", "early 17th century"]
-    clip_min_score: 0.32
-    # Require Kyoto identity plus explicit palace/court OR documented historic Kyoto city artwork; CLIP and period gates still apply.
-    identity_keyword_groups:
-      - ["Kyoto", "京都", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
-      - ["imperial palace", "Kyoto Gosho", "Kyoto Imperial Palace", "Palace of the Emperor in Kyoto", "Palais du dairo a Miaco", "京都御所", "Kyoto in the 17th century", "Scenes in and around Kyoto", "Temples in Eastern Kyoto", "Views in and around the City of Kyoto", "Rakuchu Rakugai-zu"]
-    max_year: 1867
-    banned_keywords: [Omuro, "Ninna-ji", "book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "catalogue page", "exhibition poster"]
-  - title: "The Turning Point"
-    max_queries: 8
-    max_queries_per_provider: 6
-    starts_at: "Then came 1868"
-    narration_intent: "Describe the 1868 political transition that ended shogunate rule."
-    image_type: historic
-    named_entities: ["Meiji Restoration"]
-    visual_tags: ["Meiji Restoration 1868", "Tokugawa Yoshinobu"]
-    image_search_terms: ["Meiji Restoration", "Meiji Restoration 1868", "Boshin War", "Tokugawa Yoshinobu surrender", "Meiji Restoration historical woodblock print", "Tokugawa Yoshinobu portrait 1868", "Battle of Toba Fushimi woodblock print"]
-    required_keywords: ["Meiji", "1868", "Restoration", "Yoshinobu", "Boshin"]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list", statement]
-  - title: "Edo Becomes Tokyo"
-    max_queries: 8
-    starts_at: "the emperor’s government moved east"
-    narration_intent: "Explain the renaming and the move of the emperor's government east, and how the city was transformed."
-    image_type: historic
-    named_entities: ["Edo to Tokyo", "Meiji era Tokyo"]
-    visual_tags: ["Edo renamed Tokyo 1868", "Tokyo 1870s street", "Emperor Meiji in Tokyo"]
-    image_search_terms: ["Edo became Tokyo 1868", "Edo Tokyo renaming Meiji Restoration", "Tokyo in the 1870s historical photograph", "Meiji era Tokyo street", "Emperor Meiji Tokyo 1868", "Tokyo capital 1868 Edo", "Tokyo 1870s street photograph"]
-    required_keywords: [Meiji, 明治, "Meiji Restoration", 明治維新, Tokyo, 東京, Emperor, Edo, 江戸]
-    required_keyword_groups:
-      - [Edo, Tokyo, "Edo became Tokyo", "Edo to Tokyo", "東京"]
-      - [Meiji, "Emperor Meiji", "1868", capital, renaming, renamed]
-    max_year: 1889
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster", "report cover", "document scan", "Sino-Japanese", "Sino Japanese", commander, "war scene", donkey, animal, "prints of animals", "animal print", courtesan, courtisane, "young man", smoking, tobacco, "pleasure party"]
   - title: "Gardens Remember"
-    starts_at: "Look closely at gardens"
+    starts_at: "Some traces remain"
     narration_intent: "Use surviving gardens and temple grounds as traces of older Tokyo."
     image_type: modern
     named_entities: ["Koishikawa Korakuen", "Rikugien"]
@@ -170,7 +125,7 @@ scenes:
     required_keywords: [garden, Korakuen, Rikugien, Tokyo]
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "Nihonbashi"
-    starts_at: "Nihonbashi, once a vital bridge"
+    starts_at: "Nihonbashi was more than a crossing"
     narration_intent: "Explain Nihonbashi's role as a bridge and the symbolic starting point for roads."
     image_type: historic
     named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
@@ -180,7 +135,7 @@ scenes:
     max_year: 1899
     banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
   - title: "The City Today"
-    starts_at: "Today, Tokyo layers"
+    starts_at: "Edo later took the name Tokyo"
     narration_intent: "Close the historical arc by showing contemporary Tokyo layered over its past."
     image_type: modern
     named_entities: ["Tokyo Skytree", "Shinjuku"]
