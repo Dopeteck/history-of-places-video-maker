@@ -28,6 +28,23 @@ def cand(title, provider="Fake Museum", n=1, rights="Public Domain"):
 
 
 class ResolverUnits(unittest.TestCase):
+    def test_scene_identity_gate_accepts_configured_alias_and_string_entity(self):
+        # Singular strings must not be split into characters; aliases are region-config data.
+        ok, missing = ar._scene_identity_evidence(
+            {"named_entities": "Hong Kong handover",
+             "identity_aliases": {"Hong Kong handover": ["Transfer of sovereignty over Hong Kong"]}},
+            "official photograph of the transfer of sovereignty over Hong Kong in 1997")
+        self.assertTrue(ok)
+        self.assertEqual(missing, [])
+
+    def test_scene_identity_gate_rejects_when_no_entity_or_alias_matches(self):
+        ok, missing = ar._scene_identity_evidence(
+            {"named_entities": ["Treaty of Nanking"],
+             "identity_aliases": {"Treaty of Nanking": ["Treaty of Nanjing"]}},
+            "Study for Treaty with Native Americans")
+        self.assertFalse(ok)
+        self.assertEqual(set(missing), {"Treaty of Nanking", "Treaty of Nanjing"})
+
     def test_rights_gate(self):
         for ok in ("Public Domain", "CC0 1.0", "CC BY 4.0", "CC BY-SA 3.0", "No known copyright restrictions",
                    "No known restrictions on publication"):
