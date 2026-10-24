@@ -68,7 +68,24 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, pathlib, yaml
-          from destination_prototype_placeholder import unused
+          review_path = pathlib.Path(os.environ.get("REVIEW_PATH", ""))
+          if not review_path.is_file():
+              raise SystemExit("APPROVAL GATE FAILED: supply a reviewed JSON file committed in this branch")
+          review = json.loads(review_path.read_text(encoding="utf-8"))
+          cfg = yaml.safe_load(pathlib.Path("regions/tokyo-long-form.yaml").read_text(encoding="utf-8"))
+          if review.get("region") != "tokyo-long-form-pilot" or review.get("approved") is not True:
+              raise SystemExit("APPROVAL GATE FAILED: review must match tokyo-long-form-pilot and set approved=true")
+          expected = cfg.get("claim_sources", {})
+          mapping = review.get("claim_sources", {})
+          if not isinstance(mapping, dict) or not set(expected).issubset(mapping):
+              raise SystemExit("APPROVAL GATE FAILED: review must map every long-form claim to reviewed HTTPS sources")
+          for claim in expected:
+              urls = mapping[claim]
+              if not isinstance(urls, list) or not urls or any(not isinstance(url, str) or not url.startswith("https://") for url in urls):
+                  raise SystemExit("APPROVAL GATE FAILED: invalid source mapping for " + claim)
+          if not review.get("reviewer") or not review.get("reviewed_at"):
+              raise SystemExit("APPROVAL GATE FAILED: reviewer and reviewed_at are required")
+          print("Source approval gate passed for every long-form factual claim.") 
           PY
       - name: Run long-form renderer in visual review mode
         if: ${{ inputs.visual_review_only }}
