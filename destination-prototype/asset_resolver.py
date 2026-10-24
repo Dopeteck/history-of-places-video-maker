@@ -187,7 +187,8 @@ def _scene_identity_evidence(scene, haystack):
     else:
         alias_terms.extend(_as_list(aliases))
     terms = list(dict.fromkeys(entities + alias_terms))
-    hits = [term for term in terms if _kw_hit(term, haystack)]
+    normalized_haystack = _norm(haystack)
+    hits = [term for term in terms if _kw_hit(term, normalized_haystack)]
     return bool(hits), terms if not hits else []
 
 
