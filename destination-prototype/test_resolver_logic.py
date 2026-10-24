@@ -198,7 +198,9 @@ class ResolverFlow(unittest.TestCase):
                         "required_keywords": [],
                         "image_type": image_type,
                     }, {"name": "Hong Kong"})
-                self.assertEqual(cm.exception.diagnostics["rejected"].get("scene_identity"), 1)
+                self.assertGreaterEqual(cm.exception.diagnostics["rejected"].get("scene_identity", 0), 1)
+                # A single provider item can be returned for multiple search queries;
+                # rejection counts are per candidate occurrence, not unique source.
                 self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
 
     def test_global_scene_identity_gate_accepts_cross_region_named_historical_evidence(self):
