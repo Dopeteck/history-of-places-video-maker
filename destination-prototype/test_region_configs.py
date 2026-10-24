@@ -2,6 +2,7 @@
 """Fast offline contract tests for region configs and config-draft helper."""
 import json, subprocess, sys, tempfile
 from asset_resolver import _rights_ok, BANNED, PROVIDERS, _candidate
+from region_slug import normalize_region_slug
 from pathlib import Path
 import yaml
 ROOT=Path(__file__).resolve().parents[1]
@@ -28,7 +29,27 @@ def check(path):
   assert s.get("required_keywords") and s.get("image_type") in ("historic","modern","map"), f"{path}/{s.get('title')}: missing image gates"
   assert not any(x in (s["title"]+" "+s["narration_intent"]).lower() for x in ("pending","placeholder","archival asset")), f"{path}: placeholder text"
  return d
+def test_destination_slug_normalization():
+ cases = {
+  "Hong kong": "hong-kong",
+  "HONG KONG": "hong-kong",
+  "New York City": "new-york-city",
+  " São Paulo ": "s-o-paulo",
+  "tokyo": "tokyo",
+ }
+ for raw, expected in cases.items():
+  actual=normalize_region_slug(raw)
+  assert actual==expected, f"{raw!r}: expected {expected!r}, got {actual!r}"
+ for raw in ("", " !!! ", "---"):
+  try:
+   normalize_region_slug(raw)
+  except ValueError:
+   pass
+  else:
+   raise AssertionError(f"invalid destination should fail: {raw!r}")
+ print("PASS destination slug normalization: spaces, capitalization, punctuation and empty input")
 def main():
+ test_destination_slug_normalization()
  regions=sorted((ROOT/"regions").glob("*.yaml"))
  regions=[p for p in regions if p.name!="template.yaml"]
  for p in regions:
