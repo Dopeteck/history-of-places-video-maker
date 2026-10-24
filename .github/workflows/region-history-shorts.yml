@@ -32,6 +32,11 @@ on:
         type: boolean
         default: false
         required: true
+      draft_preview:
+        description: "Render a non-publishable draft MP4; strict image, rights, relevance, and QA gates still apply"
+        type: boolean
+        default: false
+        required: true
   push:
     branches:
       - feature/destination-history-shorts
@@ -157,13 +162,13 @@ jobs:
           print("Review gate passed: all config claims have explicit source mappings and reviewer metadata.")
           PY
       - name: Install rendering dependencies
-        if: (github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push'
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
           python -m pip install -r requirements-regions.txt
       - name: Verify CLIP model can score a known image
-        if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved)) || github.event_name == 'push'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
         run: |
           cd destination-prototype
           python - <<'PY'
@@ -189,6 +194,14 @@ jobs:
           args=(--config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT" --visual-review-only)
           if [ -n "$ONLY_SCENES" ]; then args+=(--only-scenes "$ONLY_SCENES"); fi
           python destination-prototype/render_region_short.py "${args[@]}"
+      - name: Render non-publishable draft preview
+        if: github.event_name == 'workflow_dispatch' && inputs.draft_preview && !inputs.visual_review_only
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: python destination-prototype/render_region_short.py --config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT" --draft-preview
       - name: Render approved region short
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
         env:
@@ -198,7 +211,7 @@ jobs:
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
         run: python destination-prototype/render_region_short.py --config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT"
       - name: Upload reviewable region outputs
-        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
+        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
         with:
           name: region-review-${{ steps.normalize.outputs.slug }}-${{ github.run_id }}
