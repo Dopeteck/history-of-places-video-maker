@@ -14,6 +14,9 @@ place_names:
 period_focus: "Edo to Tokyo, 1603 to the present"
 story:
   hook: "Tokyo was once a different city with a different name: Edo."
+  hook_variants:
+    A: "TOKYO WAS ONCE EDO"
+    B: "BEFORE TOKYO, THERE WAS EDO"
   closing_tip: "Visit Nihonbashi and a nearby garden, then look for Edo’s street pattern beneath modern Tokyo."
   narration: "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridges connected busy neighborhoods. Artists recorded these streets and canals in woodblock prints, making everyday Edo part of Japan’s visual memory. Panoramic views suggest how large the city became, though no single image can capture its whole past. Some traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes offer a quieter link to earlier eras. Nihonbashi was more than a crossing; it became a key starting point for roads across the country. Edo later took the name Tokyo, and today towers rise above a city still layered with older routes, gardens, and memories."
 sources:
