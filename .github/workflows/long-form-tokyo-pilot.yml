@@ -92,13 +92,13 @@ jobs:
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml --visual-review-only
+        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml --output output/tokyo-long-form-pilot --visual-review-only
       - name: Render approved long-form pilot
         if: ${{ inputs.render_approved && !inputs.visual_review_only }}
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml
+        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml --output output/tokyo-long-form-pilot
       - name: Upload reviewable pilot outputs
         if: always() && (inputs.visual_review_only || inputs.render_approved)
         uses: actions/upload-artifact@v4
