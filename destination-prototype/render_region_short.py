@@ -327,6 +327,15 @@ def main():
    cf=font(40,True); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
   for j,w in enumerate(capwords):
    col=accent if lo+j==wi else "white"; d.text((x,y),w+" ",font=cf,fill=col,stroke_width=2,stroke_fill="black"); x+=widths[j]
+  # Subtle channel mark throughout; a short branded end-card replaces a long generic intro.
+  brand_font=font(25,True)
+  d.rounded_rectangle((W-360,32,W-42,78),radius=16,fill=(0,0,0,135))
+  d.text((W-340,42),"PAST THE POSTCARD",font=brand_font,fill="white")
+  if tm >= max(0.0,duration-1.5):
+   d.rounded_rectangle((110,H-700,W-110,H-535),radius=28,fill=(0,0,0,205),outline=accent,width=4)
+   brand_end=font(43,True); brand_text="PAST THE POSTCARD"
+   bw=d.textlength(brand_text,font=brand_end)
+   d.text(((W-bw)//2,H-650),brand_text,font=brand_end,fill="white")
   # Crossfade into the next scene over the final 0.4 seconds of each scene.
   if si < len(media)-1 and tm >= boundaries[si]-0.4:
    alpha=max(0.0,min(1.0,(tm-(boundaries[si]-0.4))/0.4))
