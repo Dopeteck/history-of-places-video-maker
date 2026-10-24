@@ -15,6 +15,9 @@ def check(path):
  assert len(claims)>=5, f"{path}: add claim_sources for key facts"
  for claim,urls in claims.items():
   assert claim.strip() and isinstance(urls,list) and urls and all(str(u).startswith("https://") for u in urls), f"{path}: invalid claim sources for {claim}"
+ hooks=d.get("story",{}).get("hook_variants",{})
+ assert set(hooks)=={"A","B"}, f"{path}: provide two named hook variants"
+ assert all(3<=len(str(v).split())<=5 for v in hooks.values()), f"{path}: each opening hook must be 3–5 words"
  assert d.get("visual_style",{}).get("accent_color"), f"{path}: missing regional accent"
  assert d.get("map",{}).get("latitude") is not None and d.get("map",{}).get("longitude") is not None, f"{path}: missing map coordinates"
  assert any(s.get("image_type")=="map" for s in d["scenes"]), f"{path}: must contain a real map scene"
