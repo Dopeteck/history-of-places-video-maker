@@ -183,7 +183,7 @@ def _timed(label, started):
  print(f"TIMING {label}: {time.perf_counter()-started:.2f}s", flush=True)
 def main():
  run_started=time.perf_counter()
- ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); ap.add_argument("--hook-variant",choices=("A","B"),default="A",help="Opening hook variant to render"); a=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--draft-preview",action="store_true",help="Render a non-publishable draft MP4; all source and QA gates remain enforced"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); ap.add_argument("--hook-variant",choices=("A","B"),default="A",help="Opening hook variant to render"); a=ap.parse_args()
  step_started=time.perf_counter()
  cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
  _timed("config_load_and_validate",step_started)
@@ -299,7 +299,7 @@ def main():
  durations=np.diff(np.concatenate([[0.0],boundaries]))
  short_scenes=[sc["title"] for (sc,_),dd in zip(media,durations) if dd<1.5]
  if short_scenes: print(f"WARNING: scenes shorter than 1.5s: {short_scenes}",file=sys.stderr)
- video=out/f"{slug}-history-short.mp4"
+ video=out/(f"{slug}-draft-preview.mp4" if a.draft_preview else f"{slug}-history-short.mp4")
  cmd=["ffmpeg","-y","-hide_banner","-loglevel","error","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","-","-i",str(wav),"-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-ar",str(rate),"-shortest","-movflags","+faststart",str(video)]
  proc=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=subprocess.PIPE)
  contact=[]
