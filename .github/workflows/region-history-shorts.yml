@@ -3,9 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       region:
-        description: "Region slug under regions/"
-        type: choice
-        options: [tokyo, lagos]
+        description: "Destination config slug under regions/ (supports any country; add a reviewed config for a new destination)"
+        type: string
         default: tokyo
         required: true
       hook_variant:
