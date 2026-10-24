@@ -177,6 +177,44 @@ class ResolverFlow(unittest.TestCase):
         cfg = {"name": "Testville", "asset_resolver": {"providers": [p.__name__ for p in ar.PROVIDERS]}}; cfg.update(config or {})
         return ar.resolve_scene_image(scene, 1, cfg, self.tmp.name, set(), Path(self.tmp.name))
 
+    def test_global_scene_identity_gate_rejects_geographically_wrong_high_clip_candidates(self):
+        # These represent the Hong Kong regression failures, but the gate is
+        # intentionally generic: identity comes from each scene's configured entity.
+        cases = [
+            (cand("Harbour 1880, Aberdeen City Archives", n=201), ["Hong Kong"], "modern"),
+            (cand("Study for Treaty with Native Americans", n=202), ["Treaty of Nanking"], "historic"),
+            (cand("The Pier Arts Centre, Stromness", n=203), ["Victoria Harbour"], "historic"),
+            (cand("Hong Kong Harbor, John Thomson, illustrated book page", n=204), ["1997 Handover ceremony"], "historic"),
+        ]
+        for item, entities, image_type in cases:
+            with self.subTest(title=item["title"]):
+                self.specs = [(1400, 1000, int(item["identifier"]))]
+                self.clips = [{"score": .99, "p_document": .05, "p_modern": .95 if image_type == "modern" else .05}]
+                self.setup_provider([item])
+                with self.assertRaises(ar.ResolverError) as cm:
+                    self.run_scene({
+                        "title": "Regression scene",
+                        "named_entities": entities,
+                        "required_keywords": [],
+                        "image_type": image_type,
+                    }, {"name": "Hong Kong"})
+                self.assertEqual(cm.exception.diagnostics["rejected"].get("scene_identity"), 1)
+                self.assertNotIn("clip_below_threshold", cm.exception.diagnostics["rejected"])
+
+    def test_global_scene_identity_gate_accepts_cross_region_named_historical_evidence(self):
+        item = cand("Treaty of Nanking signing and treaty port history", n=205)
+        item["description"] = "Historical treaty related to Nanjing and Hong Kong"
+        self.specs = [(1600, 1200, 205)]
+        self.clips = [{"score": .34, "p_document": .05, "p_modern": .05}]
+        self.setup_provider([item])
+        _, credit = self.run_scene({
+            "title": "Treaties",
+            "named_entities": ["Treaty of Nanking"],
+            "required_keywords": ["treaty"],
+            "image_type": "historic",
+        }, {"name": "Hong Kong"})
+        self.assertIn("Treaty of Nanking", credit["title"])
+
     def test_picks_best_and_counts_every_rejection(self):
         items = [cand("Book cover of Edo guide", n=1), cand("Edo castle page scan", n=2), cand("Edo castle small", n=3),
                  cand("Edo castle tax document", n=4), cand("Edo castle weak match", n=5), cand("Edo castle keep", n=6)]
