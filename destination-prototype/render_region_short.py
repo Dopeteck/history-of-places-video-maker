@@ -183,7 +183,7 @@ def _timed(label, started):
  print(f"TIMING {label}: {time.perf_counter()-started:.2f}s", flush=True)
 def main():
  run_started=time.perf_counter()
- ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); a=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); ap.add_argument("--hook-variant",choices=("A","B"),default="A",help="Opening hook variant to render"); a=ap.parse_args()
  step_started=time.perf_counter()
  cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
  _timed("config_load_and_validate",step_started)
@@ -196,6 +196,9 @@ def main():
   if banned(s.get("title","")+" "+s.get("narration_intent",""),["pending","placeholder","archival asset"]): fail(f"Placeholder text in scene config: {s['title']}")
  slug=cfg.get("slug",cfgpath.stem); out=Path(a.output) if a.output else ROOT/"output"/f"{slug}-region-short"; out.mkdir(parents=True,exist_ok=True); asset_dir=out/"images"; asset_dir.mkdir(exist_ok=True)
  script=cfg["story"]["narration"].strip()
+ hooks=cfg.get("story",{}).get("hook_variants",{})
+ hook=str(hooks.get(a.hook_variant,"")).strip()
+ if len(hook.split()) not in range(3,6): fail(f"Hook variant {a.hook_variant} must contain 3–5 words")
  if "[REVIEW]" in script or "[DRAFT" in script or len(script.split())<110 or len(script.split())>155: fail("Narration must be reviewed, non-placeholder, and 110–155 words")
  for term in ("pending","placeholder","archival asset"):
   if term in script.lower() or term in cfgpath.read_text(encoding="utf-8").lower(): fail(f"Forbidden placeholder text '{term}' in narration/config")
@@ -302,9 +305,19 @@ def main():
  contact=[]
  for fi in range(round(duration*FPS)):
   tm=fi/FPS; si=min(len(media)-1,int(np.searchsorted(boundaries,tm,side="right"))); start=0 if si==0 else boundaries[si-1]; progress=max(0,min(1,(tm-start)/max(.01,durations[si]))); scene,im=media[si]
+  # First two seconds use a full-bleed non-map visual with a 3–5-word hook overlay.
+  opening=tm < 2.0
+  if opening and scene.get("image_type")=="map":
+   alt=next(((s,im0) for s,im0 in media if s.get("image_type")!="map"),None)
+   if alt: scene,im=alt
   frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
   palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
-  d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
+  if opening:
+   hook_font=font(78,True); hook_lines=wrap(d,hook,hook_font,W-150); hy=180
+   for line in hook_lines:
+    tw=d.textlength(line,font=hook_font); d.text(((W-tw)//2,hy),line,font=hook_font,fill="white",stroke_width=4,stroke_fill="black"); hy+=96
+  else:
+   d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
   wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); box_top=H-450; box_bottom=H-265; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
   bbox=d.textbbox((0,0),"Ag",font=cf); text_h=bbox[3]-bbox[1]; y=box_top+(box_bottom-box_top-text_h)//2-bbox[1]
   d.rounded_rectangle((42,box_top,W-42,box_bottom),radius=26,fill=(0,0,0,210),outline=accent,width=4)
@@ -356,7 +369,7 @@ def main():
    text=pytesseract.image_to_string(im.resize((360,640))).lower()
    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
  except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
- qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
+ qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"hook_variant":a.hook_variant,"hook_text":hook,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
  (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
  print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
