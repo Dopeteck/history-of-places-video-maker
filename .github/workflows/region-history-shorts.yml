@@ -40,6 +40,8 @@ on:
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/asset_resolver.py'
       - 'destination-prototype/test_resolver_logic.py'
+      - 'destination-prototype/region_slug.py'
+      - 'destination-prototype/test_region_configs.py'
       - 'destination-prototype/vector_map.py'
       - 'destination-prototype/timing.py'
       - 'destination-prototype/data/**'
@@ -84,11 +86,13 @@ jobs:
           REGION_RAW: ${{ matrix.region }}
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, re
-          raw = os.environ["REGION_RAW"].strip()
-          slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-")
-          if not slug:
-              raise SystemExit("Destination must contain at least one letter or number.")
+          import os, sys
+          sys.path.insert(0, "destination-prototype")
+          from region_slug import normalize_region_slug
+          try:
+              slug = normalize_region_slug(os.environ["REGION_RAW"])
+          except ValueError as exc:
+              raise SystemExit(str(exc))
           print(f"slug={slug}")
           PY
       - name: Install config and renderer dependencies
@@ -98,7 +102,7 @@ jobs:
         env:
           REGION: ${{ steps.normalize.outputs.slug }}
         run: |
-          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py destination-prototype/region_slug.py
           python destination-prototype/test_region_configs.py
           python -m pytest destination-prototype/test_resolver_logic.py -q
           python - <<'PY'
