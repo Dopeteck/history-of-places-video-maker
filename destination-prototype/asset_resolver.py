@@ -167,17 +167,28 @@ def _has_term(text, terms):
     return _find_term(text, terms) is not None
 
 def _scene_identity_evidence(scene, haystack):
-    """Require a scene-specific identity anchor from source metadata, never from CLIP alone.
+    """Require a scene-specific metadata anchor; CLIP similarity alone is not identity evidence.
 
-    Named entities are the strongest portable anchors (sites, people, events, named
-    artworks). If a scene has no named entities, existing config-defined identity and
-    subject groups remain responsible for its evidence requirements.
+    Configs may provide named_entities as strings or lists, plus identity_aliases as
+    either a list (aliases for any entity) or a mapping from entity to aliases. This
+    supports translated names and alternate historical/event labels without hardcoding
+    any city or region into resolver logic.
     """
-    entities = [str(x).strip() for x in (scene.get("named_entities") or scene.get("entities") or []) if str(x).strip()]
+    raw = scene.get("named_entities") or scene.get("entities") or []
+    entities = _as_list(raw)
     if not entities:
         return True, []
-    hits = [entity for entity in entities if _kw_hit(entity, haystack)]
-    return bool(hits), entities if not hits else []
+    aliases = scene.get("identity_aliases") or scene.get("named_entity_aliases") or {}
+    alias_terms = []
+    if isinstance(aliases, dict):
+        for entity in entities:
+            values = aliases.get(entity, [])
+            alias_terms.extend(_as_list(values))
+    else:
+        alias_terms.extend(_as_list(aliases))
+    terms = list(dict.fromkeys(entities + alias_terms))
+    hits = [term for term in terms if _kw_hit(term, haystack)]
+    return bool(hits), terms if not hits else []
 
 
 def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier="", categories=None, date_text="", facets=None, year_range=None):
