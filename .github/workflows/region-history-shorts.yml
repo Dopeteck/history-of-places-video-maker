@@ -8,6 +8,12 @@ on:
         options: [tokyo, lagos]
         default: tokyo
         required: true
+      hook_variant:
+        description: "Opening hook to render (must be human-approved for production)"
+        type: choice
+        options: [A, B]
+        default: A
+        required: true
       approved_review:
         description: "Path to reviewed JSON with approved=true and claim_sources for every factual claim"
         type: string
@@ -103,6 +109,7 @@ jobs:
         env:
           REVIEW_PATH: ${{ inputs.approved_review }}
           REGION: ${{ inputs.region }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
         run: |
           python - <<'PY'
           import json, os, pathlib, yaml
@@ -113,6 +120,9 @@ jobs:
           cfg=yaml.safe_load(pathlib.Path("regions",region+".yaml").read_text())
           if review.get("region") != region or review.get("approved") is not True:
             raise SystemExit("APPROVAL GATE FAILED: review JSON must match region and set approved=true")
+          selected=os.environ.get("HOOK_VARIANT","A")
+          if selected not in review.get("approved_hook_variants",[]):
+            raise SystemExit("APPROVAL GATE FAILED: selected hook variant must be explicitly human-approved in the review JSON")
           mapping=review.get("claim_sources")
           expected=cfg.get("claim_sources",{})
           if not isinstance(mapping,dict) or not set(expected).issubset(mapping):
@@ -151,13 +161,13 @@ jobs:
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region || 'tokyo' }}.yaml --visual-review-only ${{ inputs.only_scenes != '' && format('--only-scenes "{0}"', inputs.only_scenes) || '' }}
+        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region || 'tokyo' }}.yaml --hook-variant "${{ inputs.hook_variant || 'A' }}" --visual-review-only ${{ inputs.only_scenes != '' && format('--only-scenes "{0}"', inputs.only_scenes) || '' }}
       - name: Render approved region short
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
         env:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
+        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml --hook-variant "${{ inputs.hook_variant }}"
       - name: Upload reviewable region outputs
         if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
