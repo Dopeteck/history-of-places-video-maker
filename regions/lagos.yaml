@@ -14,6 +14,9 @@ place_names:
 period_focus: "Eko to modern Lagos, from early Yoruba settlement to the present"
 story:
   hook: "Before the megacity called Lagos, this place was known as Eko."
+  hook_variants:
+    A: "LAGOS WAS ONCE EKO"
+    B: "BEFORE LAGOS, THERE WAS EKO"
   closing_tip: "Walk historic Lagos Island with a local guide, and pair the old streets with a visit to a museum or heritage site."
   narration: "Before Lagos became a vast coastal megacity, parts of its story were known as Eko. Yoruba communities shaped life around the lagoon and waterways, with fishing, trade, and local political traditions tying settlements together. The island and its harbour later drew Portuguese traders, and the name Lagos became widely used. In the nineteenth century, the port was pulled into the Atlantic slave trade and then British colonial rule; those histories must be remembered alongside the lives of the people who resisted and rebuilt. Lagos became a British colony in 1861, and later a major centre of Nigerian politics, commerce, music, and film. Nigeria’s independence in 1960 reshaped its national role, while the city kept expanding across islands and mainland districts. Today, traffic, markets, art, and waterfront life all speak to a city still in motion. Explore Lagos Island with a guide, and ask how Eko’s older geography survives in modern streets."
 sources:
