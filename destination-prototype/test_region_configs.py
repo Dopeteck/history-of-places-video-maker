@@ -27,7 +27,7 @@ def check(path):
   assert s.get("title") and s.get("narration_intent"), f"{path}: incomplete scene"
   assert len(s.get("image_search_terms",[]))>=3, f"{path}/{s.get('title')}: needs 3 search variants"
   assert s.get("required_keywords") and s.get("image_type") in ("historic","modern","map"), f"{path}/{s.get('title')}: missing image gates"
-  assert not any(x in (s["title"]+" "+s["narration_intent"]).lower() for x in ("pending","placeholder","archival asset")), f"{path}: placeholder text"
+  assert not any(x in (str(s["title"])+" "+str(s["narration_intent"])).lower() for x in ("pending","placeholder","archival asset")), f"{path}: placeholder text"
  return d
 def test_destination_slug_normalization():
  cases = {
