@@ -1,0 +1,94 @@
+name: Long-form Tokyo history pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      visual_review_only:
+        description: "Resolve images and create an approval board only; no video render"
+        type: boolean
+        default: true
+        required: true
+      approved_review:
+        description: "Reviewed JSON approval path for the long-form config"
+        type: string
+        required: false
+      render_approved:
+        description: "Render the pilot only after the review file passes the source approval gate"
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: long-form-tokyo-pilot
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML requests Pillow numpy pytest
+      - name: Validate pilot config and renderer syntax
+        run: |
+          python -m py_compile destination-prototype/long_form_config.py destination-prototype/render_long_form.py
+          python -m pip install --disable-pip-version-check pyyaml
+          cd destination-prototype
+          python -m unittest -v test_long_form_config.py
+
+  render:
+    needs: validate
+    if: ${{ inputs.visual_review_only || inputs.render_approved }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system and renderer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
+          python -m pip install --disable-pip-version-check -r requirements-regions.txt PyYAML
+      - name: Require source approval before production render
+        if: ${{ inputs.render_approved && !inputs.visual_review_only }}
+        env:
+          REVIEW_PATH: ${{ inputs.approved_review }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, yaml
+          from destination_prototype_placeholder import unused
+          PY
+      - name: Run long-form renderer in visual review mode
+        if: ${{ inputs.visual_review_only }}
+        env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml --visual-review-only
+      - name: Render approved long-form pilot
+        if: ${{ inputs.render_approved && !inputs.visual_review_only }}
+        env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: python destination-prototype/render_long_form.py --config regions/tokyo-long-form.yaml
+      - name: Upload reviewable pilot outputs
+        if: always() && (inputs.visual_review_only || inputs.render_approved)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokyo-long-form-pilot-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/tokyo-long-form-pilot/*
+            output/tokyo-long-form-pilot/images/*
