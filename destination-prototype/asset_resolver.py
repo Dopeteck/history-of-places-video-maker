@@ -857,4 +857,5 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
       "clip_score": winner["_score"], "period_ok": (winner["_p_modern"] >= 0.5) if scene.get("image_type") == "modern" else None,
       "search_variant": "CLIP ranked: " + " | ".join(prompts), "warnings": warnings, "dimensions": list(winner["_size"]),
       "top_candidates": [{"provider": x["provider"], "title": x["title"], "source_url": x["source_url"],
-                          "rights_statement": x["rights_statement"], "clip_score": x["_score"]} for x in top]}
+                          "rights_statement": x["rights_statement"], "clip_score": x["_score"]} for x in top],
+      "diagnostics": diagnostics()}
