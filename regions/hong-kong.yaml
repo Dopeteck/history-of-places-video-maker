@@ -62,7 +62,7 @@ scenes:
     required_keywords: [Hong Kong, fishing]
     banned_keywords: [Vietnam, Thailand, fantasy village]
     image_type: historic
-  - title: 1841
+  - title: "1841"
     narration_intent: "Introduce the British occupation of Hong Kong Island during the First Opium War."
     named_entities: [Possession Point, Sheung Wan, First Opium War]
     visual_tags: [Possession Point Hong Kong history, nineteenth century Hong Kong Island, historical map Hong Kong]
