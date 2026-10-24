@@ -1,20 +1,23 @@
-# Region-driven history shorts
+# Past the Postcard — destination history shorts
 
-The renderer is shared: regional differences belong in `regions/<slug>.yaml`, not Python branches.
+The renderer is shared: regional differences belong in `regions/<slug>.yaml`, not Python branches. The pipeline is destination-driven, not limited to a fixed country dropdown: use a city, landmark, region, or country from any nation, create a config on demand, then review its facts and image board before rendering. It is not necessary to pre-store every country or city as a config.
+
+The short format opens immediately on a strong image plus a 3–5-word hook (first 1–2 seconds), keeps a subtle **PAST THE POSTCARD** channel mark, and ends with a brief branded close—no separate five-second intro that wastes the hook.
 
 ## Add a region
 
 1. Run `python -m pip install -r requirements-regions.txt`.
-2. Draft a config with `python destination-prototype/make_region_config.py "Kano" --country "Nigeria"`. This writes `regions/kano.yaml`; it is intentionally a draft, not verified history.
-3. Edit the config:
+2. Create a destination config on demand: `python destination-prototype/make_region_config.py "Kyoto" --country "Japan"` (or substitute any destination and country). The workflow accepts any config slug, not just Tokyo/Lagos.
+3. Draft a config with `python destination-prototype/make_region_config.py "Kano" --country "Nigeria"`. This writes `regions/kano.yaml`; it is intentionally a draft, not verified history.
+4. Edit the config:
    - Add 8–12 scene entries, each with at least three Commons search variants, required and banned keywords, a narration intent, and `image_type: historic | modern | map`.
    - Set map latitude/longitude and the visual palette/accent/mood.
    - Add trustworthy source URLs and a `claim_sources` mapping for every factual claim used in the narration.
    - Write an original 110–155 word story, including a first-three-second hook and a useful visitor tip. Add local pronunciation hints.
-4. Run the config checks in GitHub Actions. Review facts, pronunciations, candidate image matches, image rights, and generated contact sheet before approval.
-5. Create a review JSON file in the branch (see `regions/review-template.json`). Set `approved: true` only after a human has checked the script and sources. The approval gate requires every claim key from the region config, HTTPS source URLs, reviewer and date.
-6. Run **Region-driven history shorts** via Actions → Run workflow, select the region, enter the committed review JSON path, and set `render_approved` to true.
-7. Review the MP4, contact sheet, credits, narration and QA report artifacts. A successful config check alone is not a rendered-video QA pass.
+5. Run the config checks in GitHub Actions. Review facts, pronunciations, candidate image matches, image rights, and generated contact sheet before approval.
+6. Create a review JSON file in the branch (see `regions/review-template.json`). Set `approved: true` only after a human has checked the script and sources. The approval gate requires every claim key from the region config, HTTPS source URLs, reviewer and date.
+7. Run **Region-driven history shorts** via Actions → Run workflow, select the region, enter the committed review JSON path, and set `render_approved` to true.
+8. Review the MP4, contact sheet, credits, narration and QA report artifacts. A successful config check alone is not a rendered-video QA pass.
 
 ## Scene timing (`starts_at`)
 
