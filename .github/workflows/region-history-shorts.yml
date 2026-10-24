@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       region:
-        description: "Destination config slug under regions/ (supports any country; add a reviewed config for a new destination)"
+        description: "Destination config slug under regions/ (e.g. hong-kong); add a reviewed config for new destinations"
         type: string
         default: tokyo
         required: true
@@ -78,18 +78,36 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Normalize destination input
+        id: normalize
+        env:
+          REGION_RAW: ${{ matrix.region }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, re
+          raw = os.environ["REGION_RAW"].strip()
+          slug = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-")
+          if not slug:
+              raise SystemExit("Destination must contain at least one letter or number.")
+          print(f"slug={slug}")
+          PY
       - name: Install config and renderer dependencies
         run: |
           python -m pip install PyYAML requests Pillow numpy pytest
       - name: Compile Python and validate config shape
+        env:
+          REGION: ${{ steps.normalize.outputs.slug }}
         run: |
           python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
           python destination-prototype/test_region_configs.py
           python -m pytest destination-prototype/test_resolver_logic.py -q
           python - <<'PY'
           import pathlib, yaml, os
-          p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
-          d=yaml.safe_load(p.read_text())
+          region = os.environ["REGION"]
+          p=pathlib.Path("regions") / (region+".yaml")
+          if not p.is_file():
+              raise SystemExit(f"Destination config not found: {p}. Create and review this config first; destination names normalize to lowercase hyphenated slugs.")
+          d=yaml.safe_load(p.read_text(encoding="utf-8"))
           assert d.get("name") and d.get("country") and d.get("sources"), "missing region identity/sources"
           assert len(d.get("claim_sources",{})) >= 5, "each region needs a claim_sources map for historical assertions"
           assert 8 <= len(d.get("scenes",[])) <= 12, "expected 8–12 scenes"
@@ -101,13 +119,11 @@ jobs:
             assert s.get("image_type") in ("historic","modern","map"), s["title"]+" has invalid image_type"
           print("Config structure OK:", d["name"], "scenes=",len(d["scenes"]))
           PY
-        env:
-          REGION: ${{ matrix.region }}
       - name: Require explicit story approval before rendering
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved
         env:
           REVIEW_PATH: ${{ inputs.approved_review }}
-          REGION: ${{ inputs.region }}
+          REGION: ${{ steps.normalize.outputs.slug }}
           HOOK_VARIANT: ${{ inputs.hook_variant }}
         run: |
           python - <<'PY'
@@ -116,9 +132,11 @@ jobs:
           region=os.environ["REGION"]
           if not p or not pathlib.Path(p).is_file(): raise SystemExit("APPROVAL GATE FAILED: provide a reviewed JSON file committed in this branch")
           review=json.loads(pathlib.Path(p).read_text())
-          cfg=yaml.safe_load(pathlib.Path("regions",region+".yaml").read_text())
+          cfg_path=pathlib.Path("regions",region+".yaml")
+          if not cfg_path.is_file(): raise SystemExit(f"Destination config not found: {cfg_path}")
+          cfg=yaml.safe_load(cfg_path.read_text())
           if review.get("region") != region or review.get("approved") is not True:
-            raise SystemExit("APPROVAL GATE FAILED: review JSON must match region and set approved=true")
+            raise SystemExit("APPROVAL GATE FAILED: review JSON must match normalized region slug and set approved=true")
           selected=os.environ.get("HOOK_VARIANT","A")
           if selected not in review.get("approved_hook_variants",[]):
             raise SystemExit("APPROVAL GATE FAILED: selected hook variant must be explicitly human-approved in the review JSON")
@@ -152,34 +170,42 @@ jobs:
           buf = io.BytesIO()
           image.save(buf, format="PNG")
           r = _clip_analyze("a blue image", [buf.getvalue()])[0]
-          assert set(r) == {"score", "p_document", "p_modern"} and all(0.0 <= r[k] <= 1.0 for k in ("p_document", "p_modern")) and -1.0 <= r["score"] <= 1.0, r
+          assert set(r) == {"score", "p_document", "p_modern"} and all(0.0 <= r[k] <= 1.0 for k in ("score", "p_document", "p_modern")) and -1.0 <= r["score"] <= 1.0, r
           print("CLIP smoke test passed:", r)
           PY
       - name: Render visual approval board (no audio / not publishable)
         if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
         env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant || 'A' }}
+          ONLY_SCENES: ${{ inputs.only_scenes }}
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region || 'tokyo' }}.yaml --hook-variant "${{ inputs.hook_variant || 'A' }}" --visual-review-only ${{ inputs.only_scenes != '' && format('--only-scenes "{0}"', inputs.only_scenes) || '' }}
+        run: |
+          args=(--config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT" --visual-review-only)
+          if [ -n "$ONLY_SCENES" ]; then args+=(--only-scenes "$ONLY_SCENES"); fi
+          python destination-prototype/render_region_short.py "${args[@]}"
       - name: Render approved region short
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
         env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml --hook-variant "${{ inputs.hook_variant }}"
+        run: python destination-prototype/render_region_short.py --config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT"
       - name: Upload reviewable region outputs
         if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
         with:
-          name: region-review-${{ inputs.region || 'tokyo' }}-${{ github.run_id }}
+          name: region-review-${{ steps.normalize.outputs.slug }}-${{ github.run_id }}
           retention-days: 7
           if-no-files-found: warn
           path: |
-            output/${{ inputs.region || 'tokyo' }}-region-short/*.mp4
-            output/${{ inputs.region || 'tokyo' }}-region-short/contact-sheet.jpg
-            output/${{ inputs.region || 'tokyo' }}-region-short/approval-board.html
-            output/${{ inputs.region || 'tokyo' }}-region-short/images/*
-            output/${{ inputs.region || 'tokyo' }}-region-short/credits.json
-            output/${{ inputs.region || 'tokyo' }}-region-short/credits-description.txt
-            output/${{ inputs.region || 'tokyo' }}-region-short/qa-report.json
-            output/${{ inputs.region || 'tokyo' }}-region-short/narration.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/*.mp4
+            output/${{ steps.normalize.outputs.slug }}-region-short/contact-sheet.jpg
+            output/${{ steps.normalize.outputs.slug }}-region-short/approval-board.html
+            output/${{ steps.normalize.outputs.slug }}-region-short/images/*
+            output/${{ steps.normalize.outputs.slug }}-region-short/credits.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/credits-description.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/qa-report.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/narration.txt
