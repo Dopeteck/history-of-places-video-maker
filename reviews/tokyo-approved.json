@@ -3,6 +3,9 @@
   "approved": true,
   "reviewer": "Source-checked for this render; visual selection approved by user",
   "reviewed_at": "2026-10-23",
+  "approved_hook_variants": [
+    "A"
+  ],
   "claim_sources": {
     "Edo became a major political centre under Tokugawa rule": [
       "https://www.english.metro.tokyo.lg.jp/w/000-101-007591",
