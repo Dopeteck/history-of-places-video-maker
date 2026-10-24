@@ -166,6 +166,19 @@ def _has_term(text, terms):
     """Whole-word match so banned 'page' does not reject 'pageant' and 'book' does not reject 'bookshop'."""
     return _find_term(text, terms) is not None
 
+def _scene_identity_evidence(scene, haystack):
+    """Require a scene-specific identity anchor from source metadata, never from CLIP alone.
+
+    Named entities are the strongest portable anchors (sites, people, events, named
+    artworks). If a scene has no named entities, existing config-defined identity and
+    subject groups remain responsible for its evidence requirements.
+    """
+    entities = [str(x).strip() for x in (scene.get("named_entities") or scene.get("entities") or []) if str(x).strip()]
+    if not entities:
+        return True, []
+    hits = [entity for entity in entities if _kw_hit(entity, haystack)]
+    return bool(hits), entities if not hits else []
+
 
 def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier="", categories=None, date_text="", facets=None, year_range=None):
     # Provider metadata is not schema-stable: normalize values before string operations.
@@ -729,6 +742,13 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         matched = m.group(0) if m else _find_term(text, banned_terms)
         if matched: _note_reject("banned_term", c, {"matched": matched}); continue
         hay = _norm(text + " " + " ".join(_as_list(c.get("facets"))))
+        identity_ok, missing_entities = _scene_identity_evidence(scene, hay)
+        if not identity_ok:
+            _note_reject("scene_identity", c, {
+                "required_named_entities": missing_entities,
+                "checked_text": hay[:240],
+            })
+            continue
         missing_identity = [gi for gi, group in enumerate(identity_groups)
                             if not any(_kw_hit(str(term), hay) for term in (group if isinstance(group, list) else [group]))]
         if missing_identity:
