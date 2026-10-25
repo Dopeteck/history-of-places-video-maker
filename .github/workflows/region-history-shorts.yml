@@ -167,7 +167,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
           python -m pip install -r requirements-regions.txt
-          python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
       - name: Verify Kokoro English voice pipeline initializes
         if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
         run: |
