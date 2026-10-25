@@ -1,11 +1,17 @@
+# CPU narration + region renderer dependencies.
+# Keep the Kokoro English stack aligned with the already-used working voice pipeline.
 requests>=2.31.0
 Pillow>=10.0.0
 numpy>=1.26.0,<2.0.0
 PyYAML>=6.0.1
 kokoro==0.9.4
-misaki[ja]==0.9.4
-spacy==3.7.5
-soundfile>=0.12.1
+misaki[en,ja]==0.9.4
+spacy==3.8.4
+spacy-curated-transformers==0.3.0
+typer==0.15.1
+click==8.1.8
+soundfile==0.13.1
+transformers==4.48.3
+huggingface-hub==0.28.1
+torch==2.6.0
 pytesseract>=0.3.10
-transformers>=4.41.0
-torch>=2.2.0
