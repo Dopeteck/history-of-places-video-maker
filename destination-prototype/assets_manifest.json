@@ -1,2 +1,34 @@
 [
+  {
+    "content_sha256": "f97864c4b804a43e2ade8c7e6b2b597d64941c96b1f4be5256e93030fc525d0e",
+    "scene": "The Island Beginning",
+    "file": "C:\\Users\\USER\\AppData\\Local\\Temp\\kilo\\history-of-places-video-maker\\output\\paris-region-short\\images\\scene_01_map.jpg",
+    "title": "Vector location map (Natural Earth)",
+    "author": "Natural Earth",
+    "license": "Public Domain",
+    "rights_statement": "Public Domain (Natural Earth terms of use)",
+    "license_url": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "source_url": "https://www.naturalearthdata.com/",
+    "provider": "Natural Earth (vendored)",
+    "match_score": null,
+    "dimensions": null,
+    "warnings": [],
+    "approved": false
+  },
+  {
+    "content_sha256": "9224c7649a0c206ba21849e7087f1c0959c2ab829d868537ccc7d6dcb6f91e94",
+    "scene": "Edo on the Map",
+    "file": "C:\\Users\\USER\\AppData\\Local\\Temp\\kilo\\history-of-places-video-maker\\output\\tokyo-region-short\\images\\scene_01_map.jpg",
+    "title": "Vector location map (Natural Earth)",
+    "author": "Natural Earth",
+    "license": "Public Domain",
+    "rights_statement": "Public Domain (Natural Earth terms of use)",
+    "license_url": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "source_url": "https://www.naturalearthdata.com/",
+    "provider": "Natural Earth (vendored)",
+    "match_score": null,
+    "dimensions": null,
+    "warnings": [],
+    "approved": false
+  }
 ]

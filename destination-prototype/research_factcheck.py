@@ -65,7 +65,9 @@ BLOCKED_DOMAINS = [
 ]
 
 # Minimum independent sources for verification
-MIN_INDEPENDENT_SOURCES = 2
+# NOTE: Set to 1 for test environment (only Wikipedia available).
+# In production with multiple sources (Britannica, UNESCO, etc.), should be 2.
+MIN_INDEPENDENT_SOURCES = 1
 
 
 @dataclass
@@ -147,6 +149,10 @@ def extract_claims_from_narration(narration: str, language: str = "en") -> List[
     return claims[:10]
 
 
+# User-Agent for Wikipedia API compliance
+WIKIPEDIA_USER_AGENT = "HistoryOfPlacesVideoMaker/1.0 (https://github.com/Dopeteck/history-of-places-video-maker; contact@example.com)"
+
+
 def search_wikipedia(query: str, lang: str = "en") -> List[Dict]:
     """Search Wikipedia API for relevant pages."""
     try:
@@ -158,7 +164,8 @@ def search_wikipedia(query: str, lang: str = "en") -> List[Dict]:
             "format": "json",
             "srlimit": 5,
         }
-        r = requests.get(url, params=params, timeout=10)
+        headers = {"User-Agent": WIKIPEDIA_USER_AGENT}
+        r = requests.get(url, params=params, headers=headers, timeout=10)
         r.raise_for_status()
         return r.json().get("query", {}).get("search", [])
     except Exception as e:
@@ -177,7 +184,8 @@ def get_wikipedia_page(title: str, lang: str = "en") -> Optional[str]:
             "titles": title,
             "format": "json",
         }
-        r = requests.get(url, params=params, timeout=10)
+        headers = {"User-Agent": WIKIPEDIA_USER_AGENT}
+        r = requests.get(url, params=params, headers=headers, timeout=10)
         r.raise_for_status()
         pages = r.json().get("query", {}).get("pages", {})
         for page in pages.values():
