@@ -1,0 +1,282 @@
+[
+  {
+    "date": "2026-10-26",
+    "topic": {
+      "destination_slug": "hong-kong",
+      "destination_name": "Hong Kong",
+      "country": "China",
+      "continent": "Asia",
+      "category": "hidden_history",
+      "title": "The Forgotten Hong Kong of Hong Kong",
+      "hook": "A harbour changed this city.",
+      "description": "Hong Kong’s story begins long before its skyline. Fishing communities lived along this coast, where a deep, sheltered harbour made sea routes and trade central to daily life. In 1841, British forces occupied Hong Kong Island during the First Opium War; the 1842 Treaty of Nanking formalised its cessi...",
+      "sources": [
+        "https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf",
+        "https://www.edb.gov.hk/en/about-edb/press/cleartheair/20220802.html",
+        "https://www.devb.gov.hk/en/issues_in_focus/conserving_central/our_central/index.html"
+      ],
+      "priority": 3.15,
+      "selected_at": "2026-10-26"
+    }
+  },
+  {
+    "date": "2026-10-27",
+    "topic": {
+      "destination_slug": "lagos",
+      "destination_name": "Lagos",
+      "country": "Nigeria",
+      "continent": "Africa",
+      "category": "wonders_landmarks",
+      "title": "The Eko of Lagos",
+      "hook": "Before the megacity called Lagos, this place was known as Eko.",
+      "description": "Before Lagos became a vast coastal megacity, parts of its story were known as Eko. Yoruba communities shaped life around the lagoon and waterways, with fishing, trade, and local political traditions tying settlements together. The island and its harbour later drew Portuguese traders, and the name La...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Lagos",
+        "https://en.wikipedia.org/wiki/History_of_Lagos",
+        "https://www.nigerianmuseums.gov.ng/"
+      ],
+      "priority": 3.8499999999999996,
+      "selected_at": "2026-10-27"
+    }
+  },
+  {
+    "date": "2026-10-28",
+    "topic": {
+      "destination_slug": "paris",
+      "destination_name": "Paris",
+      "country": "France",
+      "continent": "Europe",
+      "category": "wonders_landmarks",
+      "title": "The Paris of Paris",
+      "hook": "Before the City of Light, there was a river island settlement.",
+      "description": "Before Paris became the City of Light, it was a modest settlement on the Île de la Cité, where the Seine curves around a defensible island. The Romans knew it as Lutetia, a Gallic town that grew into a regional capital. By the 10th century, the Capetian kings made Paris their seat, and the city expa...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Paris",
+        "https://en.wikipedia.org/wiki/History_of_Paris",
+        "https://www.paris.fr/"
+      ],
+      "priority": 4.449999999999999,
+      "selected_at": "2026-10-28"
+    }
+  },
+  {
+    "date": "2026-10-29",
+    "topic": {
+      "destination_slug": "mexico-city",
+      "destination_name": "Mexico City",
+      "country": "Mexico",
+      "continent": "North America",
+      "category": "culture_traditions",
+      "title": "Traditions of Mexico City: A city built on a lake became the heart of an empire.",
+      "hook": "A city built on a lake became the heart of an empire.",
+      "description": "Before it was Mexico City, this valley held a lake where the Mexica people founded Tenochtitlan in 1325, guided by an eagle on a cactus. Canals and chinampas, artificial gardens, fed a population of hundreds of thousands, making it one of the world's largest cities. In 1521, Spanish forces besieged ...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Mexico_City",
+        "https://en.wikipedia.org/wiki/Tenochtitlan",
+        "https://www.inah.gob.mx/"
+      ],
+      "priority": 4.6499999999999995,
+      "selected_at": "2026-10-29"
+    }
+  },
+  {
+    "date": "2026-10-30",
+    "topic": {
+      "destination_slug": "tokyo",
+      "destination_name": "Tokyo",
+      "country": "Japan",
+      "continent": "Asia",
+      "category": "remarkable_destinations",
+      "title": "Tokyo: A Journey Through Time and Place",
+      "hook": "Tokyo was once a different city with a different name: Edo.",
+      "description": "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridg...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Tokyo",
+        "https://en.wikipedia.org/wiki/Edo",
+        "https://www.gotokyo.org/en/"
+      ],
+      "priority": 5.208333333333333,
+      "selected_at": "2026-10-30"
+    }
+  },
+  {
+    "date": "2026-10-31",
+    "topic": {
+      "destination_slug": "tokyo",
+      "destination_name": "Tokyo",
+      "country": "Japan",
+      "continent": "Asia",
+      "category": "culture_traditions",
+      "title": "Traditions of Tokyo: Tokyo was once a different city with a different name: Edo.",
+      "hook": "Tokyo was once a different city with a different name: Edo.",
+      "description": "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridg...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Tokyo",
+        "https://en.wikipedia.org/wiki/Edo",
+        "https://www.gotokyo.org/en/"
+      ],
+      "priority": 5.673333333333333,
+      "selected_at": "2026-10-31"
+    }
+  },
+  {
+    "date": "2026-11-01",
+    "topic": {
+      "destination_slug": "tokyo",
+      "destination_name": "Tokyo",
+      "country": "Japan",
+      "continent": "Asia",
+      "category": "wonders_landmarks",
+      "title": "The Edo of Tokyo",
+      "hook": "Tokyo was once a different city with a different name: Edo.",
+      "description": "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridg...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Tokyo",
+        "https://en.wikipedia.org/wiki/Edo",
+        "https://www.gotokyo.org/en/"
+      ],
+      "priority": 6.098333333333334,
+      "selected_at": "2026-11-01"
+    }
+  },
+  {
+    "date": "2026-11-02",
+    "topic": {
+      "destination_slug": "tokyo",
+      "destination_name": "Tokyo",
+      "country": "Japan",
+      "continent": "Asia",
+      "category": "hidden_history",
+      "title": "The Forgotten Edo of Tokyo",
+      "hook": "Tokyo was once a different city with a different name: Edo.",
+      "description": "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridg...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Tokyo",
+        "https://en.wikipedia.org/wiki/Edo",
+        "https://www.gotokyo.org/en/"
+      ],
+      "priority": 6.63547619047619,
+      "selected_at": "2026-11-02"
+    }
+  },
+  {
+    "date": "2026-11-03",
+    "topic": {
+      "destination_slug": "paris",
+      "destination_name": "Paris",
+      "country": "France",
+      "continent": "Europe",
+      "category": "remarkable_destinations",
+      "title": "Paris: A Journey Through Time and Place",
+      "hook": "Before the City of Light, there was a river island settlement.",
+      "description": "Before Paris became the City of Light, it was a modest settlement on the Île de la Cité, where the Seine curves around a defensible island. The Romans knew it as Lutetia, a Gallic town that grew into a regional capital. By the 10th century, the Capetian kings made Paris their seat, and the city expa...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Paris",
+        "https://en.wikipedia.org/wiki/History_of_Paris",
+        "https://www.paris.fr/"
+      ],
+      "priority": 6.7058333333333335,
+      "selected_at": "2026-11-03"
+    }
+  },
+  {
+    "date": "2026-11-04",
+    "topic": {
+      "destination_slug": "paris",
+      "destination_name": "Paris",
+      "country": "France",
+      "continent": "Europe",
+      "category": "hidden_history",
+      "title": "The Forgotten Paris of Paris",
+      "hook": "Before the City of Light, there was a river island settlement.",
+      "description": "Before Paris became the City of Light, it was a modest settlement on the Île de la Cité, where the Seine curves around a defensible island. The Romans knew it as Lutetia, a Gallic town that grew into a regional capital. By the 10th century, the Capetian kings made Paris their seat, and the city expa...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Paris",
+        "https://en.wikipedia.org/wiki/History_of_Paris",
+        "https://www.paris.fr/"
+      ],
+      "priority": 7.3146031746031746,
+      "selected_at": "2026-11-04"
+    }
+  },
+  {
+    "date": "2026-11-05",
+    "topic": {
+      "destination_slug": "mexico-city",
+      "destination_name": "Mexico City",
+      "country": "Mexico",
+      "continent": "North America",
+      "category": "hidden_history",
+      "title": "The Forgotten Tenochtitlan of Mexico City",
+      "hook": "A city built on a lake became the heart of an empire.",
+      "description": "Before it was Mexico City, this valley held a lake where the Mexica people founded Tenochtitlan in 1325, guided by an eagle on a cactus. Canals and chinampas, artificial gardens, fed a population of hundreds of thousands, making it one of the world's largest cities. In 1521, Spanish forces besieged ...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Mexico_City",
+        "https://en.wikipedia.org/wiki/Tenochtitlan",
+        "https://www.inah.gob.mx/"
+      ],
+      "priority": 7.750277777777778,
+      "selected_at": "2026-11-05"
+    }
+  },
+  {
+    "date": "2026-11-06",
+    "topic": {
+      "destination_slug": "mexico-city",
+      "destination_name": "Mexico City",
+      "country": "Mexico",
+      "continent": "North America",
+      "category": "wonders_landmarks",
+      "title": "The Tenochtitlan of Mexico City",
+      "hook": "A city built on a lake became the heart of an empire.",
+      "description": "Before it was Mexico City, this valley held a lake where the Mexica people founded Tenochtitlan in 1325, guided by an eagle on a cactus. Canals and chinampas, artificial gardens, fed a population of hundreds of thousands, making it one of the world's largest cities. In 1521, Spanish forces besieged ...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Mexico_City",
+        "https://en.wikipedia.org/wiki/Tenochtitlan",
+        "https://www.inah.gob.mx/"
+      ],
+      "priority": 8.197911255411256,
+      "selected_at": "2026-11-06"
+    }
+  },
+  {
+    "date": "2026-11-07",
+    "topic": {
+      "destination_slug": "paris",
+      "destination_name": "Paris",
+      "country": "France",
+      "continent": "Europe",
+      "category": "culture_traditions",
+      "title": "Traditions of Paris: Before the City of Light, there was a river island settlement.",
+      "hook": "Before the City of Light, there was a river island settlement.",
+      "description": "Before Paris became the City of Light, it was a modest settlement on the Île de la Cité, where the Seine curves around a defensible island. The Romans knew it as Lutetia, a Gallic town that grew into a regional capital. By the 10th century, the Capetian kings made Paris their seat, and the city expa...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Paris",
+        "https://en.wikipedia.org/wiki/History_of_Paris",
+        "https://www.paris.fr/"
+      ],
+      "priority": 8.726284271284273,
+      "selected_at": "2026-11-07"
+    }
+  },
+  {
+    "date": "2026-11-08",
+    "topic": {
+      "destination_slug": "lagos",
+      "destination_name": "Lagos",
+      "country": "Nigeria",
+      "continent": "Africa",
+      "category": "hidden_history",
+      "title": "The Forgotten Eko of Lagos",
+      "hook": "Before the megacity called Lagos, this place was known as Eko.",
+      "description": "Before Lagos became a vast coastal megacity, parts of its story were known as Eko. Yoruba communities shaped life around the lagoon and waterways, with fishing, trade, and local political traditions tying settlements together. The island and its harbour later drew Portuguese traders, and the name La...",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Lagos",
+        "https://en.wikipedia.org/wiki/History_of_Lagos",
+        "https://www.nigerianmuseums.gov.ng/"
+      ],
+      "priority": 9.296716616716617,
+      "selected_at": "2026-11-08"
+    }
+  }
+]
