@@ -1,0 +1,146 @@
+name: Mexico City
+slug: mexico-city
+country: Mexico
+languages: [Spanish, English]
+place_names:
+  - spelling: Tenochtitlan
+    pronunciation_hint: "teh-nohch-TEET-lahn"
+  - spelling: Zócalo
+    pronunciation_hint: "SOH-kah-loh"
+  - spelling: Chapultepec
+    pronunciation_hint: "chah-pool-TEH-pek"
+  - spelling: Xochimilco
+    pronunciation_hint: "soh-chee-MEEL-koh"
+period_focus: "Aztec capital to modern metropolis, 14th century to present"
+story:
+  hook: "A city built on a lake became the heart of an empire."
+  hook_variants:
+    A: "MEXICO CITY ROSE FROM LAKE"
+    B: "TENOCHTITLAN: THE VENICE OF MESOAMERICA"
+  closing_tip: "Visit the Templo Mayor ruins beside the Zócalo, then take a trajinera through Xochimilco's canals."
+  narration_language: "Spanish"
+  kokoro_voice: "ef_dora"
+  smoke_test_text: "Ciudad de México nació en un lago."
+  narration: "Before it was Mexico City, this valley held a lake where the Mexica people founded Tenochtitlan in 1325, guided by an eagle on a cactus. Canals and chinampas, artificial gardens, fed a population of hundreds of thousands, making it one of the world's largest cities. In 1521, Spanish forces besieged and destroyed the Aztec capital, building a colonial city atop its temples. The Zócalo, once the ceremonial center, became the main square of New Spain, flanked by the Metropolitan Cathedral and the Viceregal Palace. For three centuries, silver, trade, and faith shaped a baroque metropolis. Independence in 1821 brought turbulence, then the Porfiriato's modernization: trams, drainage, and grand avenues like the Paseo de la Reforma. The 20th century brought revolution, muralism, and explosive growth, swallowing the lakebed. Today, the Templo Mayor's stones emerge beside the Cathedral, and Xochimilco's canals still carry trajineras through the last chinampas. A city of layers, where excavation reveals another century."
+sources:
+  - https://en.wikipedia.org/wiki/Mexico_City
+  - https://en.wikipedia.org/wiki/Tenochtitlan
+  - https://www.inah.gob.mx/
+  - https://whc.unesco.org/en/list/412
+  - https://www.museotemplomayor.gob.mx/
+claim_sources:
+  "Tenochtitlan was founded in 1325 on an island in Lake Texcoco": [https://en.wikipedia.org/wiki/Tenochtitlan, https://www.inah.gob.mx/]
+  "The Mexica were guided by an eagle on a cactus": [https://en.wikipedia.org/wiki/Tenochtitlan, https://en.wikipedia.org/wiki/Coat_of_arms_of_Mexico]
+  "Tenochtitlan fell to Spanish forces in 1521": [https://en.wikipedia.org/wiki/Siege_of_Tenochtitlan]
+  "The Zócalo was the ceremonial center of Tenochtitlan": [https://en.wikipedia.org/wiki/Z%C3%B3calo, https://www.inah.gob.mx/]
+  "Mexico City's historic center is a UNESCO World Heritage site": [https://whc.unesco.org/en/list/412]
+  "Xochimilco preserves the last chinampa canals": [https://whc.unesco.org/en/list/412, https://www.inah.gob.mx/]
+visual_style:
+  palette: [volcanic-stone, jade-green, terracotta, obsidian]
+  accent_color: "#D4A017"
+  music_mood: "deep, resonant percussion with wind instruments and subtle lake ambience"
+  notes: "Documentary depth. Prefer verified archaeological photographs, codices, colonial art, and contemporary Mexico City photography. No fantasy illustrations or tourist stereotypes."
+image_banned_terms: [book cover, catalogue, catalog, poster, event, banner, logo, flyer, signage, conference, meetup, screenshot, rendering, illustration, generated, stock photo watermark, cartoon]
+map:
+  latitude: 19.4326
+  longitude: -99.1332
+  label: "MEXICO CITY"
+  country: "Mexico"
+  span_deg: 10
+  connect: true
+  places:
+    - {label: "Teotihuacan", latitude: 19.6925, longitude: -98.8437}
+    - {label: "Puebla", latitude: 19.0414, longitude: -98.2063}
+scenes:
+  - title: "The Valley of Lakes"
+    narration_intent: "Show the geography of the Valley of Mexico and the lake system."
+    image_type: map
+    image_search_terms: ["Valley of Mexico map", "Lake Texcoco map", "Mexico City basin map"]
+    required_keywords: [Mexico, Valley, lake]
+  - title: "Eagle on the Cactus"
+    narration_intent: "Depict the founding myth of Tenochtitlan."
+    image_type: historic
+    named_entities: ["Tenochtitlan", "Huitzilopochtli", "eagle", "cactus"]
+    visual_tags: ["eagle cactus codex", "Tenochtitlan founding myth", "Mexica migration codex"]
+    image_search_terms: ["eagle on cactus codex Mexica", "Tenochtitlan founding codex", "Huitzilopochtli eagle cactus illustration"]
+    required_keywords: [eagle, cactus, Tenochtitlan]
+    banned_keywords: [modern flag only, cartoon, tourist souvenir]
+    max_year: 1520
+  - title: "City on the Water"
+    narration_intent: "Show Tenochtitlan's canals, chinampas, and temple precinct."
+    image_type: historic
+    named_entities: ["Tenochtitlan", "chinampa", "Templo Mayor", "Great Temple"]
+    visual_tags: ["Tenochtitlan model", "chinampa agriculture", "Templo Mayor reconstruction"]
+    image_search_terms: ["Tenochtitlan model Museo Nacional", "chinampa Aztec agriculture", "Templo Mayor archaeological reconstruction"]
+    required_keywords: [Tenochtitlan, chinampa, temple]
+    banned_keywords: [modern Mexico City, tourist boat]
+    max_year: 1520
+  - title: "The Fall of Tenochtitlan"
+    narration_intent: "Represent the 1521 siege without gratuitous violence."
+    image_type: historic
+    named_entities: ["Siege of Tenochtitlan", "Cuauhtémoc", "Cortés"]
+    visual_tags: ["Siege of Tenochtitlan codex", "Conquest of Mexico illustration", "Cuauhtémoc surrender"]
+    image_search_terms: ["Siege of Tenochtitlan 1521 codex", "Conquest of Mexico historical illustration", "Cuauhtémoc capture codex"]
+    required_keywords: [Tenochtitlan, 1521, siege]
+    banned_keywords: [modern reenactment, film still, graphic violence]
+    max_year: 1521
+  - title: "Colonial Capital"
+    narration_intent: "Show the Zócalo and Cathedral rising on Aztec foundations."
+    image_type: historic
+    named_entities: ["Zócalo", "Metropolitan Cathedral", "National Palace"]
+    visual_tags: ["Zócalo colonial Mexico City", "Metropolitan Cathedral construction", "colonial Mexico City plaza"]
+    image_search_terms: ["Zócalo Mexico City colonial engraving", "Metropolitan Cathedral Mexico City historical", "colonial Mexico City main square"]
+    required_keywords: [Zócalo, Cathedral, colonial]
+    banned_keywords: [modern protest, contemporary event]
+    max_year: 1820
+  - title: "Silver and Faith"
+    narration_intent: "Depict the baroque wealth of New Spain's capital."
+    image_type: historic
+    named_entities: ["Puebla", "silver", "baroque", "Churrigueresque"]
+    visual_tags: ["Puebla baroque architecture", "Mexico City baroque church", "colonial silver Mexico"]
+    image_search_terms: ["Puebla baroque church Mexico", "Mexico City baroque architecture colonial", "Churrigueresque Mexico"]
+    required_keywords: [baroque, church, Mexico]
+    banned_keywords: [modern, tourist]
+    max_year: 1800
+  - title: "Reform and Revolution"
+    narration_intent: "Show the Paseo de la Reforma and the 1910 Revolution's impact."
+    image_type: historic
+    named_entities: ["Paseo de la Reforma", "Porfirio Díaz", "Mexican Revolution", "Ángel de la Independencia"]
+    visual_tags: ["Paseo de la Reforma 1900", "Ángel de la Independencia construction", "Mexican Revolution Mexico City"]
+    image_search_terms: ["Paseo de la Reforma historical photograph", "Ángel de la Independencia 1910", "Mexican Revolution Mexico City historical"]
+    required_keywords: [Reforma, Revolution, Mexico]
+    banned_keywords: [modern traffic, contemporary]
+    max_year: 1920
+  - title: "Muralism and Identity"
+    narration_intent: "Highlight the post-revolutionary mural movement."
+    image_type: historic
+    named_entities: ["Diego Rivera", "David Alfaro Siqueiros", "José Clemente Orozco", "National Palace murals"]
+    visual_tags: ["Diego Rivera mural National Palace", "Siqueiros mural Mexico", "Orozco mural historical"]
+    image_search_terms: ["Diego Rivera National Palace mural", "Mexican muralism 1930s", "Siqueiros Polyforum Cultural"]
+    required_keywords: [mural, Rivera, Mexico]
+    banned_keywords: [graffiti, street art, modern]
+    max_year: 1960
+  - title: "The Last Canals"
+    narration_intent: "Show Xochimilco's surviving chinampas and trajineras."
+    image_type: modern
+    named_entities: ["Xochimilco", "chinampa", "trajinera"]
+    visual_tags: ["Xochimilco canals modern", "chinampa farming today", "trajinera boat Xochimilco"]
+    image_search_terms: ["Xochimilco canals modern photograph", "chinampa farming today Mexico", "trajinera Xochimilco contemporary"]
+    required_keywords: [Xochimilco, chinampa, canal]
+    banned_keywords: [tourist trap, party boat]
+  - title: "Layers Unearthed"
+    narration_intent: "Show the Templo Mayor excavations beside the Cathedral."
+    image_type: modern
+    named_entities: ["Templo Mayor", "Metropolitan Cathedral", "archaeology"]
+    visual_tags: ["Templo Mayor excavation site", "Templo Mayor museum", "Aztec ruins Mexico City center"]
+    image_search_terms: ["Templo Mayor archaeological site Mexico City", "Templo Mayor museum photograph", "Aztec ruins downtown Mexico City"]
+    required_keywords: [Templo Mayor, excavation, Mexico]
+    banned_keywords: [reconstruction, model only]
+  - title: "Megalopolis"
+    narration_intent: "Close on the vast modern city built on a lakebed."
+    image_type: modern
+    named_entities: ["Mexico City", "Paseo de la Reforma", "Polanco", "Santa Fe"]
+    visual_tags: ["Mexico City skyline modern", "Paseo de la Reforma contemporary", "Mexico City aerial"]
+    image_search_terms: ["Mexico City skyline modern photograph", "Paseo de la Reforma today", "Mexico City aerial view contemporary"]
+    required_keywords: [Mexico City, skyline, modern]
+    banned_keywords: [historical, vintage, black and white]

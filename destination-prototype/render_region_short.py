@@ -254,17 +254,32 @@ def main():
  if any(x.get("provider") in ("fallback text card", "procedural illustration", "missing asset") for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene has no approved source image. Replace every missing scene with a verified, rights-cleared, relevant image before final rendering.")
  # Kokoro only: no silent speech-provider fallback.
  try:
-  import torch
-  from kokoro import KPipeline
+     import torch
+     from kokoro import KPipeline
  except Exception as e: fail(f"Kokoro import failed: {type(e).__name__}: {e}")
- narration_language=str(cfg.get("story",{}).get("narration_language","English")).strip().lower(); lang="j" if narration_language.startswith("japan") else "b" if narration_language.startswith("english") else None
- if lang is None: fail(f"Unsupported narration_language {narration_language!r}; configure English or Japanese explicitly")
- torch.set_num_threads(2); print(f"Kokoro narration language: {narration_language} (pipeline={lang})"); pipe=KPipeline(lang_code=lang,device="cpu")
+ narration_language=str(cfg.get("story",{}).get("narration_language","English")).strip().lower()
+ # Map language to Kokoro pipeline code
+ lang_map = {"japanese": "j", "english": "a", "mandarin": "z", "spanish": "e", "french": "f", "korean": "k", "hindi": "h"}
+ lang = lang_map.get(narration_language)
+ if lang is None:
+    # Fallback: try prefix matching for backwards compatibility
+    if narration_language.startswith("japan"): lang = "j"
+    elif narration_language.startswith("english"): lang = "a"
+    elif narration_language.startswith("mandarin") or narration_language.startswith("chinese"): lang = "z"
+    elif narration_language.startswith("spanish"): lang = "e"
+    elif narration_language.startswith("french"): lang = "f"
+    elif narration_language.startswith("korean"): lang = "k"
+    elif narration_language.startswith("hindi"): lang = "h"
+ if lang is None: fail(f"Unsupported narration_language {narration_language!r}; configure a supported language (English, Japanese, Mandarin, Spanish, French, Korean, Hindi)")
+ # Use configured voice or default for the language
+ default_voices = {"j": "jf_alpha", "a": "af_heart", "z": "zf_xiaobei", "e": "ef_dora", "f": "ff_siwis", "k": "kf_alpha", "h": "hf_alpha"}
+ voice = cfg.get("story",{}).get("kokoro_voice", default_voices.get(lang, "af_heart"))
+ torch.set_num_threads(2); print(f"Kokoro narration language: {narration_language} (pipeline={lang}, voice={voice})"); pipe=KPipeline(lang_code=lang,device="cpu")
  chunks=[]; chunk_texts=[]
  try:
-  for gs,_,audio in pipe(script,voice="jf_alpha" if lang=="j" else "bm_george",speed=1.0):
-   if audio is not None:
-    chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1)); chunk_texts.append(str(gs or ""))
+    for gs,_,audio in pipe(script,voice=voice,speed=1.0):
+        if audio is not None:
+            chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1)); chunk_texts.append(str(gs or ""))
  except Exception as e: fail(f"Kokoro synthesis failed: {type(e).__name__}: {e}")
  if not chunks: fail("Kokoro returned no narration audio")
  voice=np.concatenate(chunks); rate=24000; duration=len(voice)/rate

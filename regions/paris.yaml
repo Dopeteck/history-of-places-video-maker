@@ -1,0 +1,144 @@
+name: Paris
+slug: paris
+country: France
+languages: [French, English]
+place_names:
+  - spelling: Paris
+    pronunciation_hint: "pah-REE"
+  - spelling: Île de la Cité
+    pronunciation_hint: "eel duh la see-TAY"
+  - spelling: Notre-Dame
+    pronunciation_hint: "noh-truh DAHM"
+  - spelling: Versailles
+    pronunciation_hint: "ver-SY"
+period_focus: "Medieval origins to modern metropolis, 10th century to present"
+story:
+  hook: "Before the City of Light, there was a river island settlement."
+  hook_variants:
+    A: "PARIS BEGAN ON AN ISLAND"
+    B: "THE ISLAND THAT BECAME PARIS"
+  closing_tip: "Walk from Notre-Dame to the Louvre at sunset, and trace the Seine's curve through centuries."
+  narration_language: "French"
+  kokoro_voice: "ff_siwis"
+  smoke_test_text: "Paris a commencé sur une île."
+  narration: "Before Paris became the City of Light, it was a modest settlement on the Île de la Cité, where the Seine curves around a defensible island. The Romans knew it as Lutetia, a Gallic town that grew into a regional capital. By the 10th century, the Capetian kings made Paris their seat, and the city expanded beyond its island cradle onto both banks. Notre-Dame rose from the 12th century onward, a Gothic anchor for a growing university quarter. The Louvre began as a fortress, then a palace, before becoming the world's most visited museum. The French Revolution erupted in these streets, and Napoleon reshaped the city with triumphal arcs and grand boulevards. Haussmann's 19th-century renovation gave Paris its iconic stone facades and wide avenues, while the Eiffel Tower arrived for the 1889 World's Fair. Today, the Seine still threads through arrondissements where medieval alleys meet imperial grandeur, and every bridge crosses layers of history."
+sources:
+  - https://en.wikipedia.org/wiki/Paris
+  - https://en.wikipedia.org/wiki/History_of_Paris
+  - https://www.paris.fr/
+  - https://www.louvre.fr/en
+  - https://www.musee-orsay.fr/en
+claim_sources:
+  "Paris originated as a settlement on the Île de la Cité": [https://en.wikipedia.org/wiki/Paris, https://en.wikipedia.org/wiki/History_of_Paris]
+  "The Romans called the town Lutetia": [https://en.wikipedia.org/wiki/Lutetia]
+  "Notre-Dame construction began in the 12th century": [https://en.wikipedia.org/wiki/Notre-Dame_de_Paris]
+  "The Louvre was a fortress before becoming a palace and museum": [https://en.wikipedia.org/wiki/Louvre]
+  "Haussmann renovated Paris in the 19th century": [https://en.wikipedia.org/wiki/Haussmann%27s_renovation_of_Paris]
+  "The Eiffel Tower was built for the 1889 World's Fair": [https://en.wikipedia.org/wiki/Eiffel_Tower]
+visual_style:
+  palette: [cream-stone, slate-blue, gold-leaf, charcoal]
+  accent_color: "#C5A572"
+  music_mood: "elegant, wandering strings with subtle Seine water ambience"
+  notes: "Documentary elegance. Prefer verified historical photographs, engravings, museum objects, and contemporary Paris photography. No generated illustrations or tourist clichés."
+image_banned_terms: [book cover, catalogue, catalog, poster, event, banner, logo, flyer, signage, conference, meetup, screenshot, rendering, illustration, generated, stock photo watermark]
+map:
+  latitude: 48.8566
+  longitude: 2.3522
+  label: "PARIS"
+  country: "France"
+  span_deg: 8
+  connect: true
+  places:
+    - {label: "Versailles", latitude: 48.8049, longitude: 2.1204}
+scenes:
+  - title: "The Island Beginning"
+    narration_intent: "Show the Seine and Île de la Cité as the geographic cradle of Paris."
+    image_type: map
+    image_search_terms: ["Paris Seine map", "Île de la Cité map", "Paris locator map France"]
+    required_keywords: [Paris, Seine, island]
+  - title: "Roman Lutetia"
+    narration_intent: "Introduce the Roman town that preceded medieval Paris."
+    image_type: historic
+    named_entities: ["Lutetia", "Roman Gaul"]
+    visual_tags: ["Lutetia Roman ruins", "Roman Paris archaeological", "Thermes de Cluny"]
+    image_search_terms: ["Lutetia Roman ruins Paris", "Thermes de Cluny Roman baths", "Roman Paris archaeological site"]
+    required_keywords: [Lutetia, Roman, Paris]
+    banned_keywords: [modern reconstruction, fantasy]
+    max_year: 500
+  - title: "Capetian Capital"
+    narration_intent: "Show early medieval Paris as the Capetian royal seat."
+    image_type: historic
+    named_entities: ["Capetian", "Île de la Cité", "Notre-Dame"]
+    visual_tags: ["Notre-Dame construction", "medieval Paris Île de la Cité", "Capetian Paris"]
+    image_search_terms: ["Notre-Dame de Paris construction medieval", "medieval Paris Île de la Cité engraving", "Capetian Paris historical illustration"]
+    required_keywords: [Paris, Notre-Dame, medieval]
+    banned_keywords: [modern, fire damage, scaffolding]
+    max_year: 1300
+  - title: "University and Scholars"
+    narration_intent: "Depict the medieval university quarter on the Left Bank."
+    image_type: historic
+    named_entities: ["University of Paris", "Sorbonne", "Latin Quarter"]
+    visual_tags: ["Sorbonne medieval university", "Latin Quarter Paris medieval", "scholars Paris medieval"]
+    image_search_terms: ["Sorbonne medieval Paris", "University of Paris medieval illustration", "Latin Quarter medieval engraving"]
+    required_keywords: [Paris, university, Sorbonne]
+    banned_keywords: [modern campus, contemporary]
+    max_year: 1500
+  - title: "Royal Palace to Museum"
+    narration_intent: "Show the Louvre's evolution from fortress to palace to museum."
+    image_type: historic
+    named_entities: ["Louvre", "Francis I", "Louis XIV"]
+    visual_tags: ["Louvre palace historical", "Louvre fortress medieval", "Grand Gallery Louvre"]
+    image_search_terms: ["Louvre palace historical engraving", "Louvre medieval fortress illustration", "Grande Galerie Louvre historical"]
+    required_keywords: [Louvre, palace]
+    banned_keywords: [pyramid, modern museum entrance, I.M. Pei]
+    max_year: 1789
+  - title: "Revolution in the Streets"
+    narration_intent: "Represent the French Revolution's Paris without sensational imagery."
+    image_type: historic
+    named_entities: ["Bastille", "Place de la Concorde", "French Revolution"]
+    visual_tags: ["Storming of the Bastille", "Place de la Concorde guillotine", "French Revolution Paris engraving"]
+    image_search_terms: ["Storming of the Bastille 1789 engraving", "Place de la Concorde Revolution historical", "French Revolution Paris street scene"]
+    required_keywords: [Bastille, Revolution, Paris]
+    banned_keywords: [modern reenactment, film still, cartoon]
+    max_year: 1799
+  - title: "Imperial Grandeur"
+    narration_intent: "Show Napoleon's architectural legacy: the Arc de Triomphe and the Vendôme Column."
+    image_type: historic
+    named_entities: ["Napoleon", "Arc de Triomphe", "Vendôme Column"]
+    visual_tags: ["Arc de Triomphe construction", "Vendôme Column Paris", "Napoleon Paris architecture"]
+    image_search_terms: ["Arc de Triomphe construction 1806", "Vendôme Column Napoleon", "Napoleon Paris imperial architecture"]
+    required_keywords: [Napoleon, Arc de Triomphe, Paris]
+    banned_keywords: [modern traffic, tourist photo]
+    max_year: 1815
+  - title: "Haussmann's Paris"
+    narration_intent: "Show the 19th-century boulevards and stone facades that define Paris today."
+    image_type: historic
+    named_entities: ["Haussmann", "Boulevard Haussmann", "Opéra Garnier"]
+    visual_tags: ["Haussmann boulevard Paris", "Opéra Garnier construction", "Paris 1860s boulevard"]
+    image_search_terms: ["Haussmann renovation Paris boulevard", "Opéra Garnier construction 1870", "Paris boulevard 19th century photograph"]
+    required_keywords: [Haussmann, boulevard, Paris]
+    banned_keywords: [modern car, contemporary shopfront]
+    max_year: 1900
+  - title: "The Iron Lady"
+    narration_intent: "Depict the Eiffel Tower as the 1889 World's Fair centerpiece."
+    image_type: historic
+    named_entities: ["Eiffel Tower", "Gustave Eiffel", "Exposition Universelle 1889"]
+    visual_tags: ["Eiffel Tower construction", "Eiffel Tower 1889 World Fair", "Gustave Eiffel tower"]
+    image_search_terms: ["Eiffel Tower construction 1887", "Eiffel Tower 1889 Exposition Universelle", "Eiffel Tower historical photograph"]
+    required_keywords: [Eiffel Tower, Paris, 1889]
+    banned_keywords: [light show, night sparkle, tourist selfie]
+    max_year: 1889
+  - title: "Modern Metropolis"
+    narration_intent: "Close with contemporary Paris where history lives alongside daily life."
+    image_type: modern
+    named_entities: ["Seine", "Louvre", "Eiffel Tower", "Notre-Dame"]
+    visual_tags: ["Paris Seine banks modern", "Louvre pyramid day", "Notre-Dame restoration"]
+    image_search_terms: ["Paris Seine riverbanks modern photograph", "Louvre pyramid contemporary photo", "Notre-Dame restoration 2020s"]
+    required_keywords: [Paris, Seine, modern]
+    banned_keywords: [vintage, historical, black and white]
+  - title: "Versailles Connection"
+    narration_intent: "Orient viewers with the geographic link between Paris and Versailles."
+    image_type: map
+    image_search_terms: ["Paris Versailles map", "Île-de-France region map", "Paris to Versailles map"]
+    required_keywords: [Paris, Versailles, map]
+    banned_keywords: [fictional, schematic]

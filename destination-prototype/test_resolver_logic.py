@@ -116,7 +116,15 @@ class ResolverUnits(unittest.TestCase):
         self.assertNotIn("test-key", str(calls[0][0]))
 
     def test_europeana_is_in_default_provider_set(self):
-        self.assertIn("_europeana", ar.DEFAULT_PROVIDERS)
+        # Europeana requires an API key; default providers are no-key verified endpoints.
+        self.assertIn("_met", ar.DEFAULT_PROVIDERS)
+        self.assertIn("_aic", ar.DEFAULT_PROVIDERS)
+        self.assertIn("_cleveland", ar.DEFAULT_PROVIDERS)
+        self.assertIn("_loc", ar.DEFAULT_PROVIDERS)
+        self.assertIn("_nga", ar.DEFAULT_PROVIDERS)
+        # Europeana and Smithsonian are opt-in via config when keys are available.
+        self.assertNotIn("_europeana", ar.DEFAULT_PROVIDERS)
+        self.assertNotIn("_smithsonian", ar.DEFAULT_PROVIDERS)
 
     def test_met_403_is_not_retried(self):
         calls = []

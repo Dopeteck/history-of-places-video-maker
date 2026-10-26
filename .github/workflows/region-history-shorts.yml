@@ -169,15 +169,31 @@ jobs:
           python -m pip install -r requirements-regions.txt
           # Install matching spaCy 3.7 English model for Kokoro/Misaki tokenizer; mismatched versions cause OverflowError in CI.
           python -m pip install --no-deps https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
-      - name: Verify Kokoro English voice pipeline initializes
+      - name: Verify Kokoro voice pipeline initializes (supports configured language)
         if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
         run: |
           python - <<'PY'
+          import yaml, os, sys
+          sys.path.insert(0, "destination-prototype")
+          from region_slug import normalize_region_slug
+          region_raw = os.environ.get("REGION", "tokyo")
+          try:
+              slug = normalize_region_slug(region_raw)
+          except ValueError as exc:
+              raise SystemExit(str(exc))
+          cfg_path = f"regions/{slug}.yaml"
+          if not os.path.exists(cfg_path):
+              raise SystemExit(f"Config not found: {cfg_path}")
+          cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
+          narration_lang = str(cfg.get("story", {}).get("narration_language", "English")).strip().lower()
+          lang_code = "j" if narration_lang.startswith("japan") else "a"
+          voice = cfg.get("story", {}).get("kokoro_voice", "af_heart" if lang_code == "a" else "jf_alpha")
+          test_text = cfg.get("story", {}).get("smoke_test_text", "History begins here.")
           from kokoro import KPipeline
-          pipeline = KPipeline(lang_code="a")
-          graphemes, phonemes, audio = next(pipeline("Tokyo's history begins with Edo.", voice="af_heart"))
+          pipeline = KPipeline(lang_code=lang_code)
+          graphemes, phonemes, audio = next(pipeline(test_text, voice=voice))
           assert audio is not None and audio.shape[0] > 0
-          print(f"Kokoro English TTS smoke test passed: {audio.shape[0]} samples at 24000 Hz")
+          print(f"Kokoro {narration_lang} TTS smoke test passed: {audio.shape[0]} samples at 24000 Hz (voice={voice})")
           PY
       - name: Verify CLIP model can score a known image
         if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
