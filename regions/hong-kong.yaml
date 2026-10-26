@@ -1,138 +1,313 @@
 name: Hong Kong
 slug: hong-kong
 country: China
-languages: [Cantonese, Chinese, English]
+languages:
+- Cantonese
+- Chinese
+- English
 place_names:
-  - spelling: Hong Kong
-    pronunciation_hint: "hong kong"
-  - spelling: Victoria Harbour
-    pronunciation_hint: "vik-TOR-ee-ah HAR-ber"
-  - spelling: Kowloon Walled City
-    pronunciation_hint: "kow-LOON wawld SIT-ee"
-period_focus: "Coastal communities, nineteenth-century colonial rule, and the 1997 handover to the present"
+- spelling: Hong Kong
+  pronunciation_hint: hong kong
+- spelling: Victoria Harbour
+  pronunciation_hint: vik-TOR-ee-ah HAR-ber
+- spelling: Kowloon Walled City
+  pronunciation_hint: kow-LOON wawld SIT-ee
+period_focus: Coastal communities, nineteenth-century colonial rule, and the 1997
+  handover to the present
 story:
-  hook: "A harbour changed this city."
+  hook: A harbour changed this city.
   hook_variants:
-    A: "A HARBOUR CHANGED THIS CITY"
-    B: "HONG KONG BEFORE THE SKYLINE"
-  closing_tip: "Walk the Central waterfront, then take the Star Ferry to see how the harbour still connects the city."
-  narration_language: "English"
-  kokoro_voice: "af_heart"
-  smoke_test_text: "Hong Kong's story begins at the harbour."
-  narration: "Hong Kong’s story begins long before its skyline. Fishing communities lived along this coast, where a deep, sheltered harbour made sea routes and trade central to daily life. In 1841, British forces occupied Hong Kong Island during the First Opium War; the 1842 Treaty of Nanking formalised its cession to Britain. Kowloon and the New Territories came under British control through later agreements, including the 1898 lease of the New Territories. Around Victoria Harbour, a trading settlement grew into a major port, shaped by Chinese communities as well as migration and global commerce. Not every chapter was prosperous: war, occupation, and crowded living conditions left deep marks. Kowloon Walled City, once a Qing military outpost, was demolished in the 1990s and replaced by a park preserving historic remains. On 1 July 1997, China resumed the exercise of sovereignty over Hong Kong. Today, ferries, old streets, heritage sites, and glass towers share the same compact landscape."
+    A: A HARBOUR CHANGED THIS CITY
+    B: HONG KONG BEFORE THE SKYLINE
+  closing_tip: Walk the Central waterfront, then take the Star Ferry to see how the
+    harbour still connects the city.
+  narration_language: English
+  kokoro_voice: af_heart
+  smoke_test_text: Hong Kong's story begins at the harbour.
+  narration: 'Hong Kong’s story begins long before its skyline. Fishing communities
+    lived along this coast, where a deep, sheltered harbour made sea routes and trade
+    central to daily life. In 1841, British forces occupied Hong Kong Island during
+    the First Opium War; the 1842 Treaty of Nanking formalised its cession to Britain.
+    Kowloon and the New Territories came under British control through later agreements,
+    including the 1898 lease of the New Territories. Around Victoria Harbour, a trading
+    settlement grew into a major port, shaped by Chinese communities as well as migration
+    and global commerce. Not every chapter was prosperous: war, occupation, and crowded
+    living conditions left deep marks. Kowloon Walled City, once a Qing military outpost,
+    was demolished in the 1990s and replaced by a park preserving historic remains.
+    On 1 July 1997, China resumed the exercise of sovereignty over Hong Kong. Today,
+    ferries, old streets, heritage sites, and glass towers share the same compact
+    landscape.'
+  category: hidden_history
 sources:
-  - https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
-  - https://www.edb.gov.hk/en/about-edb/press/cleartheair/20220802.html
-  - https://www.devb.gov.hk/en/issues_in_focus/conserving_central/our_central/index.html
-  - https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_62/index.html
-  - https://www.discoverhongkong.com/eng/place-to-go/travel.guide-victoria-harbour.html
+- https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
+- https://www.edb.gov.hk/en/about-edb/press/cleartheair/20220802.html
+- https://www.devb.gov.hk/en/issues_in_focus/conserving_central/our_central/index.html
+- https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_62/index.html
+- https://www.discoverhongkong.com/eng/place-to-go/travel.guide-victoria-harbour.html
 claim_sources:
-  "Hong Kong Island was occupied by British forces in 1841 and the Treaty of Nanking was signed in 1842":
-    - https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
-  "The 1898 agreement leased the New Territories to Britain for 99 years":
-    - https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
-  "Victoria Harbour and Central shaped Hong Kong's development as a trading port":
-    - https://www.devb.gov.hk/en/issues_in_focus/conserving_central/our_central/index.html
-    - https://www.discoverhongkong.com/eng/place-to-go/travel.guide-victoria-harbour.html
-  "Kowloon Walled City began as a Qing military outpost in 1847 and its South Gate remains preserved":
-    - https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_62/index.html
-  "China resumed the exercise of sovereignty over Hong Kong on 1 July 1997":
-    - https://www.edb.gov.hk/en/about-edb/press/cleartheair/20220802.html
+  Hong Kong Island was occupied by British forces in 1841 and the Treaty of Nanking was signed in 1842:
+  - https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
+  The 1898 agreement leased the New Territories to Britain for 99 years:
+  - https://www.yearbook.gov.hk/2021/en/pdf/E22.pdf
+  Victoria Harbour and Central shaped Hong Kong's development as a trading port:
+  - https://www.devb.gov.hk/en/issues_in_focus/conserving_central/our_central/index.html
+  - https://www.discoverhongkong.com/eng/place-to-go/travel.guide-victoria-harbour.html
+  Kowloon Walled City began as a Qing military outpost in 1847 and its South Gate remains preserved:
+  - https://www.amo.gov.hk/en/historic-buildings/monuments/kowloon/monuments_62/index.html
+  China resumed the exercise of sovereignty over Hong Kong on 1 July 1997:
+  - https://www.edb.gov.hk/en/about-edb/press/cleartheair/20220802.html
 visual_style:
-  palette: [harbour-blue, jade-green, warm-stone, night-charcoal]
-  accent_color: "#D9A441"
-  music_mood: "Subtle cinematic ambient textures with restrained Chinese instrumental colour; no touristy clichés"
-  notes: "Documentary realism. Prefer verified historical photographs, maps, museum collection objects, and contemporary Hong Kong photography. No generated illustrations, text cards, unrelated landscapes, book covers, or screenshots."
-image_banned_terms: [book cover, catalogue, catalog, report, document page, text page, manuscript page, poster, event banner, unrelated, illustration, generated]
+  palette:
+  - harbour-blue
+  - jade-green
+  - warm-stone
+  - night-charcoal
+  accent_color: '#D9A441'
+  music_mood: Subtle cinematic ambient textures with restrained Chinese instrumental
+    colour; no touristy clichés
+  notes: Documentary realism. Prefer verified historical photographs, maps, museum
+    collection objects, and contemporary Hong Kong photography. No generated illustrations,
+    text cards, unrelated landscapes, book covers, or screenshots.
+image_banned_terms:
+- book cover
+- catalogue
+- catalog
+- report
+- document page
+- text page
+- manuscript page
+- poster
+- event banner
+- unrelated
+- illustration
+- generated
 map:
   latitude: 22.3193
   longitude: 114.1694
   label: HONG KONG
 scenes:
-  - title: The Harbour
-    narration_intent: "Establish Hong Kong's geography and the harbour that shaped its history."
-    named_entities: [Victoria Harbour, Hong Kong Island, Kowloon]
-    visual_tags: [Victoria Harbour, Hong Kong Island and Kowloon waterfront, historical harbour panorama]
-    image_search_terms: ["Victoria Harbour historical photograph", "Hong Kong harbour old panorama", "Victoria Harbour modern skyline aerial"]
-    required_keywords: [Hong Kong, harbour]
-    banned_keywords: [Sydney, Vancouver, generic skyline]
-    image_type: modern
-  - title: Coastal Communities
-    narration_intent: "Show the coast before the modern skyline, without claiming one image represents all early communities."
-    named_entities: [Hong Kong fishing communities, Aberdeen Harbour]
-    visual_tags: [Hong Kong fishing boats, traditional harbour life, old coastal settlement]
-    image_search_terms: ["Hong Kong fishing boats historical photograph", "Aberdeen Hong Kong old fishing village", "Hong Kong traditional fishing junks archive"]
-    required_keywords: [Hong Kong, fishing]
-    banned_keywords: [Vietnam, Thailand, fantasy village]
-    image_type: historic
-  - title: "1841"
-    narration_intent: "Introduce the British occupation of Hong Kong Island during the First Opium War."
-    named_entities: [Possession Point, Sheung Wan, First Opium War]
-    visual_tags: [Possession Point Hong Kong history, nineteenth century Hong Kong Island, historical map Hong Kong]
-    image_search_terms: ["Hong Kong Island 1841 historical map", "Possession Point Sheung Wan historical Hong Kong", "First Opium War Hong Kong historical engraving"]
-    required_keywords: [Hong Kong, 1841]
-    banned_keywords: [modern battle reenactment, unrelated naval battle]
-    image_type: historic
-  - title: The Treaties
-    narration_intent: "Explain that later agreements expanded British control, including the 1898 New Territories lease."
-    named_entities: [Treaty of Nanking, Convention for the Extension of Hong Kong Territory]
-    visual_tags: [Treaty of Nanking historical document, 1898 Hong Kong New Territories map, historical Hong Kong territorial map]
-    image_search_terms: ["Treaty of Nanking 1842 historical document", "Hong Kong New Territories 1898 map", "Hong Kong territory historical map 1898"]
-    required_keywords: [Hong Kong, treaty]
-    banned_keywords: [modern contract, unrelated treaty]
-    image_type: historic
-  - title: Central Takes Shape
-    narration_intent: "Show how Victoria City and Central developed as administrative and trading districts."
-    named_entities: [Central, Victoria City, Queen's Road]
-    visual_tags: [old Central Hong Kong, Victoria City historical buildings, Queen's Road old photograph]
-    image_search_terms: ["Central Hong Kong 1900 historical photograph", "Victoria City Hong Kong old street photograph", "Queen's Road Central historical photograph"]
-    required_keywords: [Hong Kong, Central]
-    banned_keywords: [Central London, Central Hong Kong shopping mall advertisement]
-    image_type: historic
-  - title: A Port City
-    narration_intent: "Connect the harbour with trade and the growth of the port."
-    named_entities: [Victoria Harbour, Star Ferry]
-    visual_tags: [historic Hong Kong harbour shipping, old Star Ferry, cargo ships Victoria Harbour]
-    image_search_terms: ["Hong Kong harbour shipping historical photograph", "Star Ferry old Hong Kong photograph", "Victoria Harbour cargo ships archival photograph"]
-    required_keywords: [Hong Kong, harbour]
-    banned_keywords: [Singapore harbour, cruise ship advertisement]
-    image_type: historic
-  - title: Kowloon Walled City
-    narration_intent: "Show the Qing military outpost and surviving heritage without romanticising overcrowding."
-    named_entities: [Kowloon Walled City, South Gate, Yamen]
-    visual_tags: [Kowloon Walled City archival photograph, Kowloon Walled City South Gate, former Yamen building]
-    image_search_terms: ["Kowloon Walled City historical photograph archive", "Kowloon Walled City South Gate monument", "Kowloon Walled City former Yamen building"]
-    required_keywords: [Kowloon Walled City]
-    banned_keywords: [film set, game screenshot, unrelated walled city]
-    image_type: historic
-  - title: The 1997 Handover
-    narration_intent: "State carefully that China resumed the exercise of sovereignty over Hong Kong on 1 July 1997."
-    named_entities: [Hong Kong handover, 1 July 1997]
-    visual_tags: [Hong Kong handover ceremony 1997 archival photograph, Hong Kong 1997 flag ceremony]
-    image_search_terms: ["Hong Kong handover ceremony 1 July 1997 official photograph", "Hong Kong 1997 handover archival photo", "Hong Kong flag ceremony 1997 historical photograph"]
-    required_keywords: [Hong Kong, 1997]
-    banned_keywords: [2022 ceremony, unrelated flag ceremony]
-    image_type: historic
-  - title: The City Today
-    narration_intent: "Close on the contemporary city while showing that historic routes and heritage survive alongside towers."
-    named_entities: [Victoria Harbour, Central, Star Ferry]
-    visual_tags: [modern Hong Kong waterfront, Star Ferry crossing, Central skyline from harbour]
-    image_search_terms: ["Hong Kong Central skyline Victoria Harbour modern photo", "Star Ferry Hong Kong waterfront contemporary photograph", "Hong Kong heritage street and skyline modern"]
-    required_keywords: [Hong Kong, Victoria Harbour]
-    banned_keywords: [Shanghai, Shenzhen, generic skyline]
-    image_type: modern
-  - title: Find the Harbour
-    narration_intent: "Orient viewers geographically with the real Hong Kong map scene."
-    named_entities: [Hong Kong, Pearl River Delta, Victoria Harbour]
-    visual_tags: [Hong Kong map Pearl River Delta, Hong Kong location map]
-    image_search_terms: ["Hong Kong location map Pearl River Delta", "Hong Kong Island Kowloon map", "Hong Kong territory map"]
-    required_keywords: [Hong Kong, map]
-    banned_keywords: [fictional map, schematic route line]
-    image_type: map
-
-# Explicitly enable every verified, rights-first source for the next review pass.
-# Europeana and Smithsonian are enabled through API keys (Actions secrets).
+- title: The Harbour
+  narration_intent: Establish Hong Kong's geography and the harbour that shaped its
+    history.
+  named_entities:
+  - Victoria Harbour
+  - Hong Kong Island
+  - Kowloon
+  visual_tags:
+  - Victoria Harbour
+  - Hong Kong Island and Kowloon waterfront
+  - historical harbour panorama
+  image_search_terms:
+  - Victoria Harbour historical photograph
+  - Hong Kong harbour old panorama
+  - Victoria Harbour modern skyline aerial
+  required_keywords:
+  - Hong Kong
+  - harbour
+  banned_keywords:
+  - Sydney
+  - Vancouver
+  - generic skyline
+  image_type: modern
+- title: Coastal Communities
+  narration_intent: Show the coast before the modern skyline, without claiming one
+    image represents all early communities.
+  named_entities:
+  - Hong Kong fishing communities
+  - Aberdeen Harbour
+  visual_tags:
+  - Hong Kong fishing boats
+  - traditional harbour life
+  - old coastal settlement
+  image_search_terms:
+  - Hong Kong fishing boats historical photograph
+  - Aberdeen Hong Kong old fishing village
+  - Hong Kong traditional fishing junks archive
+  required_keywords:
+  - Hong Kong
+  - fishing
+  banned_keywords:
+  - Vietnam
+  - Thailand
+  - fantasy village
+  image_type: historic
+- title: '1841'
+  narration_intent: Introduce the British occupation of Hong Kong Island during the
+    First Opium War.
+  named_entities:
+  - Possession Point
+  - Sheung Wan
+  - First Opium War
+  visual_tags:
+  - Possession Point Hong Kong history
+  - nineteenth century Hong Kong Island
+  - historical map Hong Kong
+  image_search_terms:
+  - Hong Kong Island 1841 historical map
+  - Possession Point Sheung Wan historical Hong Kong
+  - First Opium War Hong Kong historical engraving
+  required_keywords:
+  - Hong Kong
+  - 1841
+  banned_keywords:
+  - modern battle reenactment
+  - unrelated naval battle
+  image_type: historic
+- title: The Treaties
+  narration_intent: Explain that later agreements expanded British control, including
+    the 1898 New Territories lease.
+  named_entities:
+  - Treaty of Nanking
+  - Convention for the Extension of Hong Kong Territory
+  visual_tags:
+  - Treaty of Nanking historical document
+  - 1898 Hong Kong New Territories map
+  - historical Hong Kong territorial map
+  image_search_terms:
+  - Treaty of Nanking 1842 historical document
+  - Hong Kong New Territories 1898 map
+  - Hong Kong territory historical map 1898
+  required_keywords:
+  - Hong Kong
+  - treaty
+  banned_keywords:
+  - modern contract
+  - unrelated treaty
+  image_type: historic
+- title: Central Takes Shape
+  narration_intent: Show how Victoria City and Central developed as administrative
+    and trading districts.
+  named_entities:
+  - Central
+  - Victoria City
+  - Queen's Road
+  visual_tags:
+  - old Central Hong Kong
+  - Victoria City historical buildings
+  - Queen's Road old photograph
+  image_search_terms:
+  - Central Hong Kong 1900 historical photograph
+  - Victoria City Hong Kong old street photograph
+  - Queen's Road Central historical photograph
+  required_keywords:
+  - Hong Kong
+  - Central
+  banned_keywords:
+  - Central London
+  - Central Hong Kong shopping mall advertisement
+  image_type: historic
+- title: A Port City
+  narration_intent: Connect the harbour with trade and the growth of the port.
+  named_entities:
+  - Victoria Harbour
+  - Star Ferry
+  visual_tags:
+  - historic Hong Kong harbour shipping
+  - old Star Ferry
+  - cargo ships Victoria Harbour
+  image_search_terms:
+  - Hong Kong harbour shipping historical photograph
+  - Star Ferry old Hong Kong photograph
+  - Victoria Harbour cargo ships archival photograph
+  required_keywords:
+  - Hong Kong
+  - harbour
+  banned_keywords:
+  - Singapore harbour
+  - cruise ship advertisement
+  image_type: historic
+- title: Kowloon Walled City
+  narration_intent: Show the Qing military outpost and surviving heritage without
+    romanticising overcrowding.
+  named_entities:
+  - Kowloon Walled City
+  - South Gate
+  - Yamen
+  visual_tags:
+  - Kowloon Walled City archival photograph
+  - Kowloon Walled City South Gate
+  - former Yamen building
+  image_search_terms:
+  - Kowloon Walled City historical photograph archive
+  - Kowloon Walled City South Gate monument
+  - Kowloon Walled City former Yamen building
+  required_keywords:
+  - Kowloon Walled City
+  banned_keywords:
+  - film set
+  - game screenshot
+  - unrelated walled city
+  image_type: historic
+- title: The 1997 Handover
+  narration_intent: State carefully that China resumed the exercise of sovereignty
+    over Hong Kong on 1 July 1997.
+  named_entities:
+  - Hong Kong handover
+  - 1 July 1997
+  visual_tags:
+  - Hong Kong handover ceremony 1997 archival photograph
+  - Hong Kong 1997 flag ceremony
+  image_search_terms:
+  - Hong Kong handover ceremony 1 July 1997 official photograph
+  - Hong Kong 1997 handover archival photo
+  - Hong Kong flag ceremony 1997 historical photograph
+  required_keywords:
+  - Hong Kong
+  - 1997
+  banned_keywords:
+  - 2022 ceremony
+  - unrelated flag ceremony
+  image_type: historic
+- title: The City Today
+  narration_intent: Close on the contemporary city while showing that historic routes
+    and heritage survive alongside towers.
+  named_entities:
+  - Victoria Harbour
+  - Central
+  - Star Ferry
+  visual_tags:
+  - modern Hong Kong waterfront
+  - Star Ferry crossing
+  - Central skyline from harbour
+  image_search_terms:
+  - Hong Kong Central skyline Victoria Harbour modern photo
+  - Star Ferry Hong Kong waterfront contemporary photograph
+  - Hong Kong heritage street and skyline modern
+  required_keywords:
+  - Hong Kong
+  - Victoria Harbour
+  banned_keywords:
+  - Shanghai
+  - Shenzhen
+  - generic skyline
+  image_type: modern
+- title: Find the Harbour
+  narration_intent: Orient viewers geographically with the real Hong Kong map scene.
+  named_entities:
+  - Hong Kong
+  - Pearl River Delta
+  - Victoria Harbour
+  visual_tags:
+  - Hong Kong map Pearl River Delta
+  - Hong Kong location map
+  image_search_terms:
+  - Hong Kong location map Pearl River Delta
+  - Hong Kong Island Kowloon map
+  - Hong Kong territory map
+  required_keywords:
+  - Hong Kong
+  - map
+  banned_keywords:
+  - fictional map
+  - schematic route line
+  image_type: map
 asset_resolver:
-  clip_min_score: 0.30
+  clip_min_score: 0.3
   max_queries_per_provider: 6
-  providers: [_loc, _met, _aic, _cleveland, _smithsonian, _europeana]
+  providers:
+  - _loc
+  - _met
+  - _aic
+  - _cleveland
+  - _smithsonian
+  - _europeana

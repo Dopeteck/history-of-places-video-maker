@@ -1,160 +1,438 @@
 name: Tokyo
 slug: tokyo
 country: Japan
-languages: [Japanese, English]
+languages:
+- Japanese
+- English
 place_names:
-  - spelling: Edo
-    pronunciation_hint: "EH-doh"
-  - spelling: Tokugawa Ieyasu
-    pronunciation_hint: "toh-koo-GAH-wah ee-eh-YAH-soo"
-  - spelling: Nihonbashi
-    pronunciation_hint: "nee-hohn-bah-shee"
-  - spelling: Kyoto
-    pronunciation_hint: "kee-OH-toh"
-period_focus: "Edo to Tokyo, 1603 to the present"
+- spelling: Edo
+  pronunciation_hint: EH-doh
+- spelling: Tokugawa Ieyasu
+  pronunciation_hint: toh-koo-GAH-wah ee-eh-YAH-soo
+- spelling: Nihonbashi
+  pronunciation_hint: nee-hohn-bah-shee
+- spelling: Kyoto
+  pronunciation_hint: kee-OH-toh
+period_focus: Edo to Tokyo, 1603 to the present
 story:
-  hook: "Tokyo was once a different city with a different name: Edo."
+  hook: 'Tokyo was once a different city with a different name: Edo.'
   hook_variants:
-    A: "TOKYO BEGAN AS EDO"
-    B: "EDO: THE CITY BEFORE TOKYO"
-  closing_tip: "Visit Nihonbashi and a nearby garden, then look for Edo’s street pattern beneath modern Tokyo."
-  narration_language: "English"
-  kokoro_voice: "af_heart"
-  smoke_test_text: "Tokyo's history begins with Edo."
-  narration: "Before it was Tokyo, this city was called Edo. A map places it on Japan’s eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government. The city grew through its waterways: boats carried goods, while bridges connected busy neighborhoods. Artists recorded these streets and canals in woodblock prints, making everyday Edo part of Japan’s visual memory. Panoramic views suggest how large the city became, though no single image can capture its whole past. Some traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes offer a quieter link to earlier eras. Nihonbashi was more than a crossing; it became a key starting point for roads across the country. Edo later took the name Tokyo, and today towers rise above a city still layered with older routes, gardens, and memories."
+    A: TOKYO BEGAN AS EDO
+    B: 'EDO: THE CITY BEFORE TOKYO'
+  closing_tip: Visit Nihonbashi and a nearby garden, then look for Edo’s street pattern
+    beneath modern Tokyo.
+  narration_language: English
+  kokoro_voice: af_heart
+  smoke_test_text: Tokyo's history begins with Edo.
+  narration: 'Before it was Tokyo, this city was called Edo. A map places it on Japan’s
+    eastern coast, far from the old imperial capital. In 1603, Tokugawa Ieyasu established
+    his shogunate here, turning Edo into the seat of military government. The city
+    grew through its waterways: boats carried goods, while bridges connected busy
+    neighborhoods. Artists recorded these streets and canals in woodblock prints,
+    making everyday Edo part of Japan’s visual memory. Panoramic views suggest how
+    large the city became, though no single image can capture its whole past. Some
+    traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes
+    offer a quieter link to earlier eras. Nihonbashi was more than a crossing; it
+    became a key starting point for roads across the country. Edo later took the name
+    Tokyo, and today towers rise above a city still layered with older routes, gardens,
+    and memories.'
+  category: hidden_history
 sources:
-  - https://en.wikipedia.org/wiki/Tokyo
-  - https://en.wikipedia.org/wiki/Edo
-  - https://www.gotokyo.org/en/
-  - https://www.ndl.go.jp/landmarks/e/
+- https://en.wikipedia.org/wiki/Tokyo
+- https://en.wikipedia.org/wiki/Edo
+- https://www.gotokyo.org/en/
+- https://www.ndl.go.jp/landmarks/e/
 claim_sources:
-  "Edo became a major political centre under Tokugawa rule": [https://en.wikipedia.org/wiki/Edo, https://en.wikipedia.org/wiki/Tokugawa_shogunate]
-  "The shogunate was established in 1603": [https://en.wikipedia.org/wiki/Tokugawa_Ieyasu, https://en.wikipedia.org/wiki/Tokugawa_shogunate]
-  "Edo developed a rich merchant, canal, print and theatre culture": [https://en.wikipedia.org/wiki/Edo, https://www.ndl.go.jp/landmarks/e/]
-  "The imperial court remained in Kyoto before the Meiji Restoration": [https://en.wikipedia.org/wiki/Capital_of_Japan]
-  "Edo became Tokyo during the 1868 political transition": [https://en.wikipedia.org/wiki/Tokyo, https://en.wikipedia.org/wiki/Meiji_Restoration]
-  "Nihonbashi was a key bridge and starting point for major roads": [https://en.wikipedia.org/wiki/Nihonbashi, https://www.ndl.go.jp/landmarks/e/]
+  Edo became a major political centre under Tokugawa rule:
+  - https://en.wikipedia.org/wiki/Edo
+  - https://en.wikipedia.org/wiki/Tokugawa_shogunate
+  The shogunate was established in 1603:
+  - https://en.wikipedia.org/wiki/Tokugawa_Ieyasu
+  - https://en.wikipedia.org/wiki/Tokugawa_shogunate
+  Edo developed a rich merchant, canal, print and theatre culture:
+  - https://en.wikipedia.org/wiki/Edo
+  - https://www.ndl.go.jp/landmarks/e/
+  The imperial court remained in Kyoto before the Meiji Restoration:
+  - https://en.wikipedia.org/wiki/Capital_of_Japan
+  Edo became Tokyo during the 1868 political transition:
+  - https://en.wikipedia.org/wiki/Tokyo
+  - https://en.wikipedia.org/wiki/Meiji_Restoration
+  Nihonbashi was a key bridge and starting point for major roads:
+  - https://en.wikipedia.org/wiki/Nihonbashi
+  - https://www.ndl.go.jp/landmarks/e/
 visual_style:
-  palette: [ink-black, warm-ivory, vermilion]
-  accent_color: "#E65A45"
-  music_mood: "restrained, reflective plucked strings and soft city ambience"
-  notes: "Use Edo-period print warmth for historic scenes and cooler steel-blue contrast for contemporary Tokyo."
-image_banned_terms: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster", manuscript, "plate list", banner, poster, logo, flyer, signage, conference, meetup, collage, montage, "composite image"]
+  palette:
+  - ink-black
+  - warm-ivory
+  - vermilion
+  accent_color: '#E65A45'
+  music_mood: restrained, reflective plucked strings and soft city ambience
+  notes: Use Edo-period print warmth for historic scenes and cooler steel-blue contrast
+    for contemporary Tokyo.
+image_banned_terms:
+- book cover
+- front cover
+- back cover
+- title page
+- frontispiece
+- scanned page
+- text page
+- catalogue page
+- exhibition poster
+- manuscript
+- plate list
+- banner
+- poster
+- logo
+- flyer
+- signage
+- conference
+- meetup
+- collage
+- montage
+- composite image
 map:
   latitude: 35.6762
   longitude: 139.6503
-  label: "TOKYO"
-  country: "Japan"
+  label: TOKYO
+  country: Japan
   span_deg: 9
   connect: true
   places:
-    - {label: "Kyoto", latitude: 35.0116, longitude: 135.7681}
-# Scene order follows the narration. `starts_at` is the phrase in the narration where the cut lands.
-# Search: named_entities and visual_tags are tried first; keep queries short (museum APIs match few words best).
-# required_keywords only rank candidates (and hard-filter free-text Commons search); CLIP decides relevance.
+  - label: Kyoto
+    latitude: 35.0116
+    longitude: 135.7681
 scenes:
-  - title: "Edo on the Map"
-    narration_intent: "Show where Tokyo and Kyoto sit in Japan, introducing Edo as Tokyo's earlier name."
-    image_type: map
-    image_search_terms: ["Tokyo Japan map", "Edo Japan map", "Japan locator map"]
-    required_keywords: [Tokyo, Edo, Japan]
-  - title: "Bridges and Waterways"
-    narration_intent: "Show an Edo-period bridge, canal, or river crossing to illustrate how boats and bridges connected busy neighborhoods; do not require the specific Nihonbashi landmark."
-    image_type: historic
-    visual_tags: ["Edo period bridge over canal", "Edo river crossing with boats", "Edo city waterway woodblock print"]
-    image_search_terms: ["Edo period bridge canal woodblock print", "Edo river crossing boats historical print", "Edo city waterways bridge ukiyo-e", "Edo bridge daily life print"]
-    required_keywords: [Edo, 江戸, bridge, 橋, canal, waterway]
-    required_keyword_groups:
-      - [bridge, bridges, 橋, crossing]
-      - [Edo, 江戸, Edo period]
-    allow_modern_photo: false
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", "frontispiece", "scanned page", "text page", "catalogue page", "exhibition poster"]
-  - title: "The Shogunate"
-    max_queries: 8
-    max_queries_per_provider: 6
-    starts_at: "In 1603"
-    narration_intent: "Place Tokugawa Ieyasu's 1603 shogunate in the city's story."
-    image_type: historic
-    named_entities: ["Tokugawa Ieyasu"]
-    visual_tags: ["Tokugawa Ieyasu portrait", "Tokugawa shogunate", "Tokugawa Ieyasu painted portrait", "Tokugawa Ieyasu woodblock portrait"]
-    image_search_terms: ["Tokugawa Ieyasu2.JPG", "Tokugawa Ieyasu2 full.JPG", "Portrait of Tokugawa Ieyasu by Kano Tanyu", "Tokugawa Ieyasu", "Tokugawa Ieyasu portrait", "Tokugawa shogunate Japan"]
-    required_keywords: ["Tokugawa", "Ieyasu", "shogun", "徳川家康", "徳川", "家康"]
-    # The named historical figure must be explicitly identified in source metadata.
-    identity_keyword_groups:
-      - ["Tokugawa Ieyasu", "徳川家康"]
-      - ["portrait", "painting", "painted", "woodblock", "Tan-yu", "Tannyu", "狩野探幽", "shogun"]
-    clip_min_score: 0.32
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "Merchants and Canals"
-    max_queries: 8
-    max_queries_per_provider: 6
-    starts_at: "The city grew through its waterways"
-    narration_intent: "Show the commerce, waterways, boats and daily life that made Edo thrive."
-    image_type: historic
-    named_entities: ["Hiroshige"]
-    visual_tags: ["Edo canal boats", "Edo merchants shop"]
-    image_search_terms: ["Hauling Canal Boats Yotsugi Road", "Towboats on the Yotsugi Road Canal", "Pleasure Parties in Boats Sumida River", "Edo canal boats print", "Hiroshige Edo canal", "Edo period river boats", "Edo merchants ukiyo-e"]
-    required_keywords: [Edo, canal, merchant, boat, shop, Hiroshige]
-    required_keyword_groups:
-      - [canal, canals, boat, boats, river, waterway]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "A City of Culture"
-    starts_at: "Artists recorded these streets"
-    narration_intent: "Show an Edo-period woodblock print as evidence of how artists recorded everyday places and scenes."
-    image_type: historic
-    named_entities: ["Utagawa Hiroshige", "ukiyo-e"]
-    visual_tags: ["Famous Views of Edo", "ukiyo-e Edo"]
-    image_search_terms: ["Hiroshige Famous Views of Edo", "ukiyo-e Edo street scene", "kabuki theatre Edo print"]
-    required_keywords: [Edo, ukiyo, Hiroshige, kabuki]
-    required_keyword_groups:
-      - [ukiyo, ukiyo-e, woodblock, print]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list", collage, montage]
-  - title: "A Great City"
-    max_queries: 8
-    starts_at: "Panoramic views suggest"
-    narration_intent: "Use a panoramic historical view to convey the scale of Edo, without claiming the image depicts every part of the city."
-    image_type: historic
-    named_entities: ["Edo"]
-    visual_tags: ["Edo panorama", "Edo bird's-eye view"]
-    image_search_terms: ["Edo panorama print", "Edo bird's-eye view", "Edo period Tokyo view", "Edo meisho panorama woodblock", "Edo city map eighteenth century"]
-    required_keywords: [Edo, panorama, view, city]
-    required_keyword_groups:
-      - [panorama, bird's-eye, bird eye, city view, cityscape, aerial view]
-      - [Edo, Tokyo, cityscape, city view, capital]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "Gardens Remember"
-    starts_at: "Some traces remain"
-    narration_intent: "Use surviving gardens and temple grounds as traces of older Tokyo."
-    image_type: modern
-    named_entities: ["Koishikawa Korakuen", "Rikugien"]
-    visual_tags: ["Koishikawa Korakuen garden", "Tokyo Japanese garden"]
-    image_search_terms: ["Koishikawa Korakuen", "Rikugien garden Tokyo", "Tokyo Japanese garden photo"]
-    required_keywords: [garden, Korakuen, Rikugien, Tokyo]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "Nihonbashi"
-    starts_at: "Nihonbashi was more than a crossing"
-    narration_intent: "Explain Nihonbashi's role as a bridge and the symbolic starting point for roads."
-    image_type: historic
-    named_entities: ["Nihonbashi", "Utagawa Hiroshige"]
-    visual_tags: ["Hiroshige Nihonbashi", "Nihonbashi bridge Edo period"]
-    image_search_terms: ["Hiroshige Nihonbashi", "Nihonbashi bridge print", "Nihonbashi Edo Tokaido", "Nihonbashi morning Tokaido woodblock print", "Nihonbashi bridge Edo period historical print"]
-    required_keywords: [Nihonbashi, 日本橋]
-    max_year: 1899
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-  - title: "The City Today"
-    starts_at: "Edo later took the name Tokyo"
-    narration_intent: "Close the historical arc by showing contemporary Tokyo layered over its past."
-    image_type: modern
-    named_entities: ["Tokyo Skytree", "Shinjuku"]
-    visual_tags: ["Tokyo skyline", "Tokyo modern street"]
-    image_search_terms: ["Tokyo skyline", "Shinjuku skyscrapers", "Tokyo street at night"]
-    required_keywords: [Tokyo, Shinjuku, Skytree, skyline]
-    banned_keywords: ["book cover", "front cover", "back cover", "title page", frontispiece, "scanned page", "text page", "catalogue page", "exhibition poster", "plate list"]
-
-# Explicitly enable every verified, rights-first source for the next review pass.
-# Europeana is enabled only through the EUROPEANA_API_KEY Actions secret.
-asset_resolver:
-  # Require a meaningful semantic match; keyword overlap alone must not approve an image.
-  clip_min_score: 0.30
+- title: Edo on the Map
+  narration_intent: Show where Tokyo and Kyoto sit in Japan, introducing Edo as Tokyo's
+    earlier name.
+  image_type: map
+  image_search_terms:
+  - Tokyo Japan map
+  - Edo Japan map
+  - Japan locator map
+  required_keywords:
+  - Tokyo
+  - Edo
+  - Japan
+- title: Bridges and Waterways
+  narration_intent: Show an Edo-period bridge, canal, or river crossing to illustrate
+    how boats and bridges connected busy neighborhoods; do not require the specific
+    Nihonbashi landmark.
+  image_type: historic
+  visual_tags:
+  - Edo period bridge over canal
+  - Edo river crossing with boats
+  - Edo city waterway woodblock print
+  image_search_terms:
+  - Edo period bridge canal woodblock print
+  - Edo river crossing boats historical print
+  - Edo city waterways bridge ukiyo-e
+  - Edo bridge daily life print
+  required_keywords:
+  - Edo
+  - 江戸
+  - bridge
+  - 橋
+  - canal
+  - waterway
+  required_keyword_groups:
+  - - bridge
+    - bridges
+    - 橋
+    - crossing
+  - - Edo
+    - 江戸
+    - Edo period
+  allow_modern_photo: false
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+- title: The Shogunate
+  max_queries: 8
   max_queries_per_provider: 6
-  providers: [_loc, _met, _aic, _cleveland, _smithsonian, _europeana]
+  starts_at: In 1603
+  narration_intent: Place Tokugawa Ieyasu's 1603 shogunate in the city's story.
+  image_type: historic
+  named_entities:
+  - Tokugawa Ieyasu
+  visual_tags:
+  - Tokugawa Ieyasu portrait
+  - Tokugawa shogunate
+  - Tokugawa Ieyasu painted portrait
+  - Tokugawa Ieyasu woodblock portrait
+  image_search_terms:
+  - Tokugawa Ieyasu2.JPG
+  - Tokugawa Ieyasu2 full.JPG
+  - Portrait of Tokugawa Ieyasu by Kano Tanyu
+  - Tokugawa Ieyasu
+  - Tokugawa Ieyasu portrait
+  - Tokugawa shogunate Japan
+  required_keywords:
+  - Tokugawa
+  - Ieyasu
+  - shogun
+  - 徳川家康
+  - 徳川
+  - 家康
+  identity_keyword_groups:
+  - - Tokugawa Ieyasu
+    - 徳川家康
+  - - portrait
+    - painting
+    - painted
+    - woodblock
+    - Tan-yu
+    - Tannyu
+    - 狩野探幽
+    - shogun
+  clip_min_score: 0.32
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+- title: Merchants and Canals
+  max_queries: 8
+  max_queries_per_provider: 6
+  starts_at: The city grew through its waterways
+  narration_intent: Show the commerce, waterways, boats and daily life that made Edo
+    thrive.
+  image_type: historic
+  named_entities:
+  - Hiroshige
+  visual_tags:
+  - Edo canal boats
+  - Edo merchants shop
+  image_search_terms:
+  - Hauling Canal Boats Yotsugi Road
+  - Towboats on the Yotsugi Road Canal
+  - Pleasure Parties in Boats Sumida River
+  - Edo canal boats print
+  - Hiroshige Edo canal
+  - Edo period river boats
+  - Edo merchants ukiyo-e
+  required_keywords:
+  - Edo
+  - canal
+  - merchant
+  - boat
+  - shop
+  - Hiroshige
+  required_keyword_groups:
+  - - canal
+    - canals
+    - boat
+    - boats
+    - river
+    - waterway
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+- title: A City of Culture
+  starts_at: Artists recorded these streets
+  narration_intent: Show an Edo-period woodblock print as evidence of how artists
+    recorded everyday places and scenes.
+  image_type: historic
+  named_entities:
+  - Utagawa Hiroshige
+  - ukiyo-e
+  visual_tags:
+  - Famous Views of Edo
+  - ukiyo-e Edo
+  image_search_terms:
+  - Hiroshige Famous Views of Edo
+  - ukiyo-e Edo street scene
+  - kabuki theatre Edo print
+  required_keywords:
+  - Edo
+  - ukiyo
+  - Hiroshige
+  - kabuki
+  required_keyword_groups:
+  - - ukiyo
+    - ukiyo-e
+    - woodblock
+    - print
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+  - collage
+  - montage
+- title: A Great City
+  max_queries: 8
+  starts_at: Panoramic views suggest
+  narration_intent: Use a panoramic historical view to convey the scale of Edo, without
+    claiming the image depicts every part of the city.
+  image_type: historic
+  named_entities:
+  - Edo
+  visual_tags:
+  - Edo panorama
+  - Edo bird's-eye view
+  image_search_terms:
+  - Edo panorama print
+  - Edo bird's-eye view
+  - Edo period Tokyo view
+  - Edo meisho panorama woodblock
+  - Edo city map eighteenth century
+  required_keywords:
+  - Edo
+  - panorama
+  - view
+  - city
+  required_keyword_groups:
+  - - panorama
+    - bird's-eye
+    - bird eye
+    - city view
+    - cityscape
+    - aerial view
+  - - Edo
+    - Tokyo
+    - cityscape
+    - city view
+    - capital
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+- title: Gardens Remember
+  starts_at: Some traces remain
+  narration_intent: Use surviving gardens and temple grounds as traces of older Tokyo.
+  image_type: modern
+  named_entities:
+  - Koishikawa Korakuen
+  - Rikugien
+  visual_tags:
+  - Koishikawa Korakuen garden
+  - Tokyo Japanese garden
+  image_search_terms:
+  - Koishikawa Korakuen
+  - Rikugien garden Tokyo
+  - Tokyo Japanese garden photo
+  required_keywords:
+  - garden
+  - Korakuen
+  - Rikugien
+  - Tokyo
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+- title: Nihonbashi
+  starts_at: Nihonbashi was more than a crossing
+  narration_intent: Explain Nihonbashi's role as a bridge and the symbolic starting
+    point for roads.
+  image_type: historic
+  named_entities:
+  - Nihonbashi
+  - Utagawa Hiroshige
+  visual_tags:
+  - Hiroshige Nihonbashi
+  - Nihonbashi bridge Edo period
+  image_search_terms:
+  - Hiroshige Nihonbashi
+  - Nihonbashi bridge print
+  - Nihonbashi Edo Tokaido
+  - Nihonbashi morning Tokaido woodblock print
+  - Nihonbashi bridge Edo period historical print
+  required_keywords:
+  - Nihonbashi
+  - 日本橋
+  max_year: 1899
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+- title: The City Today
+  starts_at: Edo later took the name Tokyo
+  narration_intent: Close the historical arc by showing contemporary Tokyo layered
+    over its past.
+  image_type: modern
+  named_entities:
+  - Tokyo Skytree
+  - Shinjuku
+  visual_tags:
+  - Tokyo skyline
+  - Tokyo modern street
+  image_search_terms:
+  - Tokyo skyline
+  - Shinjuku skyscrapers
+  - Tokyo street at night
+  required_keywords:
+  - Tokyo
+  - Shinjuku
+  - Skytree
+  - skyline
+  banned_keywords:
+  - book cover
+  - front cover
+  - back cover
+  - title page
+  - frontispiece
+  - scanned page
+  - text page
+  - catalogue page
+  - exhibition poster
+  - plate list
+asset_resolver:
+  clip_min_score: 0.3
+  max_queries_per_provider: 6
+  providers:
+  - _loc
+  - _met
+  - _aic
+  - _cleveland
+  - _smithsonian
+  - _europeana

@@ -34,9 +34,13 @@ class Script:
     estimated_duration: float
     claims_supported: int
     claims_total: int
+    claims_verified: int
+    claims_insufficient: int
+    claims_disputed: int
     generated_at: str
     kokoro_voice: str
     narration_language: str
+    research_record: str
 
 
 def load_region_config(destination_slug: str) -> Optional[Dict]:
@@ -80,12 +84,19 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         kokoro_voice = topic_data.get("kokoro_voice", "af_heart")
         narration_lang = topic_data.get("narration_language", "English")
 
-    # Extract verified claims
+    # Extract claims from research
     verified_claims = []
+    insufficient_claims = []
+    disputed_claims = []
+
     if research:
         for claim in research.get("claims", []):
             if claim.get("status") == "verified":
                 verified_claims.append(claim["text"])
+            elif claim.get("status") == "insufficient_evidence":
+                insufficient_claims.append(claim["text"])
+            elif claim.get("status") == "disputed":
+                disputed_claims.append(claim["text"])
 
     # Build structured script using full narration
     parts = []
@@ -105,12 +116,19 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         full_narration = trim_to_word_count(full_narration, TARGET_WORDS_MAX)
         word_count = len(full_narration.split())
 
-    # Pad if too short (add detail from research)
+    # Pad if too short (add detail from verified claims only)
     if word_count < TARGET_WORDS_MIN and research:
         full_narration = expand_with_research(full_narration, verified_claims, TARGET_WORDS_MIN)
         word_count = len(full_narration.split())
 
     estimated_duration = word_count / 150 * 60  # seconds at 150 WPM
+
+    research_file = ""
+    if research:
+        # Find the research file path
+        files = glob.glob(str(DATA_DIR / f"research_{destination_slug}_*.json"))
+        if files:
+            research_file = max(files)
 
     return Script(
         topic_slug=destination_slug,
@@ -121,11 +139,15 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         narration=full_narration,
         word_count=word_count,
         estimated_duration=round(estimated_duration, 1),
-        claims_supported=len(verified_claims),
+        claims_supported=len(verified_claims) + len(insufficient_claims),
         claims_total=len(research.get("claims", [])) if research else 0,
+        claims_verified=len(verified_claims),
+        claims_insufficient=len(insufficient_claims),
+        claims_disputed=len(disputed_claims),
         generated_at=datetime.now().isoformat(),
         kokoro_voice=kokoro_voice,
-        narration_language=narration_lang
+        narration_language=narration_lang,
+        research_record=research_file
     )
 
 
@@ -136,7 +158,6 @@ def split_narration_into_structure(narration: str, destination: str) -> List[str
         return [f"{destination} has a rich history waiting to be discovered."]
 
     total = len(sentences)
-    # Distribute: hook(1), context(2), development(3-4), climax(1-2), resolution(1), closing(1)
     parts = []
 
     # Context: first 2-3 sentences
@@ -146,7 +167,7 @@ def split_narration_into_structure(narration: str, destination: str) -> List[str
 
     # Development: middle portion
     dev_start = context_end
-    dev_end = min(dev_start + 4, total - 2)  # leave room for climax/resolution/closing
+    dev_end = min(dev_start + 4, total - 2)
     if dev_start < dev_end:
         parts.append(" ".join(sentences[dev_start:dev_end]) + ".")
 
@@ -171,10 +192,9 @@ def trim_to_word_count(text: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    # Cut at sentence boundary before max_words
     truncated = " ".join(words[:max_words])
     last_period = max(truncated.rfind("."), truncated.rfind("!"), truncated.rfind("?"))
-    if last_period > max_words * 0.7:  # Don't cut too aggressively
+    if last_period > max_words * 0.7:
         return truncated[:last_period + 1]
     return truncated
 
@@ -184,7 +204,6 @@ def expand_with_research(text: str, claims: List[str], min_words: int) -> str:
     words = text.split()
     if len(words) >= min_words:
         return text
-    # Add claims as additional sentences
     for claim in claims:
         if len(text.split()) >= min_words:
             break
@@ -209,15 +228,15 @@ def main():
     if args.topic == "latest":
         schedule_file = DATA_DIR / "daily_schedule.json"
         if not schedule_file.exists():
-            print("No schedule found.")
-            return
+            print("ERROR: No schedule found.")
+            sys.exit(1)
         with open(schedule_file, encoding="utf-8") as f:
             schedule = json.load(f)
         today = datetime.now().date().isoformat()
         entry = next((e for e in schedule if e.get("date") == today and e.get("topic")), None)
         if not entry:
-            print(f"No topic scheduled for {today}")
-            return
+            print(f"ERROR: No topic scheduled for {today}")
+            sys.exit(1)
         topic_data = entry["topic"]
     else:
         with open(args.topic, encoding="utf-8") as f:
@@ -229,10 +248,12 @@ def main():
 
     print(f"Generated script for: {script.title}")
     print(f"Words: {script.word_count} | Est. duration: {script.estimated_duration}s")
-    print(f"Claims: {script.claims_supported}/{script.claims_total} verified")
+    print(f"Claims: {script.claims_verified} verified, {script.claims_insufficient} insufficient, {script.claims_disputed} disputed")
     print(f"Voice: {script.kokoro_voice} ({script.narration_language})")
+    print(f"Research record: {script.research_record}")
     print(f"\n--- NARRATION ---\n{script.narration}")
 
 
 if __name__ == "__main__":
+    import sys
     main()

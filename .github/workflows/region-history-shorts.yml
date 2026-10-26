@@ -1,4 +1,5 @@
 name: Region-driven history shorts
+
 on:
   workflow_dispatch:
     inputs:
@@ -66,11 +67,14 @@ on:
       - 'requirements-regions.txt'
       - 'README-regions.md'
       - '.github/workflows/region-history-shorts.yml'
+
 permissions:
   contents: read
+
 concurrency:
   group: region-history-${{ github.event.inputs.region || 'config-tests' }}
   cancel-in-progress: false
+
 jobs:
   config-check:
     runs-on: ubuntu-latest
@@ -190,11 +194,9 @@ jobs:
               raise SystemExit(f"Config not found: {cfg_path}")
           cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
           narration_lang = str(cfg.get("story", {}).get("narration_language", "English")).strip().lower()
-          # Full Kokoro language mapping (verified working languages only)
           lang_map = {"english": "a", "british": "b", "spanish": "e", "french": "f", "hindi": "h", "portuguese": "p", "mandarin": "z"}
           lang_code = lang_map.get(narration_lang)
           if lang_code is None:
-              # Fallback: try prefix matching for backwards compatibility
               if narration_lang.startswith("english"): lang_code = "a"
               elif narration_lang.startswith("british"): lang_code = "b"
               elif narration_lang.startswith("spanish"): lang_code = "e"
@@ -204,10 +206,8 @@ jobs:
               elif narration_lang.startswith("mandarin") or narration_lang.startswith("chinese"): lang_code = "z"
           if lang_code is None:
               raise SystemExit(f"Unsupported narration_language {narration_lang!r}; configure a supported language (English, British, Spanish, French, Hindi, Portuguese, Mandarin)")
-          # Validate voice against language
           default_voices = {"a": "af_heart", "b": "bf_emma", "e": "ef_dora", "f": "ff_siwis", "h": "hf_alpha", "p": "pf_dora", "z": "zf_xiaobei"}
           voice = cfg.get("story", {}).get("kokoro_voice", default_voices.get(lang_code, "af_heart"))
-          # Verify voice matches language prefix
           expected_prefix = {"a": "a", "b": "b", "e": "e", "f": "f", "h": "h", "p": "p", "z": "z"}[lang_code]
           if not voice.startswith(expected_prefix):
               raise SystemExit(f"Voice {voice!r} does not match language {lang_code} (expected prefix {expected_prefix!r})")
@@ -261,6 +261,17 @@ jobs:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
         run: python destination-prototype/render_region_short.py --config "regions/${REGION_SLUG}.yaml" --hook-variant "$HOOK_VARIANT"
+      - name: Run production QA on draft/approved renders
+        if: github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.draft_preview)
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+        run: |
+          python destination-prototype/qa_checks.py \
+            --script destination-prototype/data/script_${REGION_SLUG}_*.json \
+            --output-dir output/${REGION_SLUG}-region-short \
+            --video output/${REGION_SLUG}-region-short/*.mp4 \
+            --mode production \
+            --fail-on-error
       - name: Upload reviewable region outputs
         if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
