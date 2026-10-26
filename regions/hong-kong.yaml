@@ -129,3 +129,10 @@ scenes:
     required_keywords: [Hong Kong, map]
     banned_keywords: [fictional map, schematic route line]
     image_type: map
+
+# Explicitly enable every verified, rights-first source for the next review pass.
+# Europeana and Smithsonian are enabled through API keys (Actions secrets).
+asset_resolver:
+  clip_min_score: 0.30
+  max_queries_per_provider: 6
+  providers: [_loc, _met, _aic, _cleveland, _smithsonian, _europeana]

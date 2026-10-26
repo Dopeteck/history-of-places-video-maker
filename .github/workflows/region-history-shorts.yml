@@ -171,12 +171,16 @@ jobs:
           python -m pip install --no-deps https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
       - name: Verify Kokoro voice pipeline initializes (supports configured language)
         if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
+        env:
+          REGION: ${{ steps.normalize.outputs.slug }}
         run: |
           python - <<'PY'
           import yaml, os, sys
           sys.path.insert(0, "destination-prototype")
           from region_slug import normalize_region_slug
-          region_raw = os.environ.get("REGION", "tokyo")
+          region_raw = os.environ.get("REGION")
+          if not region_raw:
+              raise SystemExit("REGION environment variable not set; this step requires the normalized region slug")
           try:
               slug = normalize_region_slug(region_raw)
           except ValueError as exc:
@@ -186,14 +190,33 @@ jobs:
               raise SystemExit(f"Config not found: {cfg_path}")
           cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
           narration_lang = str(cfg.get("story", {}).get("narration_language", "English")).strip().lower()
-          lang_code = "j" if narration_lang.startswith("japan") else "a"
-          voice = cfg.get("story", {}).get("kokoro_voice", "af_heart" if lang_code == "a" else "jf_alpha")
+          # Full Kokoro language mapping (verified working languages only)
+          lang_map = {"english": "a", "british": "b", "spanish": "e", "french": "f", "hindi": "h", "portuguese": "p", "mandarin": "z"}
+          lang_code = lang_map.get(narration_lang)
+          if lang_code is None:
+              # Fallback: try prefix matching for backwards compatibility
+              if narration_lang.startswith("english"): lang_code = "a"
+              elif narration_lang.startswith("british"): lang_code = "b"
+              elif narration_lang.startswith("spanish"): lang_code = "e"
+              elif narration_lang.startswith("french"): lang_code = "f"
+              elif narration_lang.startswith("hindi"): lang_code = "h"
+              elif narration_lang.startswith("portuguese"): lang_code = "p"
+              elif narration_lang.startswith("mandarin") or narration_lang.startswith("chinese"): lang_code = "z"
+          if lang_code is None:
+              raise SystemExit(f"Unsupported narration_language {narration_lang!r}; configure a supported language (English, British, Spanish, French, Hindi, Portuguese, Mandarin)")
+          # Validate voice against language
+          default_voices = {"a": "af_heart", "b": "bf_emma", "e": "ef_dora", "f": "ff_siwis", "h": "hf_alpha", "p": "pf_dora", "z": "zf_xiaobei"}
+          voice = cfg.get("story", {}).get("kokoro_voice", default_voices.get(lang_code, "af_heart"))
+          # Verify voice matches language prefix
+          expected_prefix = {"a": "a", "b": "b", "e": "e", "f": "f", "h": "h", "p": "p", "z": "z"}[lang_code]
+          if not voice.startswith(expected_prefix):
+              raise SystemExit(f"Voice {voice!r} does not match language {lang_code} (expected prefix {expected_prefix!r})")
           test_text = cfg.get("story", {}).get("smoke_test_text", "History begins here.")
           from kokoro import KPipeline
           pipeline = KPipeline(lang_code=lang_code)
           graphemes, phonemes, audio = next(pipeline(test_text, voice=voice))
           assert audio is not None and audio.shape[0] > 0
-          print(f"Kokoro {narration_lang} TTS smoke test passed: {audio.shape[0]} samples at 24000 Hz (voice={voice})")
+          print(f"Kokoro {narration_lang} TTS smoke test passed: {audio.shape[0]} samples at 24000 Hz (voice={voice}, lang_code={lang_code})")
           PY
       - name: Verify CLIP model can score a known image
         if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
