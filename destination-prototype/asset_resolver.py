@@ -9,10 +9,18 @@ Every rejection is counted so a failed scene explains itself (see ResolverError)
 from __future__ import annotations
 import hashlib, html as _html, io, json, os, re, time, datetime, unicodedata
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
 import requests
+import threading
 from PIL import Image
+
+# Concurrency control for provider requests
+MAX_CONCURRENT_PROVIDERS = 3
+MAX_CONCURRENT_DOWNLOADS = 2
+_provider_semaphore = threading.BoundedSemaphore(MAX_CONCURRENT_PROVIDERS)
+_download_semaphore = threading.BoundedSemaphore(MAX_CONCURRENT_DOWNLOADS)
 
 UA = "RegionHistoryShort/2.2 (https://github.com/Dopeteck/history-of-places-video-maker)"
 S = requests.Session()
@@ -36,6 +44,39 @@ PROVIDER_ERRORS = {}       # provider -> last error text (whole run)
 _LAST_API_REQUEST = 0.0
 _LAST_MET_REQUEST = 0.0
 _FAILS = Counter()         # consecutive failures per provider (whole run)
+
+# Request timeout configuration
+DEFAULT_CONNECT_TIMEOUT = 10.0
+DEFAULT_READ_TIMEOUT = 30.0
+DEFAULT_TOTAL_TIMEOUT = 60.0
+MAX_RETRIES = 3
+BASE_RETRY_DELAY = 1.0
+MAX_RETRY_DELAY = 8.0
+
+# Provider-specific timeout overrides
+PROVIDER_TIMEOUTS = {
+    "wikimedia.org/w/api.php": (10.0, 30.0),
+    "wikidata.org/w/api.php": (10.0, 30.0),
+    "commons.wikimedia.org/w/api.php": (10.0, 30.0),
+    "collectionapi.metmuseum.org": (15.0, 45.0),
+    "api.artic.edu": (15.0, 45.0),
+    "openaccess-api.clevelandart.org": (15.0, 45.0),
+    "api.si.edu": (15.0, 45.0),
+    "api.europeana.eu": (15.0, 45.0),
+    "api.dp.la": (15.0, 45.0),
+    "api.repo.nypl.org": (15.0, 45.0),
+    "www.nga.gov": (15.0, 45.0),
+    "www.rijksmuseum.nl": (15.0, 45.0),
+    "api.getty.edu": (15.0, 45.0),
+    "www.loc.gov": (15.0, 45.0),
+}
+
+def _get_timeouts_for_url(url: str) -> tuple:
+    """Get (connect_timeout, read_timeout) for a given URL."""
+    for domain, timeouts in PROVIDER_TIMEOUTS.items():
+        if domain in url:
+            return timeouts
+    return (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
 
 
 class ResolverError(RuntimeError):
@@ -107,15 +148,29 @@ def _has_author(author):
     return str(author or "").strip().lower() not in ("", "not stated", "unknown", "unknown author", "none", "n/a")
 
 
-def _get(url, params=None, timeout=10):
-    """Request with provider pacing and Retry-After-aware transient retries.
+def _get(url, params=None, timeout=None):
+    """Request with provider pacing, bounded timeouts, retries with exponential backoff, and Retry-After awareness.
 
-    The Met API has returned 403 bot-protection pages during bursts. Pace every
-    Met request, including object lookups, and do not retry deterministic 403s.
+    - Connection and read timeouts are provider-specific.
+    - Transient errors (429, 5xx) are retried with exponential backoff and Retry-After header.
+    - Deterministic 403s are not retried (access/bot protection).
+    - Provider-specific pacing is preserved.
     """
     global _LAST_API_REQUEST, _LAST_MET_REQUEST
+
+    if timeout is None:
+        connect_timeout, read_timeout = _get_timeouts_for_url(url)
+    else:
+        # Backward compatibility: if a single timeout is provided, use it for both
+        connect_timeout = read_timeout = timeout
+
     last = None
-    for attempt in range(2):
+    for attempt in range(MAX_RETRIES):
+        # Acquire semaphore to limit concurrent provider requests
+        acquired = _provider_semaphore.acquire(timeout=30.0)
+        if not acquired:
+            raise requests.Timeout("Could not acquire provider semaphore within 30s")
+
         try:
             is_wikimedia = "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url
             is_met = "collectionapi.metmuseum.org/public/collection/" in url
@@ -125,28 +180,45 @@ def _get(url, params=None, timeout=10):
             elif is_met:
                 wait = 1.0 - (time.monotonic() - _LAST_MET_REQUEST)
                 if wait > 0: time.sleep(wait)
-            r = S.get(url, params=params, timeout=timeout)
+
+            r = S.get(url, params=params, timeout=(connect_timeout, read_timeout))
+
             if is_wikimedia:
                 _LAST_API_REQUEST = time.monotonic()
             elif is_met:
                 _LAST_MET_REQUEST = time.monotonic()
+
+            # Handle transient HTTP errors
             if r.status_code == 429 or 500 <= r.status_code < 600:
                 retry_after = r.headers.get("Retry-After", "")
-                try: delay = min(8.0, max(1.0, float(retry_after)))
-                except (TypeError, ValueError): delay = 2.0 * (attempt + 1)
+                try:
+                    delay = min(MAX_RETRY_DELAY, max(BASE_RETRY_DELAY, float(retry_after)))
+                except (TypeError, ValueError):
+                    delay = BASE_RETRY_DELAY * (2 ** attempt)  # Exponential backoff
                 last = requests.HTTPError(f"HTTP {r.status_code}")
-                if attempt == 0: time.sleep(delay); continue
+                if attempt < MAX_RETRIES - 1:
+                    _provider_semaphore.release()
+                    time.sleep(delay)
+                    continue
+                _provider_semaphore.release()
                 break
+
             r.raise_for_status()
+            _provider_semaphore.release()
             return r.json()
+
         except requests.RequestException as e:
             last = e
-            # 403 usually indicates access/bot protection, not a transient network
-            # failure. Retrying immediately makes the block more likely to persist.
+            _provider_semaphore.release()
+            # 403 usually indicates access/bot protection, not a transient network failure.
+            # Retrying immediately makes the block more likely to persist.
             if isinstance(e, requests.HTTPError) and getattr(e.response, "status_code", None) == 403:
                 break
-            if attempt == 1: break
-            time.sleep(1.0)
+            if attempt == MAX_RETRIES - 1:
+                break
+            delay = min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * (2 ** attempt))
+            time.sleep(delay)
+
     raise last
 
 
@@ -641,24 +713,47 @@ def _round_robin(cands, cap):
     return out
 
 def _download(c):
+    """Download an image with bounded timeouts, retries, and concurrency control."""
     last = None
-    for attempt in range(2):
+    for attempt in range(MAX_RETRIES):
+        # Acquire download semaphore
+        acquired = _download_semaphore.acquire(timeout=30.0)
+        if not acquired:
+            raise requests.Timeout("Could not acquire download semaphore within 30s")
+
         try:
-            r=S.get(c["image_url"],timeout=(8,18),stream=True)
+            connect_timeout, read_timeout = _get_timeouts_for_url(c["image_url"])
+            r = S.get(c["image_url"], timeout=(connect_timeout, read_timeout), stream=True)
+
             if r.status_code == 429 or 500 <= r.status_code < 600:
+                retry_after = r.headers.get("Retry-After", "")
+                try:
+                    delay = min(MAX_RETRY_DELAY, max(BASE_RETRY_DELAY, float(retry_after)))
+                except (TypeError, ValueError):
+                    delay = BASE_RETRY_DELAY * (2 ** attempt)
                 last = requests.HTTPError(f"HTTP {r.status_code} downloading image")
-                if attempt == 0:
-                    try: delay = min(8.0, max(1.0, float(r.headers.get("Retry-After", "2"))))
-                    except ValueError: delay = 2.0
-                    time.sleep(delay); continue
+                if attempt < MAX_RETRIES - 1:
+                    _download_semaphore.release()
+                    time.sleep(delay)
+                    continue
                 break
+
             r.raise_for_status()
-            if int(r.headers.get("Content-Length") or 0)>35_000_000: raise ValueError("file larger than 35 MB")
+            if int(r.headers.get("Content-Length") or 0) > 35_000_000:
+                _download_semaphore.release()
+                raise ValueError("file larger than 35 MB")
+            _download_semaphore.release()
             return r.content
+
         except requests.RequestException as e:
-            last=e
-            if attempt == 0: time.sleep(1.0); continue
-            break
+            last = e
+            if attempt == MAX_RETRIES - 1:
+                _download_semaphore.release()
+                break
+            delay = min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * (2 ** attempt))
+            time.sleep(delay)
+
+    _download_semaphore.release()
     raise last
 
 def resolve_scene_image(scene, idx, config, asset_dir, used, output):

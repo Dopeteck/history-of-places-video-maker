@@ -1,0 +1,88 @@
+{
+  "topic_slug": "tokyo",
+  "destination": "",
+  "category": "hidden_history",
+  "title": "Tokyo was once a different city with a different name: Edo.",
+  "claims": [
+    {
+      "text": "Before it was Tokyo, this city was called Edo",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "A map places it on Japan’s eastern coast, far from the old imperial capital",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government",
+      "evidence": [
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Tokugawa_Ieyasu",
+          "source_title": "Tokugawa Ieyasu",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "Tokugawa Ieyasu (born Matsudaira Takechiyo; January 31, 1543 – June 1, 1616) was a Japanese samurai, daimyo and the founder and first shogun of the Tokugawa shogunate of Japan, which ruled from 1603 until the Meiji Restoration in 1868",
+          "confidence": 0.9
+        }
+      ],
+      "confidence": 0.9,
+      "status": "verified",
+      "independent_sources": 1,
+      "language": "en"
+    },
+    {
+      "text": "The city grew through its waterways: boats carried goods, while bridges connected busy neighborhoods",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Artists recorded these streets and canals in woodblock prints, making everyday Edo part of Japan’s visual memory",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Panoramic views suggest how large the city became, though no single image can capture its whole past",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Some traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes offer a quieter link to earlier eras",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Nihonbashi was more than a crossing; it became a key starting point for roads across the country",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    }
+  ],
+  "sources_used": [
+    "https://en.wikipedia.org/wiki/Tokugawa_Ieyasu"
+  ],
+  "research_date": "2026-10-26",
+  "notes": "Researched 8 claims in english (en)",
+  "extraction_failed": false,
+  "verification_failed": false,
+  "zero_claims": false
+}

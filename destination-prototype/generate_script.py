@@ -212,10 +212,9 @@ def expand_with_research(text: str, claims: List[str], min_words: int) -> str:
     return text
 
 
-def save_script(script: Script):
+def save_script(script: Script, output_path: Path):
     """Save script to disk."""
-    filename = DATA_DIR / f"script_{script.topic_slug}_{script.generated_at[:10]}.json"
-    with open(filename, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(asdict(script), f, indent=2, ensure_ascii=False)
 
 
@@ -223,6 +222,7 @@ def main():
     import argparse
     ap = argparse.ArgumentParser(description="Generate narration script from topic and research")
     ap.add_argument("--topic", required=True, help="Path to topic JSON or 'latest' from schedule")
+    ap.add_argument("--output", required=True, help="Output script path")
     args = ap.parse_args()
 
     if args.topic == "latest":
@@ -244,7 +244,7 @@ def main():
 
     research = load_research(topic_data.get("destination_slug", ""))
     script = build_script_from_research(topic_data, research)
-    save_script(script)
+    save_script(script, Path(args.output))
 
     print(f"Generated script for: {script.title}")
     print(f"Words: {script.word_count} | Est. duration: {script.estimated_duration}s")

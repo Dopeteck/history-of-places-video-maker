@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import os
+import shutil
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +14,39 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "destination-prototype" / "data"
 REGIONS_DIR = ROOT / "regions"
 OUTPUT_DIR = ROOT / "output"
+
+
+@dataclass
+class RunPaths:
+    """Paths for a single orchestration run."""
+    run_dir: Path
+    topic_file: Path
+    research_file: Path
+    script_file: Path
+    review_dir: Path
+    video_file: Path
+    qa_report_file: Path
+    credits_file: Path
+    image_manifest_file: Path
+
+    @classmethod
+    def create(cls, run_id: str) -> "RunPaths":
+        run_dir = DATA_DIR / "runs" / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        review_dir = OUTPUT_DIR / f"{run_id}-review"
+        if review_dir.exists():
+            shutil.rmtree(review_dir)
+        return cls(
+            run_dir=run_dir,
+            topic_file=run_dir / "topic.json",
+            research_file=run_dir / "research.json",
+            script_file=run_dir / "script.json",
+            review_dir=review_dir,
+            video_file=review_dir / "final_video.mp4",
+            qa_report_file=run_dir / "qa_report.json",
+            credits_file=run_dir / "credits.json",
+            image_manifest_file=run_dir / "image_manifest.json",
+        )
 
 
 @dataclass
@@ -31,64 +65,51 @@ def run_command(cmd: List[str], cwd: Path = ROOT, env: Optional[Dict] = None) ->
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=full_env)
 
 
-def select_topic(run_id: str) -> Optional[Dict]:
+def select_topic(paths: RunPaths) -> Optional[Dict]:
     """Select next topic using daily engine."""
-    topic_file = DATA_DIR / f"topic_{run_id}.json"
     result = run_command([
-        sys.executable, "destination-prototype/daily_content_engine.py", "--select-topic"
+        sys.executable, "destination-prototype/daily_content_engine.py", "--select-topic", "--output", str(paths.topic_file)
     ])
     if result.returncode != 0:
         return None
     try:
-        topic = json.loads(result.stdout.strip())
-        # Save topic for this run
-        with open(topic_file, "w", encoding="utf-8") as f:
-            json.dump(topic, f, ensure_ascii=False)
-        return topic
-    except json.JSONDecodeError:
+        with open(paths.topic_file, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
         return None
 
 
-def research_topic(topic: Dict, run_id: str) -> Optional[Dict]:
+def research_topic(topic: Dict, paths: RunPaths) -> Optional[Dict]:
     """Research topic and save record to run-specific file."""
-    topic_file = DATA_DIR / f"topic_{run_id}.json"
-    with open(topic_file, "w", encoding="utf-8") as f:
+    with open(paths.topic_file, "w", encoding="utf-8") as f:
         json.dump(topic, f, ensure_ascii=False)
 
     result = run_command([
-        sys.executable, "destination-prototype/research_factcheck.py", "--topic", str(topic_file)
+        sys.executable, "destination-prototype/research_factcheck.py", "--topic", str(paths.topic_file), "--output", str(paths.research_file)
     ])
     if result.returncode != 0:
         return None
 
-    # Research file is saved with date-based name: research_{topic_slug}_{date}.json
-    today = datetime.now().date().isoformat()
-    research_files = list(DATA_DIR.glob(f"research_{topic['destination_slug']}_{today}.json"))
-    if not research_files:
+    if not paths.research_file.exists():
         return None
-    latest = max(research_files)
-    with open(latest, encoding="utf-8") as f:
+    with open(paths.research_file, encoding="utf-8") as f:
         return json.load(f)
 
 
-def generate_script(topic: Dict, research: Dict, run_id: str) -> Optional[Dict]:
+def generate_script(topic: Dict, research: Dict, paths: RunPaths) -> Optional[Dict]:
     """Generate narration script."""
-    topic_file = DATA_DIR / f"topic_{run_id}.json"
-    with open(topic_file, "w", encoding="utf-8") as f:
+    with open(paths.topic_file, "w", encoding="utf-8") as f:
         json.dump(topic, f, ensure_ascii=False)
 
     result = run_command([
-        sys.executable, "destination-prototype/generate_script.py", "--topic", str(topic_file)
+        sys.executable, "destination-prototype/generate_script.py", "--topic", str(paths.topic_file), "--output", str(paths.script_file)
     ])
     if result.returncode != 0:
         return None
 
-    today = datetime.now().date().isoformat()
-    script_files = list(DATA_DIR.glob(f"script_{topic['destination_slug']}_{today}.json"))
-    if not script_files:
+    if not paths.script_file.exists():
         return None
-    latest = max(script_files)
-    with open(latest, encoding="utf-8") as f:
+    with open(paths.script_file, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -114,34 +135,32 @@ def validate_claims(script: Dict, research: Dict) -> Dict:
     }
 
 
-def render_visual_review(region_slug: str, hook_variant: str = "A", run_id: str = "") -> Optional[Path]:
+def render_visual_review(region_slug: str, hook_variant: str, paths: RunPaths) -> Optional[Path]:
     """Render visual approval board."""
-    output_path = OUTPUT_DIR / f"{region_slug}-region-short"
-    # Clean previous output for this region
-    if output_path.exists():
-        import shutil
-        shutil.rmtree(output_path)
+    if paths.review_dir.exists():
+        shutil.rmtree(paths.review_dir)
 
     result = run_command([
         sys.executable, "destination-prototype/render_region_short.py",
         "--config", f"regions/{region_slug}.yaml",
         "--hook-variant", hook_variant,
-        "--visual-review-only"
+        "--visual-review-only",
+        "--output", str(paths.review_dir)
     ])
     if result.returncode != 0:
         return None
 
-    if output_path.exists():
-        return output_path
+    if paths.review_dir.exists():
+        return paths.review_dir
     return None
 
 
-def run_review_qa(script_path: Path, output_dir: Path) -> Dict:
+def run_review_qa(paths: RunPaths) -> Dict:
     """Run review QA checks - exits non-zero on failure."""
     cmd = [
         sys.executable, "destination-prototype/qa_checks.py",
-        "--script", str(script_path),
-        "--output-dir", str(output_dir),
+        "--script", str(paths.script_file),
+        "--output-dir", str(paths.review_dir),
         "--mode", "review",
         "--fail-on-error"
     ]
@@ -154,13 +173,13 @@ def run_review_qa(script_path: Path, output_dir: Path) -> Dict:
     }
 
 
-def run_production_qa(script_path: Path, output_dir: Path, video_path: Path) -> Dict:
+def run_production_qa(paths: RunPaths) -> Dict:
     """Run production QA checks - exits non-zero on failure."""
     cmd = [
         sys.executable, "destination-prototype/qa_checks.py",
-        "--script", str(script_path),
-        "--output-dir", str(output_dir),
-        "--video", str(video_path),
+        "--script", str(paths.script_file),
+        "--output-dir", str(paths.review_dir),
+        "--video", str(paths.video_file),
         "--mode", "production",
         "--fail-on-error"
     ]
@@ -173,33 +192,33 @@ def run_production_qa(script_path: Path, output_dir: Path, video_path: Path) -> 
     }
 
 
-def render_final_video(region_slug: str, hook_variant: str = "A") -> Optional[Path]:
+def render_final_video(region_slug: str, hook_variant: str, paths: RunPaths) -> Optional[Path]:
     """Render final narrated MP4."""
-    output_path = OUTPUT_DIR / f"{region_slug}-region-short"
-    if output_path.exists():
-        import shutil
-        shutil.rmtree(output_path)
+    if paths.review_dir.exists():
+        shutil.rmtree(paths.review_dir)
 
     result = run_command([
         sys.executable, "destination-prototype/render_region_short.py",
         "--config", f"regions/{region_slug}.yaml",
-        "--hook-variant", hook_variant
+        "--hook-variant", hook_variant,
+        "--output", str(paths.review_dir)
     ])
     if result.returncode != 0:
         return None
 
-    video_files = list(output_path.glob("*.mp4"))
-    return video_files[0] if video_files else None
+    video_files = list(paths.review_dir.glob("*.mp4"))
+    if video_files:
+        # Move to the expected video file path
+        shutil.move(str(video_files[0]), str(paths.video_file))
+        return paths.video_file
+    return None
 
 
-def save_artifacts(artifacts: Dict, run_id: str):
+def save_artifacts(artifacts: Dict, paths: RunPaths):
     """Save all artifacts for the run."""
-    run_dir = DATA_DIR / "runs" / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-
     for name, data in artifacts.items():
         if data is not None:
-            filepath = run_dir / f"{name}.json"
+            filepath = paths.run_dir / f"{name}.json"
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -215,10 +234,8 @@ def main():
     args = ap.parse_args()
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    paths = RunPaths.create(run_id)
     artifacts = {}
-    script_path = None
-    review_dir = None
-    video_path = None
 
     print(f"=== DAILY ORCHESTRATION RUN: {run_id} ===")
     print(f"Mode: {args.mode}")
@@ -247,7 +264,7 @@ def main():
             "narration_language": cfg.get("story", {}).get("narration_language", "English"),
         }
     else:
-        topic = select_topic(run_id)
+        topic = select_topic(paths)
         if not topic:
             print("ERROR: No topic available")
             sys.exit(1)
@@ -257,7 +274,7 @@ def main():
 
     # Stage 2: Research
     print("\n[2/8] Researching and fact-checking...")
-    research = research_topic(topic, run_id)
+    research = research_topic(topic, paths)
     if not research:
         print("ERROR: Research failed")
         sys.exit(1)
@@ -266,13 +283,12 @@ def main():
 
     # Stage 3: Generate script
     print("\n[3/8] Generating narration script...")
-    script = generate_script(topic, research, run_id)
+    script = generate_script(topic, research, paths)
     if not script:
         print("ERROR: Script generation failed")
         sys.exit(1)
     print(f"  Words: {script.get('word_count', 0)}, Est. duration: {script.get('estimated_duration', 0)}s")
     artifacts["script"] = script
-    script_path = DATA_DIR / f"script_{run_id}.json"
 
     # Stage 4: Validate claims
     print("\n[4/8] Validating claims...")
@@ -282,7 +298,7 @@ def main():
 
     # Stage 5: Visual review
     print("\n[5/8] Rendering visual review board...")
-    review_dir = render_visual_review(topic["destination_slug"], args.hook_variant, run_id)
+    review_dir = render_visual_review(topic["destination_slug"], args.hook_variant, paths)
     if not review_dir:
         print("ERROR: Visual review rendering failed")
         sys.exit(1)
@@ -291,7 +307,7 @@ def main():
 
     # QA for review artifacts - MANDATORY, exits non-zero on failure
     print("\n[6/8] Running QA on review artifacts...")
-    qa_result = run_review_qa(script_path, review_dir)
+    qa_result = run_review_qa(paths)
     print(f"  QA passed: {qa_result['passed']}")
     if not qa_result['passed']:
         print(f"  QA FAILED: {qa_result['stderr']}")
@@ -301,8 +317,8 @@ def main():
     if args.mode == "review":
         print("\n=== REVIEW MODE COMPLETE ===")
         print("Visual review artifacts ready for human approval.")
-        print(f"Approval board: {review_dir}/approval-board.html")
-        save_artifacts(artifacts, run_id)
+        print(f"Approval board: {paths.review_dir}/approval-board.html")
+        save_artifacts(artifacts, paths)
         return
 
     # Stage 7: Production (requires explicit approval)
@@ -312,7 +328,7 @@ def main():
         sys.exit(1)
 
     print("\n[7/8] Rendering final narrated video...")
-    video_path = render_final_video(topic["destination_slug"], args.hook_variant)
+    video_path = render_final_video(topic["destination_slug"], args.hook_variant, paths)
     if not video_path:
         print("ERROR: Final video rendering failed")
         sys.exit(1)
@@ -321,7 +337,7 @@ def main():
 
     # Stage 8: Final QA - MANDATORY, exits non-zero on failure
     print("\n[8/8] Running final video QA...")
-    prod_qa = run_production_qa(script_path, review_dir, video_path)
+    prod_qa = run_production_qa(paths)
     print(f"  Production QA passed: {prod_qa['passed']}")
     if not prod_qa['passed']:
         print(f"  PRODUCTION QA FAILED: {prod_qa['stderr']}")
@@ -332,7 +348,7 @@ def main():
     print(f"Video: {video_path}")
     print(f"Run ID: {run_id}")
 
-    save_artifacts(artifacts, run_id)
+    save_artifacts(artifacts, paths)
 
 
 if __name__ == "__main__":

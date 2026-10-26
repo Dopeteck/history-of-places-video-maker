@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "destination-prototype"))
@@ -25,10 +25,11 @@ from daily_content_engine import (
     CATEGORIES,
     CONTINENT_WEIGHTS,
 )
-from daily_orchestrate import run_review_qa, run_production_qa
+# Import QA functions with explicit aliases to avoid duplicate imports
+from daily_orchestrate import run_review_qa as orch_run_review_qa, run_production_qa as orch_run_production_qa
 from generate_script import build_script_from_research
 from research_factcheck import extract_claims_from_narration, verify_claim, research_topic
-from qa_checks import run_review_qa, run_production_qa, validate_video_with_ffprobe
+from qa_checks import run_review_qa as qa_run_review_qa, run_production_qa as qa_run_production_qa, validate_video_with_ffprobe
 
 
 def test_continent_inference():
@@ -198,19 +199,15 @@ def test_qa_review_mode_rejects_failures():
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
-            # Create a minimal approval board
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[]")
 
-            results = run_review_qa(script_path, output_dir)
-            # Should have claims_support error
+            results = qa_run_review_qa(script_path, output_dir)
             claims_check = next((r for r in results if r.check == "claims_support"), None)
             assert claims_check is not None, "Should have claims_support check"
             assert not claims_check.passed, "Should fail with <70% verified claims"
             assert "below 70% threshold" in claims_check.details
 
-            # The run_review_qa returns the result but with --fail-on-error it would exit non-zero
-            # Verify the returncode would be non-zero
             assert any(not r.passed for r in results), "Should have at least one failure"
     finally:
         script_path.unlink()
@@ -223,7 +220,7 @@ def test_qa_review_mode_rejects_failures():
             "claims_verified": 5,
             "claims_total": 6,
             "claims_insufficient": 0,
-            "claims_disputed": 1,  # Disputed claims should fail
+            "claims_disputed": 1,
             "research_record": "",
         }
         json.dump(script, f)
@@ -235,11 +232,7 @@ def test_qa_review_mode_rejects_failures():
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[]")
 
-            results = run_review_qa(script_path, output_dir)
-            # Should have claims_no_disputed error (disputed claims fail review too)
-            disputed_check = next((r for r in results if r.check == "claims_no_disputed"), None)
-            # Note: review mode doesn't check claims_no_disputed, but production does
-            # The key is that claims_support should pass (5/6 = 83%)
+            results = qa_run_review_qa(script_path, output_dir)
             claims_check = next((r for r in results if r.check == "claims_support"), None)
             assert claims_check is not None
             assert claims_check.passed, "5/6 verified should pass review threshold"
@@ -251,37 +244,6 @@ def test_qa_review_mode_rejects_failures():
 
 def test_qa_production_rejects_failures():
     """Test that production QA rejects failures and would cause non-zero exit."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        script = {
-            "word_count": 130,
-            "estimated_duration": 52.0,
-            "claims_verified": 5,
-            "claims_total": 6,
-            "claims_insufficient": 1,
-            "claims_disputed": 0,
-            "research_record": "",
-        }
-        json.dump(script, f)
-        script_path = Path(f.name)
-
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_dir = Path(tmpdir)
-            video_path = output_dir / "video.mp4"
-            video_path.write_bytes(b"fake")
-            (output_dir / "approval-board.html").write_text("<html>test</html>")
-            (output_dir / "credits.json").write_text("[{\"provider\": \"test\", \"rights\": \"CC0\", \"source_url\": \"https://example.com\", \"asset_url\": \"https://example.com/img.jpg\"}]")
-
-            results = run_production_qa(script_path, output_dir, video_path)
-
-            # Should have claims_support error (5/6 = 83% but claims_insufficient=1 means claims_supported=5, claims_total=6 -> 83%)
-            # Wait: claims_supported = claims_verified + claims_insufficient = 5+1=6, claims_total=6 -> 100%
-            # The check is verified/total = 5/6 = 83% >= 70% -> passes
-            # But claims_no_disputed should pass (0 disputed)
-            # Let's test with actual failure case
-    finally:
-        script_path.unlink()
-
     # Test with <70% verified
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         script = {
@@ -304,14 +266,13 @@ def test_qa_production_rejects_failures():
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[{\"provider\": \"test\", \"rights\": \"CC0\", \"source_url\": \"https://example.com\", \"asset_url\": \"https://example.com/img.jpg\"}]")
 
-            results = run_production_qa(script_path, output_dir, video_path)
+            results = qa_run_production_qa(script_path, output_dir, video_path)
 
             claims_check = next((r for r in results if r.check == "claims_support"), None)
             assert claims_check is not None
             assert not claims_check.passed, "Should fail with <70% verified claims"
             assert "below 70% threshold" in claims_check.details
 
-            # Production QA with --fail-on-error would exit non-zero
             assert any(not r.passed for r in results), "Should have failures"
     finally:
         script_path.unlink()
@@ -338,7 +299,7 @@ def test_qa_production_rejects_failures():
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[{\"provider\": \"test\", \"rights\": \"CC0\", \"source_url\": \"https://example.com\", \"asset_url\": \"https://example.com/img.jpg\"}]")
 
-            results = run_production_qa(script_path, output_dir, video_path)
+            results = qa_run_production_qa(script_path, output_dir, video_path)
 
             disputed_check = next((r for r in results if r.check == "claims_no_disputed"), None)
             assert disputed_check is not None
@@ -354,49 +315,59 @@ def test_qa_production_rejects_failures():
 
 def test_research_http_failure_stops_pipeline():
     """Test that mocked research HTTP failures stop the pipeline."""
-    # The research_factcheck.py exits with code 1 on:
-    # - extraction_failed (zero claims extracted)
-    # - verification_failed (all claims disputed)
-    # - zero_claims
-    # This is tested by the main() function in research_factcheck.py
-    # which calls sys.exit(1) on these conditions.
-    # We verify the CLI behavior here.
-    print("OK test_research_http_failure_stops_pipeline passed (CLI exit code verified)")
+    # Test that research_factcheck.py exits with code 1 on verification_failed
+    # Mock Wikipedia API to return no results
+    with patch('research_factcheck.search_wikipedia', return_value=[]):
+        # Create a topic that will trigger extraction
+        topic_data = {
+            "destination_slug": "tokyo",
+            "destination": "Tokyo",
+            "category": "hidden_history",
+            "title": "Test Topic",
+            "description": "Tokyo was founded in 1603. The population grew to 1 million by 1700. Tokugawa Ieyasu established the shogunate.",
+            "narration_language": "English",
+        }
+        record = research_topic(topic_data)
+        # With no Wikipedia results, all claims should be disputed
+        assert record.verification_failed, "Should have verification_failed=True when all claims disputed"
+        assert record.extraction_failed is False, "Should still extract claims"
+
+    # Test that research_factcheck.py exits with code 1 on zero_claims
+    topic_no_claims = {
+        "destination_slug": "tokyo",
+        "destination": "Tokyo",
+        "category": "hidden_history",
+        "title": "Test Topic",
+        "description": "This is a beautiful city with nice weather.",  # No factual claims
+        "narration_language": "English",
+    }
+    record = research_topic(topic_no_claims)
+    assert record.zero_claims, "Should have zero_claims=True"
+
+    print("OK test_research_http_failure_stops_pipeline passed")
 
 
 def test_stale_artifacts_not_selected():
     """Test that stale artifacts from previous runs cannot be selected."""
-    # The daily_orchestrate.py now uses run-specific file paths:
-    # - topic_{run_id}.json
-    # - research_{run_id}.json
-    # - script_{run_id}.json
-    # Instead of globbing for max timestamp.
-    # This test verifies the pattern.
     run_id_1 = "20261026_100000"
     run_id_2 = "20261026_110000"
 
-    # Create fake files for two runs
     DATA_DIR = Path(__file__).resolve().parents[1] / "destination-prototype" / "data"
     DATA_DIR.mkdir(exist_ok=True)
 
-    # Run 1 files
     (DATA_DIR / f"topic_{run_id_1}.json").write_text('{"destination_slug": "tokyo"}')
     (DATA_DIR / f"research_{run_id_1}.json").write_text('{"claims": []}')
     (DATA_DIR / f"script_{run_id_1}.json").write_text('{"word_count": 100}')
 
-    # Run 2 files
     (DATA_DIR / f"topic_{run_id_2}.json").write_text('{"destination_slug": "lagos"}')
     (DATA_DIR / f"research_{run_id_2}.json").write_text('{"claims": [{"status": "verified"}]}')
     (DATA_DIR / f"script_{run_id_2}.json").write_text('{"word_count": 130}')
 
-    # The orchestrate functions should load the exact run_id files
-    # Verify the files exist and are distinct
     assert (DATA_DIR / f"topic_{run_id_1}.json").exists()
     assert (DATA_DIR / f"topic_{run_id_2}.json").exists()
     assert (DATA_DIR / f"research_{run_id_1}.json").exists()
     assert (DATA_DIR / f"research_{run_id_2}.json").exists()
 
-    # Clean up
     for f in DATA_DIR.glob(f"*{run_id_1}*"):
         f.unlink()
     for f in DATA_DIR.glob(f"*{run_id_2}*"):
@@ -407,13 +378,9 @@ def test_stale_artifacts_not_selected():
 
 def test_clean_runner_smoke_review():
     """Smoke test for the review path with minimal dependencies."""
-    # This test verifies that the review orchestration can be imported
-    # and the main functions exist. It doesn't run the full pipeline
-    # (which requires network, kokoro, etc.) but validates the entry point.
     from daily_orchestrate import main, select_topic, research_topic, generate_script
     from daily_orchestrate import render_visual_review, run_review_qa
 
-    # Verify functions are callable
     assert callable(main)
     assert callable(select_topic)
     assert callable(research_topic)
@@ -421,7 +388,6 @@ def test_clean_runner_smoke_review():
     assert callable(render_visual_review)
     assert callable(run_review_qa)
 
-    # Verify argument parsing works
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["review", "production"])
@@ -429,14 +395,12 @@ def test_clean_runner_smoke_review():
     ap.add_argument("--hook-variant")
     ap.add_argument("--approve", action="store_true")
 
-    # Test review mode args
     args = ap.parse_args(["--mode", "review", "--region", "lagos", "--hook-variant", "A"])
     assert args.mode == "review"
     assert args.region == "lagos"
     assert args.hook_variant == "A"
     assert args.approve is False
 
-    # Test production mode args
     args = ap.parse_args(["--mode", "production", "--region", "tokyo", "--approve"])
     assert args.mode == "production"
     assert args.approve is True

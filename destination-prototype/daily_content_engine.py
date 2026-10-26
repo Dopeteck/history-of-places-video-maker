@@ -550,6 +550,7 @@ def main():
                     help="Generate topic candidates from all region configs")
     ap.add_argument("--select-topic", action="store_true",
                     help="Select and output the next topic")
+    ap.add_argument("--output", help="Output file path for --select-topic")
     ap.add_argument("--build-schedule", type=int, default=14,
                     help="Build N-day editorial schedule")
     ap.add_argument("--list-destinations", action="store_true",
@@ -603,7 +604,12 @@ def main():
         topic = select_next_topic(candidates, state)
         if topic:
             topic.selected_at = datetime.now().date().isoformat()
-            print(json.dumps(asdict(topic), indent=2, ensure_ascii=False))
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    json.dump(asdict(topic), f, indent=2, ensure_ascii=False)
+                print(f"Topic saved to {args.output}")
+            else:
+                print(json.dumps(asdict(topic), indent=2, ensure_ascii=False))
             update_state(state, topic)
         else:
             print("No qualified candidate available (constraints or exhaustion).")

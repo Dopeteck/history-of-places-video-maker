@@ -356,7 +356,7 @@ def main():
     import argparse
     ap = argparse.ArgumentParser(description="Research and fact-check a topic")
     ap.add_argument("--topic", required=True, help="Path to topic JSON or 'latest' from schedule")
-    ap.add_argument("--output", help="Output research record path")
+    ap.add_argument("--output", required=True, help="Output research record path")
     args = ap.parse_args()
 
     if args.topic == "latest":
@@ -378,7 +378,9 @@ def main():
 
     print(f"Researching: {topic_data.get('title', 'Unknown')}")
     record = research_topic(topic_data)
-    save_research(record)
+    # Save to explicit output path
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(asdict(record), f, indent=2, ensure_ascii=False)
 
     # Report results with details
     print(f"Saved research record with {len(record.claims)} claims")
