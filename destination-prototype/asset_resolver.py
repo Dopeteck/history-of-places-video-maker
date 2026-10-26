@@ -733,27 +733,24 @@ def _download(c):
                     delay = BASE_RETRY_DELAY * (2 ** attempt)
                 last = requests.HTTPError(f"HTTP {r.status_code} downloading image")
                 if attempt < MAX_RETRIES - 1:
-                    _download_semaphore.release()
                     time.sleep(delay)
                     continue
                 break
 
             r.raise_for_status()
             if int(r.headers.get("Content-Length") or 0) > 35_000_000:
-                _download_semaphore.release()
                 raise ValueError("file larger than 35 MB")
-            _download_semaphore.release()
             return r.content
 
         except requests.RequestException as e:
             last = e
             if attempt == MAX_RETRIES - 1:
-                _download_semaphore.release()
                 break
             delay = min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * (2 ** attempt))
             time.sleep(delay)
+        finally:
+            _download_semaphore.release()
 
-    _download_semaphore.release()
     raise last
 
 def resolve_scene_image(scene, idx, config, asset_dir, used, output):

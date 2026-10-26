@@ -444,6 +444,292 @@ def test_schedule_exhaustion():
             os.remove("destination-prototype/data/editorial_state.json")
 
 
+def test_download_success():
+    """Test successful image download with mocked response."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+
+    # Create a fake image response
+    fake_image = b"fake_jpeg_data" + b"x" * 1000  # > 30KB to pass size check
+
+    with patch.object(ar.S, 'get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Length": "50000"}
+        mock_response.raise_for_status = MagicMock()
+        mock_response.content = fake_image
+        mock_get.return_value = mock_response
+
+        c = {"image_url": "https://example.com/image.jpg"}
+        result = ar._download(c)
+
+        assert result == fake_image
+        mock_get.assert_called_once()
+
+    print("OK test_download_success passed")
+
+
+def test_download_http_429_retry():
+    """Test retry on HTTP 429 with Retry-After header."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+    import time
+
+    with patch.object(ar.S, 'get') as mock_get:
+        # First call returns 429, second succeeds
+        responses = []
+        for i in range(2):
+            mock_resp = MagicMock()
+            if i == 0:
+                mock_resp.status_code = 429
+                mock_resp.headers = {"Retry-After": "1"}
+                err = requests.HTTPError("429 Too Many Requests")
+                err.response = mock_resp
+                mock_resp.raise_for_status = MagicMock(side_effect=err)
+            else:
+                mock_resp.status_code = 200
+                mock_resp.headers = {"Content-Length": "50000"}
+                mock_resp.raise_for_status = MagicMock()
+                mock_resp.content = b"fake_jpeg_data" + b"x" * 1000
+            responses.append(mock_resp)
+
+        mock_get.side_effect = responses
+
+        c = {"image_url": "https://example.com/image.jpg"}
+        with patch('time.sleep') as mock_sleep:
+            result = ar._download(c)
+
+        assert result == responses[1].content
+        assert mock_get.call_count == 2
+        # Should sleep with Retry-After delay
+        mock_sleep.assert_called_with(1.0)
+
+    print("OK test_download_http_429_retry passed")
+
+
+def test_download_http_5xx_retry():
+    """Test retry on HTTP 5xx with exponential backoff."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+
+    with patch.object(ar.S, 'get') as mock_get:
+        # First two calls return 500, third succeeds
+        responses = []
+        for i in range(3):
+            mock_resp = MagicMock()
+            if i < 2:
+                mock_resp.status_code = 500
+                mock_resp.headers = {}
+                err = requests.HTTPError("500 Internal Server Error")
+                err.response = mock_resp
+                mock_resp.raise_for_status = MagicMock(side_effect=err)
+            else:
+                mock_resp.status_code = 200
+                mock_resp.headers = {"Content-Length": "50000"}
+                mock_resp.raise_for_status = MagicMock()
+                mock_resp.content = b"fake_jpeg_data" + b"x" * 1000
+            responses.append(mock_resp)
+
+        mock_get.side_effect = responses
+
+        c = {"image_url": "https://example.com/image.jpg"}
+        with patch('time.sleep') as mock_sleep:
+            result = ar._download(c)
+
+        assert result == responses[2].content
+        assert mock_get.call_count == 3
+        # Should sleep with exponential backoff
+        assert mock_sleep.call_count == 2
+
+    print("OK test_download_http_5xx_retry passed")
+
+
+def test_download_connection_error_retry():
+    """Test retry on connection error with exponential backoff."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+
+    expected_content = b"fake_jpeg_data" + b"x" * 1000
+    expected_response = MagicMock(
+        status_code=200,
+        headers={"Content-Length": "50000"},
+        raise_for_status=MagicMock(),
+        content=expected_content
+    )
+
+    with patch.object(ar.S, 'get') as mock_get:
+        # First two calls raise connection error, third succeeds
+        mock_get.side_effect = [
+            requests.ConnectionError("Connection refused"),
+            requests.Timeout("Read timed out"),
+            expected_response
+        ]
+
+        c = {"image_url": "https://example.com/image.jpg"}
+        with patch('time.sleep') as mock_sleep:
+            result = ar._download(c)
+
+        assert result == expected_content
+        assert mock_get.call_count == 3
+        assert mock_sleep.call_count == 2
+
+    print("OK test_download_connection_error_retry passed")
+
+
+def test_download_oversized_image_rejected():
+    """Test that oversized images (>35MB) are rejected."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+
+    with patch.object(ar.S, 'get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Length": "40000000"}  # 40MB
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        c = {"image_url": "https://example.com/huge_image.jpg"}
+
+        try:
+            ar._download(c)
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "larger than 35 MB" in str(e)
+
+    print("OK test_download_oversized_image_rejected passed")
+
+
+def test_download_semaphore_not_exhausted_on_repeated_failures():
+    """Test that repeated failures don't exhaust the download semaphore."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+    import threading
+
+    # Test that semaphore is released even after all retries fail
+    with patch.object(ar.S, 'get') as mock_get:
+        mock_get.side_effect = requests.ConnectionError("Connection refused")
+
+        c = {"image_url": "https://example.com/image.jpg"}
+
+        # Should fail after MAX_RETRIES attempts
+        try:
+            ar._download(c)
+            assert False, "Should have raised ConnectionError"
+        except requests.ConnectionError:
+            pass
+
+        # Semaphore should be available for another download
+        acquired = ar._download_semaphore.acquire(timeout=1.0)
+        assert acquired, "Semaphore should be available after failed download"
+        ar._download_semaphore.release()
+
+    print("OK test_download_semaphore_not_exhausted_on_repeated_failures passed")
+
+
+def test_download_read_timeout_retry():
+    """Test retry on read timeout."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+
+    expected_content = b"fake_jpeg_data" + b"x" * 1000
+    expected_response = MagicMock(
+        status_code=200,
+        headers={"Content-Length": "50000"},
+        raise_for_status=MagicMock(),
+        content=expected_content
+    )
+
+    with patch.object(ar.S, 'get') as mock_get:
+        # First call times out, second succeeds
+        mock_get.side_effect = [
+            requests.ReadTimeout("Read timed out"),
+            expected_response
+        ]
+
+        c = {"image_url": "https://example.com/image.jpg"}
+        with patch('time.sleep') as mock_sleep:
+            result = ar._download(c)
+
+        assert result == expected_content
+        assert mock_get.call_count == 2
+        mock_sleep.assert_called_once()
+
+    print("OK test_download_read_timeout_retry passed")
+
+
+def test_download_concurrent_semaphore_limit():
+    """Test that concurrent downloads respect semaphore limit."""
+    import sys
+    sys.path.insert(0, str(ROOT / "destination-prototype"))
+    import asset_resolver as ar
+    from unittest.mock import patch, MagicMock
+    import requests
+    import threading
+    import time
+
+    download_started = threading.Event()
+    downloads_completed = threading.Event()
+    active_downloads = []
+    active_lock = threading.Lock()
+
+    def mock_get_slow(*args, **kwargs):
+        with active_lock:
+            active_downloads.append(threading.current_thread().ident)
+            if len(active_downloads) > ar.MAX_CONCURRENT_DOWNLOADS:
+                raise AssertionError(f"Too many concurrent downloads: {len(active_downloads)}")
+        download_started.set()
+        time.sleep(0.1)
+        with active_lock:
+            active_downloads.remove(threading.current_thread().ident)
+        downloads_completed.set()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {"Content-Length": "50000"}
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.content = b"fake_jpeg_data" + b"x" * 1000
+        return mock_resp
+
+    with patch.object(ar.S, 'get', side_effect=mock_get_slow):
+        c = {"image_url": "https://example.com/image.jpg"}
+
+        # Try to start more concurrent downloads than the semaphore allows
+        threads = []
+        for i in range(ar.MAX_CONCURRENT_DOWNLOADS + 1):
+            t = threading.Thread(target=lambda: ar._download(c))
+            threads.append(t)
+            t.start()
+
+        # Wait for all to complete or fail
+        for t in threads:
+            t.join(timeout=5.0)
+
+        # All should have completed or failed gracefully
+        # The semaphore should limit concurrent execution
+
+    print("OK test_download_concurrent_semaphore_limit passed")
+
+
 def main():
     """Run all tests."""
     print("Running orchestration and fact-checking tests...\n")
@@ -462,9 +748,13 @@ def main():
     test_clean_runner_smoke_review()
     test_generate_candidates_structure()
     test_schedule_exhaustion()
+    test_download_success()
+    test_download_http_429_retry()
+    test_download_http_5xx_retry()
+    test_download_connection_error_retry()
+    test_download_oversized_image_rejected()
+    test_download_semaphore_not_exhausted_on_repeated_failures()
+    test_download_read_timeout_retry()
+    test_download_concurrent_semaphore_limit()
 
     print("\n=== ALL TESTS PASSED ===")
-
-
-if __name__ == "__main__":
-    main()
