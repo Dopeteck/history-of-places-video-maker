@@ -20,7 +20,11 @@ from scene_planner import plan_scenes
 
 @dataclass
 class RunPaths:
-    """Paths for a single orchestration run."""
+    """Paths for a single orchestration run.
+
+    review_dir is deliberately named {region_slug}-region-short to match the
+    artifact upload paths in .github/workflows/region-history-shorts.yml.
+    """
     run_dir: Path
     topic_file: Path
     research_file: Path
@@ -33,10 +37,10 @@ class RunPaths:
     image_manifest_file: Path
 
     @classmethod
-    def create(cls, run_id: str) -> "RunPaths":
+    def create(cls, run_id: str, region_slug: str) -> "RunPaths":
         run_dir = DATA_DIR / "runs" / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
-        review_dir = OUTPUT_DIR / f"{run_id}-review"
+        review_dir = OUTPUT_DIR / f"{region_slug}-region-short"
         if review_dir.exists():
             shutil.rmtree(review_dir)
         return cls(
@@ -62,11 +66,19 @@ class OrchestrationResult:
 
 
 def run_command(cmd: List[str], cwd: Path = ROOT, env: Optional[Dict] = None) -> subprocess.CompletedProcess:
-    """Run a command and return result."""
+    """Run a command and return result. Prints captured output on failure for diagnostics."""
     full_env = os.environ.copy()
     if env:
         full_env.update(env)
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=full_env)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=full_env)
+    if result.returncode != 0:
+        cmd_str = " ".join(str(c) for c in cmd)
+        print(f"COMMAND FAILED (exit={result.returncode}): {cmd_str}", file=sys.stderr)
+        if result.stdout.strip():
+            print(f"STDOUT:\n{result.stdout}", file=sys.stderr)
+        if result.stderr.strip():
+            print(f"STDERR:\n{result.stderr}", file=sys.stderr)
+    return result
 
 
 def select_topic(paths: RunPaths) -> Optional[Dict]:
@@ -256,7 +268,12 @@ def main():
     args = ap.parse_args()
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    paths = RunPaths.create(run_id)
+    # Determine region slug early so RunPaths can use the correct output directory.
+    if args.region:
+        region_slug = args.region
+    else:
+        region_slug = None  # will be set after topic selection
+    paths = None
     artifacts = {}
 
     print(f"=== DAILY ORCHESTRATION RUN: {run_id} ===")
@@ -284,6 +301,8 @@ def main():
             "sources": cfg.get("sources", []),
             "kokoro_voice": cfg.get("story", {}).get("kokoro_voice", "af_heart"),
             "narration_language": cfg.get("story", {}).get("narration_language", "English"),
+            # Extract named entities from place_names spellings for scene planning.
+            "entities": [p.get("spelling", "") for p in cfg.get("place_names", []) if p.get("spelling")],
         }
     else:
         topic = select_topic(paths)
@@ -293,6 +312,11 @@ def main():
 
     print(f"Selected: {topic['destination_name']} ({topic['category']}) - {topic['title']}")
     artifacts["topic"] = topic
+
+    # Initialize run paths now that we know the region slug.
+    if paths is None:
+        region_slug = topic["destination_slug"]
+    paths = RunPaths.create(run_id, region_slug)
 
     # Stage 2: Research
     print("\n[2/8] Researching and fact-checking...")

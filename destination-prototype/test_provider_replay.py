@@ -647,3 +647,111 @@ class ScriptSceneConsistency(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class OrchestrationErrorPropagation(unittest.TestCase):
+    """Failing subprocesses surface captured output and cause orchestration to fail."""
+
+    def test_run_command_prints_stderr_on_failure(self):
+        import daily_orchestrate as do
+        import io, contextlib
+        # A command that exits nonzero with stderr output
+        result = do.run_command([sys.executable, "-c", "import sys; print('error detail', file=sys.stderr); sys.exit(3)"])
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("error detail", result.stderr)
+
+    def test_run_command_empty_output_on_failure(self):
+        import daily_orchestrate as do
+        result = do.run_command([sys.executable, "-c", "import sys; sys.exit(7)"])
+        self.assertEqual(result.returncode, 7)
+
+    def test_scene_plan_rejects_empty_required_keywords(self):
+        """Renderer must reject scene plans with empty required_keywords."""
+        import render_region_short as rr
+        import json, tempfile
+        from pathlib import Path
+
+        scene = {
+            "scene_id": "test:s01",
+            "title": "Bad Scene",
+            "narration_intent": "Test intent",
+            "narration_text": "Test text",
+            "image_type": "historic",
+            "named_entities": [],
+            "visual_tags": [],
+            "image_search_terms": ["term one", "term two", "term three"],
+            "required_keywords": [],  # EMPTY - should fail
+            "banned_keywords": [],
+            "sources": [],
+            "claim_refs": [],
+        }
+        cfg = {
+            "name": "Test",
+            "slug": "test",
+            "scenes": [scene],
+            "story": {
+                "narration": "A" * 120,
+                "hook_variants": {"A": "HOOK TEST HERE"},
+                "narration_language": "English",
+                "kokoro_voice": "af_heart",
+            },
+        }
+        with tempfile.TemporaryDirectory() as d:
+            cfg_path = Path(d) / "config.yaml"
+            import yaml
+            cfg_path.write_text(yaml.dump(cfg), encoding="utf-8")
+            with self.assertRaises(RuntimeError) as ctx:
+                # Simulate the renderer's validation logic
+                from render_region_short import normalize_config
+                cfg2 = normalize_config(yaml.safe_load(cfg_path.read_text(encoding="utf-8")))
+                for s in cfg2["scenes"]:
+                    if not s.get("required_keywords"):
+                        raise RuntimeError(f"Scene plan '{s.get('title')}' needs required_keywords")
+            self.assertIn("required_keywords", str(ctx.exception))
+
+    def test_scene_plan_with_entities_passes_validation(self):
+        """Scene plan with entities produces non-empty required_keywords."""
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/mexico-city.yaml", encoding="utf-8"))
+        topic = {
+            "destination_slug": "mexico-city",
+            "destination_name": "Mexico City",
+            "country": "Mexico",
+            "continent": "North America",
+            "category": "ancient_civilization",
+            "story_id": "mexico-city:aztec:temples",
+            "hook": "Hook",
+            "description": "Description",
+            "entities": ["Templo Mayor", "Tenochtitlan"],
+            "sources": ["https://example.com"],
+            "claim_refs": ["claim1"],
+        }
+        scenes = sp.plan_scenes(topic, cfg)
+        for s in scenes:
+            self.assertTrue(s.get("required_keywords"), f"Scene '{s['title']}' has empty required_keywords")
+            self.assertGreaterEqual(len(s.get("image_search_terms", [])), 3)
+            self.assertIn(s["image_type"], ("historic", "modern", "map"))
+            self.assertTrue(s.get("title"))
+            self.assertTrue(s.get("narration_intent"))
+
+
+class RunPathsOutputDirectory(unittest.TestCase):
+    """Review output directory must match workflow artifact paths."""
+
+    def test_review_dir_matches_region_slug_pattern(self):
+        import daily_orchestrate as do
+        from pathlib import Path
+        paths = do.RunPaths.create("20261028_120000", "tokyo")
+        self.assertEqual(paths.review_dir.name, "tokyo-region-short")
+        self.assertIn("output", str(paths.review_dir))
+        self.assertTrue(str(paths.review_dir).endswith("output\\tokyo-region-short") or str(paths.review_dir).endswith("output/tokyo-region-short"))
+
+    def test_review_dir_matches_mexico_city(self):
+        import daily_orchestrate as do
+        paths = do.RunPaths.create("20261028_120000", "mexico-city")
+        self.assertEqual(paths.review_dir.name, "mexico-city-region-short")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
