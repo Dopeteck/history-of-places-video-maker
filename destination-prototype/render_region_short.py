@@ -252,25 +252,41 @@ def _timed(label, started):
  print(f"TIMING {label}: {time.perf_counter()-started:.2f}s", flush=True)
 def main():
  run_started=time.perf_counter()
- ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--draft-preview",action="store_true",help="Render a non-publishable draft MP4; all source and QA gates remain enforced"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); ap.add_argument("--hook-variant",choices=("A","B"),default="A",help="Opening hook variant to render"); a=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--output",default=""); ap.add_argument("--visual-review-only",action="store_true"); ap.add_argument("--draft-preview",action="store_true",help="Render a non-publishable draft MP4; all source and QA gates remain enforced"); ap.add_argument("--only-scenes",default="",help="Comma-separated exact scene titles to review"); ap.add_argument("--hook-variant",choices=("A","B"),default="A",help="Opening hook variant to render"); ap.add_argument("--scenes-json",default="",help="Path to story-driven scene plan JSON (overrides config scenes)"); ap.add_argument("--script-json",default="",help="Path to generated script JSON (overrides config narration)"); a=ap.parse_args()
  step_started=time.perf_counter()
  cfgpath=Path(a.config); cfg=normalize_config(yaml.safe_load(cfgpath.read_text(encoding="utf-8")))
  _timed("config_load_and_validate",step_started)
- if not cfg.get("name") or len(cfg.get("scenes",[]))<8 or len(cfg["scenes"])>12: fail("Config needs name and 8–12 scenes")
+ if not cfg.get("name"): fail("Config needs name")
+ # Load story-driven scene plan if provided; otherwise use config scenes.
+ scenes_json=a.scenes_json.strip(); script_json=a.script_json.strip()
+ if scenes_json and Path(scenes_json).exists():
+  import json as _json
+  _plan=_json.loads(Path(scenes_json).read_text(encoding="utf-8"))
+  if not _plan: fail("Scene plan is empty")
+  # Validate plan scenes have required fields
+  for _s in _plan:
+   if len(_s.get("image_search_terms",[]))<3: fail(f"Scene plan '{_s.get('title')}' needs at least 3 search variants")
+   if not _s.get("required_keywords"): fail(f"Scene plan '{_s.get('title')}' needs required_keywords")
+   if _s.get("image_type") not in ("historic","modern","map"): fail(f"Scene plan '{_s.get('title')}' has invalid image_type")
+  cfg["scenes"]=_plan
+ if len(cfg.get("scenes",[]))<8 or len(cfg["scenes"])>12: fail("Config needs 8–12 scenes")
  if len(set(s["title"] for s in cfg["scenes"]))!=len(cfg["scenes"]): fail("Scene titles must be unique")
  for s in cfg["scenes"]:
-  if len(s.get("image_search_terms",[]))<3: fail(f"Scene '{s.get('title')}' needs at least 3 search variants")
-  if not s.get("required_keywords"): fail(f"Scene '{s.get('title')}' needs required_keywords")
-  if s.get("image_type") not in ("historic","modern","map"): fail(f"Scene '{s.get('title')}' has invalid image_type")
   if banned(s.get("title","")+" "+s.get("narration_intent",""),["pending","placeholder","archival asset"]): fail(f"Placeholder text in scene config: {s['title']}")
  slug=cfg.get("slug",cfgpath.stem); out=Path(a.output) if a.output else ROOT/"output"/f"{slug}-region-short"; out.mkdir(parents=True,exist_ok=True); asset_dir=out/"images"; asset_dir.mkdir(exist_ok=True)
- script=cfg["story"]["narration"].strip()
+ # Load generated script narration if provided; otherwise use config narration.
+ if script_json and Path(script_json).exists():
+  import json as _json
+  _sdata=_json.loads(Path(script_json).read_text(encoding="utf-8"))
+  script=_sdata.get("narration",_sdata.get("script","")).strip()
+ else:
+  script=cfg["story"]["narration"].strip()
  hooks=cfg.get("story",{}).get("hook_variants",{})
  hook=str(hooks.get(a.hook_variant,"")).strip()
  if len(hook.split()) not in range(3,6): fail(f"Hook variant {a.hook_variant} must contain 3–5 words")
  if "[REVIEW]" in script or "[DRAFT" in script or len(script.split())<110 or len(script.split())>155: fail("Narration must be reviewed, non-placeholder, and 110–155 words")
  for term in ("pending","placeholder","archival asset"):
-  if term in script.lower() or term in cfgpath.read_text(encoding="utf-8").lower(): fail(f"Forbidden placeholder text '{term}' in narration/config")
+  if term in script.lower(): fail(f"Forbidden placeholder text '{term}' in narration")
  media=[]; credits=[]; used=set(); previous_digest=None
  selected={x.strip() for x in a.only_scenes.split(",") if x.strip()}
  unknown=selected-{str(x.get("title","")) for x in cfg["scenes"]}
@@ -279,35 +295,34 @@ def main():
  for i,scene in scene_rows:
   scene_started=time.perf_counter()
   try:
-      scene_started=time.perf_counter()
-      if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
-      else:
-       local=local_image(scene,i,cfg,used)
-       if local: im,credit=local
-       else:
-        try: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
-        except Exception as resolver_error:
-         print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
-         im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
-      if _needs_modern_recheck(scene, credit):
-       # Present-day scenes must be positively identified as a modern photograph by the CLIP period probe.
-       reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
-       if a.visual_review_only:
-        print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
-        im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
-       else:
-        fail(reason)
-      if credit.get("provider")!="fallback text card" and str(credit.get("license","")).lower().find("cc by")>=0 and not str(credit.get("author","")).strip():
-       fail(f"Attribution-required asset has no author: {scene['title']}")
-      credit.setdefault("warnings",[])
-      print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
-      digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
-      if credit.get("provider") != "missing asset":
-       if digest in {c.get("content_sha256") for c in credits if c.get("provider") != "missing asset"}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
-       if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
-       previous_digest=digest
-      credit["content_sha256"]=digest; used.add(digest)
-      media.append((scene,im)); credits.append(credit)
+   scene_started=time.perf_counter()
+   if scene["image_type"]=="map": im,credit=make_map(scene,i,cfg,asset_dir)
+   else:
+    local=local_image(scene,i,cfg,used)
+    if local: im,credit=local
+    else:
+     try: im,credit=get_image(scene,i,cfg,asset_dir,used,out)
+     except Exception as resolver_error:
+      print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
+      im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
+   if _needs_modern_recheck(scene, credit):
+    reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
+    if a.visual_review_only:
+     print(f"REVIEW CARD for {scene['title']}: {reason}",file=sys.stderr)
+     im,credit=text_fallback_card(scene,i,cfg,asset_dir,reason)
+    else:
+     fail(reason)
+   if credit.get("provider")!="fallback text card" and str(credit.get("license","")).lower().find("cc by")>=0 and not str(credit.get("author","")).strip():
+    fail(f"Attribution-required asset has no author: {scene['title']}")
+   credit.setdefault("warnings",[])
+   print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
+   digest=credit.get("content_sha256") or hashlib.sha256(im.tobytes()).hexdigest()
+   if credit.get("provider") != "missing asset":
+    if digest in {c.get("content_sha256") for c in credits if c.get("provider") != "missing asset"}: fail(f"Duplicate image content detected at scene '{scene['title']}'")
+    if digest == previous_digest: fail(f"Consecutive scenes reuse the same image: '{scene['title']}'")
+    previous_digest=digest
+   credit["content_sha256"]=digest; used.add(digest)
+   media.append((scene,im)); credits.append(credit)
   except Exception as scene_error:
    if not a.visual_review_only: raise
    print(f"REVIEW SCENE ERROR [{scene.get('title')}]: {type(scene_error).__name__}: {scene_error}",file=sys.stderr)

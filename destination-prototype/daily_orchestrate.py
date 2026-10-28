@@ -15,6 +15,8 @@ DATA_DIR = ROOT / "destination-prototype" / "data"
 REGIONS_DIR = ROOT / "regions"
 OUTPUT_DIR = ROOT / "output"
 
+from scene_planner import plan_scenes
+
 
 @dataclass
 class RunPaths:
@@ -23,6 +25,7 @@ class RunPaths:
     topic_file: Path
     research_file: Path
     script_file: Path
+    scene_plan_file: Path
     review_dir: Path
     video_file: Path
     qa_report_file: Path
@@ -41,6 +44,7 @@ class RunPaths:
             topic_file=run_dir / "topic.json",
             research_file=run_dir / "research.json",
             script_file=run_dir / "script.json",
+            scene_plan_file=run_dir / "scene_plan.json",
             review_dir=review_dir,
             video_file=review_dir / "final_video.mp4",
             qa_report_file=run_dir / "qa_report.json",
@@ -135,18 +139,25 @@ def validate_claims(script: Dict, research: Dict) -> Dict:
     }
 
 
-def render_visual_review(region_slug: str, hook_variant: str, paths: RunPaths) -> Optional[Path]:
-    """Render visual approval board."""
+def render_visual_review(region_slug: str, hook_variant: str, paths: RunPaths,
+                         scenes_json: Optional[Path] = None,
+                         script_json: Optional[Path] = None) -> Optional[Path]:
+    """Render visual approval board, using story-driven scenes when provided."""
     if paths.review_dir.exists():
         shutil.rmtree(paths.review_dir)
 
-    result = run_command([
+    cmd = [
         sys.executable, "destination-prototype/render_region_short.py",
         "--config", f"regions/{region_slug}.yaml",
         "--hook-variant", hook_variant,
         "--visual-review-only",
-        "--output", str(paths.review_dir)
-    ])
+        "--output", str(paths.review_dir),
+    ]
+    if scenes_json:
+        cmd += ["--scenes-json", str(scenes_json)]
+    if script_json:
+        cmd += ["--script-json", str(script_json)]
+    result = run_command(cmd)
     if result.returncode != 0:
         return None
 
@@ -196,23 +207,29 @@ def run_production_qa(paths: RunPaths, scene_count: Optional[int] = None) -> Dic
     }
 
 
-def render_final_video(region_slug: str, hook_variant: str, paths: RunPaths) -> Optional[Path]:
-    """Render final narrated MP4."""
+def render_final_video(region_slug: str, hook_variant: str, paths: RunPaths,
+                       scenes_json: Optional[Path] = None,
+                       script_json: Optional[Path] = None) -> Optional[Path]:
+    """Render final narrated MP4, using story-driven scenes when provided."""
     if paths.review_dir.exists():
         shutil.rmtree(paths.review_dir)
 
-    result = run_command([
+    cmd = [
         sys.executable, "destination-prototype/render_region_short.py",
         "--config", f"regions/{region_slug}.yaml",
         "--hook-variant", hook_variant,
-        "--output", str(paths.review_dir)
-    ])
+        "--output", str(paths.review_dir),
+    ]
+    if scenes_json:
+        cmd += ["--scenes-json", str(scenes_json)]
+    if script_json:
+        cmd += ["--script-json", str(script_json)]
+    result = run_command(cmd)
     if result.returncode != 0:
         return None
 
     video_files = list(paths.review_dir.glob("*.mp4"))
     if video_files:
-        # Move to the expected video file path
         shutil.move(str(video_files[0]), str(paths.video_file))
         return paths.video_file
     return None
@@ -235,6 +252,7 @@ def main():
     ap.add_argument("--region", help="Specific region slug (overrides topic selection)")
     ap.add_argument("--hook-variant", default="A", help="Hook variant (A or B)")
     ap.add_argument("--approve", action="store_true", help="Mark as approved for production")
+    ap.add_argument("--draft-preview", action="store_true", help="Render non-publishable draft MP4 (no approval gate)")
     args = ap.parse_args()
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -294,38 +312,41 @@ def main():
     print(f"  Words: {script.get('word_count', 0)}, Est. duration: {script.get('estimated_duration', 0)}s")
     artifacts["script"] = script
 
-    # Stage 4: Validate claims
-    print("\n[4/8] Validating claims...")
+    # Stage 4: Plan scenes from the selected story
+    print("\n[4/8] Planning scenes from the selected story...")
+    config_path = REGIONS_DIR / f"{topic['destination_slug']}.yaml"
+    if not config_path.exists():
+        print(f"ERROR: Region config not found: {config_path}")
+        sys.exit(1)
+    with open(config_path, encoding="utf-8") as f:
+        import yaml
+        dest_cfg = yaml.safe_load(f)
+    scenes = plan_scenes(topic, dest_cfg)
+    with open(paths.scene_plan_file, "w", encoding="utf-8") as f:
+        json.dump(scenes, f, indent=2, ensure_ascii=False)
+    scene_count = len(scenes)
+    print(f"  Planned scenes: {scene_count}")
+    artifacts["scene_plan"] = scenes
+
+    # Stage 5: Validate claims
+    print("\n[5/8] Validating claims...")
     claim_validation = validate_claims(script, research)
     print(f"  Verified claims: {claim_validation['claims_mapped']}/{claim_validation['claims_total']}")
     artifacts["claim_validation"] = claim_validation
 
-    # Stage 5: Visual review
-    print("\n[5/8] Rendering visual review board...")
-    review_dir = render_visual_review(topic["destination_slug"], args.hook_variant, paths)
+    # Stage 6: Visual review
+    print("\n[6/8] Rendering visual review board...")
+    review_dir = render_visual_review(topic["destination_slug"], args.hook_variant, paths,
+                                      scenes_json=paths.scene_plan_file,
+                                      script_json=paths.script_file)
     if not review_dir:
         print("ERROR: Visual review rendering failed")
         sys.exit(1)
     print(f"  Review artifacts: {review_dir}")
     artifacts["review_dir"] = str(review_dir)
 
-    # Determine planned scene count from config for completeness check
-    scene_count = None
-    if args.region:
-        config_path = REGIONS_DIR / f"{args.region}.yaml"
-    else:
-        # Try to get config from topic
-        config_path = REGIONS_DIR / f"{topic.get('destination_slug', '')}.yaml"
-    if config_path.exists():
-        import yaml
-        with open(config_path, encoding="utf-8") as f:
-            _cfg = yaml.safe_load(f)
-        scene_count = len(_cfg.get("scenes", []))
-    if scene_count:
-        print(f"  Planned scenes: {scene_count}")
-
     # QA for review artifacts - MANDATORY, exits non-zero on failure
-    print("\n[6/8] Running QA on review artifacts...")
+    print("\n[7/8] Running QA on review artifacts...")
     qa_result = run_review_qa(paths, scene_count=scene_count)
     print(f"  QA passed: {qa_result['passed']}")
     if not qa_result['passed']:
@@ -334,28 +355,43 @@ def main():
     artifacts["qa_review"] = qa_result
 
     if args.mode == "review":
-        print("\n=== REVIEW MODE COMPLETE ===")
-        print("Visual review artifacts ready for human approval.")
-        print(f"Approval board: {paths.review_dir}/approval-board.html")
+        if args.draft_preview:
+            # Draft preview: render non-publishable MP4 without approval gate
+            print("\n[9/9] Rendering draft preview MP4 (no approval gate)...")
+            video_path = render_final_video(topic["destination_slug"], args.hook_variant, paths,
+                                            scenes_json=paths.scene_plan_file,
+                                            script_json=paths.script_file)
+            if not video_path:
+                print("ERROR: Draft preview rendering failed")
+                sys.exit(1)
+            print(f"  Draft video: {video_path}")
+            artifacts["video_path"] = str(video_path)
+            print("\n=== DRAFT PREVIEW COMPLETE ===")
+        else:
+            print("\n=== REVIEW MODE COMPLETE ===")
+            print("Visual review artifacts ready for human approval.")
+            print(f"Approval board: {paths.review_dir}/approval-board.html")
         save_artifacts(artifacts, paths)
         return
 
-    # Stage 7: Production (requires explicit approval)
+    # Stage 9: Production (requires explicit approval)
     if not args.approve:
         print("\nERROR: Production mode requires --approve flag (human approval)")
         print("Run with --mode review first, then --mode production --approve after review")
         sys.exit(1)
 
-    print("\n[7/8] Rendering final narrated video...")
-    video_path = render_final_video(topic["destination_slug"], args.hook_variant, paths)
+    print("\n[10/8] Rendering final narrated video...")
+    video_path = render_final_video(topic["destination_slug"], args.hook_variant, paths,
+                                    scenes_json=paths.scene_plan_file,
+                                    script_json=paths.script_file)
     if not video_path:
         print("ERROR: Final video rendering failed")
         sys.exit(1)
     print(f"  Video: {video_path}")
     artifacts["video_path"] = str(video_path)
 
-    # Stage 8: Final QA - MANDATORY, exits non-zero on failure
-    print("\n[8/8] Running final video QA...")
+    # Stage 11: Final QA - MANDATORY, exits non-zero on failure
+    print("\n[11/8] Running final video QA...")
     prod_qa = run_production_qa(paths, scene_count=scene_count)
     print(f"  Production QA passed: {prod_qa['passed']}")
     if not prod_qa['passed']:

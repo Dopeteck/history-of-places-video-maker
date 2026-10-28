@@ -69,20 +69,33 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
     category = topic_data.get("category", "")
     title = topic_data.get("title", "")
 
-    # Load full region config for complete narration
+    # Load full region config for defaults (voice, language, fallback narration)
     region_cfg = load_region_config(destination_slug)
     if region_cfg:
         story = region_cfg.get("story", {})
-        narration_base = story.get("narration", "")
         hook_variants = story.get("hook_variants", {})
-        hook = hook_variants.get("A", story.get("hook", ""))
         kokoro_voice = story.get("kokoro_voice", "af_heart")
         narration_lang = story.get("narration_language", "English")
+        config_narration = story.get("narration", "")
     else:
-        narration_base = topic_data.get("description", "")
-        hook = topic_data.get("hook", "")
+        hook_variants = {}
         kokoro_voice = topic_data.get("kokoro_voice", "af_heart")
         narration_lang = topic_data.get("narration_language", "English")
+        config_narration = ""
+
+    # Use story-specific narration from the topic when available;
+    # fall back to config narration, then to topic description.
+    narration_base = (
+        topic_data.get("narration")
+        or topic_data.get("description")
+        or config_narration
+    )
+    hook = (
+        topic_data.get("hook")
+        or hook_variants.get("A")
+        or topic_data.get("hook", "")
+        or f"{destination} was once a very different place than the {destination} you know today."
+    )
 
     # Extract claims from research
     verified_claims = []

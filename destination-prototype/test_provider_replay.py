@@ -506,5 +506,144 @@ class StorySelectionDedup(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class ScenePlannerIntegration(unittest.TestCase):
+    """The scene planner must turn a selected story into renderer-ready scenes."""
+
+    def test_plan_scenes_produces_valid_renderer_format(self):
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/mexico-city.yaml", encoding="utf-8"))
+        topic = {
+            "destination_slug": "mexico-city",
+            "destination_name": "Mexico City",
+            "country": "Mexico",
+            "continent": "North America",
+            "category": "culture_traditions",
+            "title": "Día de Muertos: From Aztec Miccaihuitl to Modern Celebration",
+            "story_id": "mexico-city:culture:dia-de-muertos",
+            "hook": "Long before sugar skulls and marigolds.",
+            "description": "Explore how the Indigenous Miccaihuitl festival merged with Catholic All Saints day.",
+            "entities": ["Miccaihuitl", "Mictecacihuatl", "ofrenda", "cempasuchil"],
+            "sources": ["https://en.wikipedia.org/wiki/Day_of_the_Dead"],
+            "claim_refs": ["miccaihuitl_origins"],
+        }
+        scenes = sp.plan_scenes(topic, cfg)
+        self.assertGreaterEqual(len(scenes), 8)
+        self.assertLessEqual(len(scenes), 12)
+        for s in scenes:
+            self.assertIn("title", s)
+            self.assertIn("narration_intent", s)
+            self.assertIn("image_type", s)
+            self.assertIn(s["image_type"], ("historic", "modern", "map"))
+            self.assertGreaterEqual(len(s.get("image_search_terms", [])), 3)
+            self.assertTrue(s.get("required_keywords"))
+            self.assertIn("named_entities", s)
+            self.assertIn("image_search_queries", s)
+            self.assertGreaterEqual(len(s["image_search_queries"]), 1)
+
+    def test_different_categories_produce_different_scenes(self):
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/mexico-city.yaml", encoding="utf-8"))
+        base_topic = {
+            "destination_slug": "mexico-city",
+            "destination_name": "Mexico City",
+            "country": "Mexico",
+            "continent": "North America",
+            "story_id": "mexico-city:test",
+            "hook": "Hook",
+            "description": "Description",
+            "entities": ["Zocalo", "Cathedral"],
+            "sources": ["https://example.com"],
+            "claim_refs": ["claim1"],
+        }
+        topic_a = dict(base_topic); topic_a["category"] = "culture_traditions"; topic_a["title"] = "Tradition"
+        topic_b = dict(base_topic); topic_b["category"] = "independence_colonial"; topic_b["title"] = "Independence"
+        scenes_a = sp.plan_scenes(topic_a, cfg)
+        scenes_b = sp.plan_scenes(topic_b, cfg)
+        titles_a = {s["title"] for s in scenes_a}
+        titles_b = {s["title"] for s in scenes_b}
+        # Map scene title is the same; everything else should differ
+        non_map_a = {t for t in titles_a if "Map" not in t}
+        non_map_b = {t for t in titles_b if "Map" not in t}
+        self.assertNotEqual(non_map_a, non_map_b)
+
+    def test_topic_category_takes_precedence_over_config(self):
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/mexico-city.yaml", encoding="utf-8"))
+        # Config says hidden_history, topic says culture_traditions
+        topic = {
+            "destination_slug": "mexico-city",
+            "destination_name": "Mexico City",
+            "country": "Mexico",
+            "continent": "North America",
+            "category": "culture_traditions",
+            "story_id": "mexico-city:test",
+            "hook": "Hook",
+            "description": "Description",
+            "entities": ["Miccaihuitl"],
+            "sources": ["https://example.com"],
+            "claim_refs": ["claim1"],
+        }
+        scenes = sp.plan_scenes(topic, cfg)
+        # culture_traditions scenes have "Miccaihuitl" in entities, hidden_history would use generic subject
+        titles = " ".join(s["title"] for s in scenes)
+        self.assertIn("Miccaihuitl", titles)
+
+    def test_scene_plan_has_stable_ids(self):
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/mexico-city.yaml", encoding="utf-8"))
+        topic = {
+            "destination_slug": "mexico-city",
+            "destination_name": "Mexico City",
+            "country": "Mexico",
+            "continent": "North America",
+            "category": "ancient_civilization",
+            "story_id": "mexico-city:aztec:temples",
+            "hook": "Hook",
+            "description": "Description",
+            "entities": ["Templo Mayor", "Tenochtitlan"],
+            "sources": ["https://example.com"],
+            "claim_refs": ["claim1"],
+        }
+        scenes = sp.plan_scenes(topic, cfg)
+        ids = [s["scene_id"] for s in scenes]
+        self.assertEqual(len(ids), len(set(ids)), "Scene IDs must be unique")
+        for sid in ids:
+            self.assertTrue(sid.startswith("mexico-city:aztec:temples:"), f"Bad scene ID: {sid}")
+
+
+class ScriptSceneConsistency(unittest.TestCase):
+    """The script, scene plan, and story must all reference the same story."""
+
+    def test_script_matches_selected_story(self):
+        import generate_script as gs
+        topic = {
+            "destination_slug": "lagos",
+            "destination_name": "Lagos",
+            "country": "Nigeria",
+            "continent": "Africa",
+            "category": "music_film_entertainment",
+            "title": "Lagos Highlife Music: The Sound of Independence",
+            "story_id": "lagos:music:highlife",
+            "hook": "Lagos was the heartbeat of West African music.",
+            "description": "Highlife music emerged in Lagos in the 1950s.",
+            "entities": ["Fela Kuti", "Highlife", "Lagos"],
+            "narration": "Lagos was the heartbeat of West African music in the decades after independence. Highlife emerged in the 1950s as a vibrant fusion of jazz, brass band music, and local Yoruba rhythms. The sound filled dance halls and nightclubs across Lagos Island and the mainland. Musicians like Fela Kuti later transformed highlife into afrobeat, carrying the Lagos sound to global audiences. Today, the city still pulses with live music in venues from Victoria Island to Ikeja.",
+        }
+        research = {"claims": [
+            {"status": "verified", "text": "Highlife emerged in Lagos in the 1950s as a fusion of jazz and local rhythms", "evidence": [{"source_url": "https://example.com"}]},
+            {"status": "verified", "text": "Fela Kuti transformed highlife into afrobeat", "evidence": [{"source_url": "https://example.com"}]},
+        ]}
+        script = gs.build_script_from_research(topic, research)
+        narration = script.narration.lower()
+        self.assertIn("highlife", narration)
+        self.assertIn("lagos", narration)
+        self.assertGreaterEqual(script.word_count, 110)
+        self.assertLessEqual(script.word_count, 155)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
