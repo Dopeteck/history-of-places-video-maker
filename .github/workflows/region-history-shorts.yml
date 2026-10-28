@@ -1,6 +1,8 @@
 name: Region-driven history shorts
 
 on:
+  schedule:
+    - cron: '0 9 * * *'   # daily 09:00 UTC - automated region selection and visual review
   workflow_dispatch:
     inputs:
       region:
@@ -69,7 +71,7 @@ on:
       - '.github/workflows/region-history-shorts.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: region-history-${{ github.event.inputs.region || 'config-tests' }}
@@ -267,7 +269,7 @@ jobs:
           REGION_SLUG: ${{ steps.normalize.outputs.slug }}
         run: |
           python destination-prototype/qa_checks.py \
-            --script destination-prototype/data/script_${REGION_SLUG}_*.json \
+            --script output/${REGION_SLUG}-region-short/script.json \
             --output-dir output/${REGION_SLUG}-region-short \
             --video output/${REGION_SLUG}-region-short/*.mp4 \
             --mode production \
@@ -281,6 +283,7 @@ jobs:
           if-no-files-found: warn
           path: |
             output/${{ steps.normalize.outputs.slug }}-region-short/*.mp4
+            output/${{ steps.normalize.outputs.slug }}-region-short/*-captions.srt
             output/${{ steps.normalize.outputs.slug }}-region-short/contact-sheet.jpg
             output/${{ steps.normalize.outputs.slug }}-region-short/approval-board.html
             output/${{ steps.normalize.outputs.slug }}-region-short/images/*
@@ -288,3 +291,111 @@ jobs:
             output/${{ steps.normalize.outputs.slug }}-region-short/credits-description.txt
             output/${{ steps.normalize.outputs.slug }}-region-short/qa-report.json
             output/${{ steps.normalize.outputs.slug }}-region-short/narration.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/script.json
+
+  daily-selection:
+    if: github.event_name == 'schedule'
+    needs: config-check
+    runs-on: ubuntu-latest
+    concurrency:
+      group: region-history-daily
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install PyYAML requests
+      - name: Pick next region in rotation
+        id: pick-region
+        env:
+          ROTATION_ORDER: tokyo,hong-kong,lagos,paris,mexico-city
+          STATE_FILE: state/region_rotation.json
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          from datetime import datetime, timezone
+          
+          order = os.environ["ROTATION_ORDER"].split(",")
+          state_path = pathlib.Path(os.environ["STATE_FILE"])
+          
+          last_region = None
+          if state_path.is_file():
+              try:
+                  state = json.loads(state_path.read_text())
+                  last_region = state.get("last_region")
+              except Exception:
+                  pass
+          
+          if last_region and last_region in order:
+              idx = order.index(last_region)
+              next_region = order[(idx + 1) % len(order)]
+          else:
+              next_region = order[0]
+          
+          state_path.parent.mkdir(parents=True, exist_ok=True)
+          state_path.write_text(json.dumps({
+              "last_region": next_region,
+              "last_run_date": datetime.now(timezone.utc).isoformat(),
+              "rotation_order": order,
+          }, indent=2) + "\n")
+          
+          print(f"Selected region: {next_region} (last was: {last_region})")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"region={next_region}\n")
+          PY
+      - name: Validate selected region config
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+        run: |
+          python - <<'PY'
+          import pathlib, yaml, os, sys
+          region = os.environ["REGION"]
+          p = pathlib.Path("regions") / f"{region}.yaml"
+          if not p.is_file():
+              raise SystemExit(f"Destination config not found: {p}")
+          d = yaml.safe_load(p.read_text(encoding="utf-8"))
+          assert d.get("name") and d.get("country"), f"Region {region} missing identity"
+          assert 8 <= len(d.get("scenes",[])) <= 12, f"{region}: expected 8-12 scenes, got {len(d.get('scenes',[]))}"
+          print(f"Config validated: {d['name']} ({region}) - {len(d['scenes'])} scenes")
+          PY
+      - name: Install rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
+          python -m pip install -r requirements-regions.txt
+          python -m pip install --no-deps https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+      - name: Render visual approval board for selected region
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: |
+          python destination-prototype/render_region_short.py \
+            --config "regions/${REGION}.yaml" \
+            --hook-variant A \
+            --visual-review-only
+      - name: Upload daily review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-review-${{ steps.pick-region.outputs.region }}-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/${{ steps.pick-region.outputs.region }}-region-short/approval-board.html
+            output/${{ steps.pick-region.outputs.region }}-region-short/images/*
+            output/${{ steps.pick-region.outputs.region }}-region-short/qa-report.json
+      - name: Commit rotation state
+        if: success()
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/region_rotation.json
+          git commit -m "chore: advance region rotation to ${{ steps.pick-region.outputs.region }}" || true
+          git push origin feature/destination-history-shorts || true

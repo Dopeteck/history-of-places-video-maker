@@ -334,5 +334,68 @@ class Renderer(unittest.TestCase):
         self.assertFalse(rr._needs_modern_recheck({"title": "x", "image_type": "historic"}, {"provider": "Met", "period_ok": None}))
 
 
+class SubtitleVisibility(Flow):
+    def test_font_resolves_fallback_chain_on_non_linux(self):
+        import render_region_short as rr
+        rr.font.cache_clear()
+        p = rr._resolve_font_path(bold=True)
+        # On any system, either a real TTF path is found or we gracefully fall back.
+        self.assertTrue(p is None or Path(p).exists())
+        f = rr.font(48, True)
+        self.assertIsNotNone(f)
+
+    def test_srt_timestamp_format(self):
+        import render_region_short as rr
+        self.assertEqual(rr.srt_timestamp(0.0), "00:00:00,000")
+        self.assertEqual(rr.srt_timestamp(1.5), "00:00:01,500")
+        self.assertEqual(rr.srt_timestamp(61.25), "00:01:01,250")
+        self.assertEqual(rr.srt_timestamp(3661.999), "01:01:01,999")
+
+    def test_srt_groups_words_into_readable_lines(self):
+        import render_region_short as rr
+        words = ["Before", "Paris", "became", "the", "City", "of", "Light", "it", "was", "a", "modest", "settlement"]
+        wtimes = [(0.0, 0.5), (0.5, 1.0), (1.0, 1.5), (1.5, 2.0), (2.0, 2.5), (2.5, 3.0),
+                  (3.0, 3.5), (3.5, 4.0), (4.0, 4.5), (4.5, 5.0), (5.0, 5.5), (5.5, 6.0)]
+        entries = rr.srt_from_word_times(words, wtimes, max_chars=42, max_words=5)
+        self.assertGreaterEqual(len(entries), 1)
+        # First entry starts at 0
+        self.assertEqual(entries[0][1], "00:00:00,000")
+        # Last entry ends at 6.0
+        self.assertEqual(entries[-1][2], "00:00:06,000")
+        # No entry exceeds max_words
+        for _, _, _, text in entries:
+            self.assertLessEqual(len(text.split()), 5)
+
+    def test_write_srt_produces_valid_file(self):
+        import render_region_short as rr
+        import tempfile
+        from pathlib import Path
+        words = ["Hello", "world", "this", "is", "a", "test"]
+        wtimes = [(0.0, 0.5), (0.5, 1.0), (1.0, 1.5), (1.5, 2.0), (2.0, 2.5), (2.5, 3.0)]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "captions.srt"
+            rr.write_srt(p, words, wtimes)
+            content = p.read_text(encoding="utf-8")
+            self.assertIn("00:00:00,000 --> 00:00:02,500", content)
+            self.assertIn("00:00:02,500 --> 00:00:03,000", content)
+            self.assertIn("Hello world this is a", content)
+            self.assertIn("test", content)
+
+    def test_caption_window_keeps_active_word_centered(self):
+        import render_region_short as rr
+        from PIL import ImageDraw, Image
+        words = ["word1", "word2", "word3", "word4", "word5", "word6", "word7"]
+        im = Image.new("RGB", (1080, 1920))
+        d = ImageDraw.Draw(im)
+        f = rr.font(48, True)
+        # Active word in the middle
+        lo, hi = rr.caption_window(d, words, 3, f, 900)
+        self.assertLessEqual(lo, 3)
+        self.assertGreaterEqual(hi, 4)
+        # Caption window text should not exceed max width
+        text = " ".join(words[lo:hi])
+        self.assertLessEqual(d.textlength(text, font=f), 900)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

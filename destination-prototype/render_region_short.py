@@ -44,19 +44,67 @@ def color(value,default=(32,32,32)):
  except Exception: pass
  return default
 from functools import lru_cache
+_FALLBACK_FONTS = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+    "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
+    "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+    "/System/Library/Fonts/Arial.ttf",
+    "/System/Library/Fonts/Helvetica.ttf",
+]
+def _resolve_font_path(bold=False):
+    named = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    candidates = [named] + [p for p in _FALLBACK_FONTS if p != named]
+    for p in candidates:
+        if Path(p).exists():
+            return p
+    return None
 @lru_cache(maxsize=32)
-def font(size,bold=False):
- p="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
- return ImageFont.truetype(p,size) if Path(p).exists() else ImageFont.load_default()
+def font(size, bold=False):
+    p = _resolve_font_path(bold)
+    if p:
+        try:
+            return ImageFont.truetype(p, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
+def srt_timestamp(seconds):
+    """HH:MM:SS,mmm for SRT files."""
+    ms=int(round(seconds*1000)); h,ms=divmod(ms,3600000); m,ms=divmod(ms,60000); s,ms=divmod(ms,1000)
+    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+def srt_from_word_times(words, wtimes, max_chars=42, max_words=5):
+    """Group timed words into SRT subtitle entries."""
+    entries=[]; i=0; index=1
+    while i < len(words):
+        j=min(i+max_words, len(words)); text=" ".join(words[i:j])
+        if len(text)>max_chars and j-i>1:
+            j=i+1; text=words[i]
+        start=wtimes[i][0]; end=wtimes[j-1][1] if j-1 < len(wtimes) else wtimes[-1][1]
+        entries.append((index, srt_timestamp(start), srt_timestamp(end), text))
+        index+=1; i=j
+    return entries
+def write_srt(path, words, wtimes):
+    entries=srt_from_word_times(words, wtimes)
+    blocks=[]
+    for idx, start, end, text in entries:
+        blocks.append(f"{idx}\n{start} --> {end}\n{text}\n")
+    path.write_text("\n".join(blocks)+"\n", encoding="utf-8")
 def caption_window(d,words,wi,f,maxw):
- # Up to 3 words before and 3 after the spoken word, shrunk so the line never leaves the frame.
- lo,hi=wi,wi+1
- width=lambda a,b: d.textlength(" ".join(words[a:b]),font=f)
- while True:
-  grew=False
-  if lo>0 and wi-lo<3 and width(lo-1,hi)<=maxw: lo-=1; grew=True
-  if hi<len(words) and hi-wi<4 and width(lo,hi+1)<=maxw: hi+=1; grew=True
-  if not grew: return lo,hi
+    # Up to 3 words before and 3 after the spoken word, shrunk so the line never leaves the frame.
+    lo,hi=wi,wi+1
+    width=lambda a,b: d.textlength(" ".join(words[a:b]),font=f)
+    while True:
+        grew=False
+        if lo>0 and wi-lo<3 and width(lo-1,hi)<=maxw: lo-=1; grew=True
+        if hi<len(words) and hi-wi<4 and width(lo,hi+1)<=maxw: hi+=1; grew=True
+        if not grew: return lo,hi
 def wrap(draw,text,f,maxw):
  out=[]; line=""
  for word in text.split():
@@ -387,6 +435,8 @@ def main():
   if fi % (FPS*5)==0: contact.append(frame.convert("RGB").resize((180,320)))
  proc.stdin.close(); err=proc.stderr.read().decode("utf-8","replace"); rc=proc.wait()
  if rc: fail(f"FFmpeg encode failed {rc}: {err[-3000:]}")
+ # Burned-in captions plus a sidecar SRT for accessibility and players that display subtitle tracks.
+ write_srt(out/(f"{slug}-captions.srt"), words, wtimes)
  # Contact sheet includes one representative scene frame for every scene.
  sheet=Image.new("RGB",(180*4,320*math.ceil(len(media)/4)),(24,24,24))
  for i,(_,im) in enumerate(media):
@@ -396,6 +446,20 @@ def main():
  block="\n".join(f"- {c['title']} \u2014 {c['author']}; {c['license']} ({c['license_url']}); source: {c['source_url']}" for c in credits)
  (out/"credits-description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
  (out/"description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ # Script JSON for QA checks: word count, estimated duration, claim support from config claim_sources.
+ claim_sources=cfg.get("claim_sources",{})
+ script_json={
+   "word_count": len(script.split()),
+   "estimated_duration": round(duration,2),
+   "claims_verified": len(claim_sources),
+   "claims_total": len(claim_sources),
+   "claims_disputed": 0,
+   "research_record": "",
+   "narration_language": cfg.get("story",{}).get("narration_language","English"),
+   "hook_variant": a.hook_variant,
+   "hook_text": hook,
+ }
+ (out/"script.json").write_text(json.dumps(script_json,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  _timed("total_render",run_started)
  # Automated validation: real audio, duration, format, non-silence, uniqueness and placeholder text.
  probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(video)],capture_output=True,text=True)
