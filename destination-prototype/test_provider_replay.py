@@ -208,6 +208,41 @@ class Gates(Flow):
         self.assertIn("photograph", self.prompts_seen[-1][0])
 
 
+class QueryGeneration(Flow):
+    def test_queries_are_entity_first_diverse_deduped_and_capped(self):
+        scene = {
+          "title": "Test Scene",
+          "named_entities": ["Tokugawa Ieyasu", "Edo Castle"],
+          "visual_tags": ["woodblock print", "ukiyo-e"],
+          "image_search_terms": ["Edo period bridge", "Tokugawa Ieyasu portrait"],
+        }
+        queries = ar.build_queries(scene)
+        self.assertGreaterEqual(len(queries), 1)
+        self.assertEqual(queries[0], "Tokugawa Ieyasu")      # named entities lead
+        self.assertIn("Edo Castle", queries)
+        self.assertEqual(len(queries), len(set(queries)))    # no duplicates
+        self.assertLessEqual(len(queries), 6)                # result cap
+
+    def test_scene_with_no_planner_terms_still_searches_its_title(self):
+        scene = {"title": "Lonely Monument", "image_type": "historic"}
+        queries = ar.build_queries(scene)
+        self.assertEqual(queries, ["Lonely Monument"])
+
+    def test_empty_provider_results_are_recorded_as_no_results_not_a_failure(self):
+        calls = {"n": 0}
+        def empty(query):
+            calls["n"] += 1
+            return []
+        empty.__name__ = "_empty"
+        ar.PROVIDERS = [empty]
+        with self.assertRaises(ar.ResolverError) as cm:
+            self.run_scene(self.scene(), {"asset_resolver": {"providers": ["_empty"]}})
+        d = cm.exception.diagnostics
+        self.assertEqual(d["providers_found"].get("_empty"), 0)
+        self.assertNotIn("_empty", d.get("provider_errors", {}))
+        self.assertGreaterEqual(calls["n"], 1)   # the empty provider was attempted, not skipped
+
+
 class Diagnostics(Flow):
     def test_late_stage_clip_rejections_are_not_crowded_out_by_early_rejections(self):
         items = [cand(f"Bad rights {i}", i, rights="All rights reserved") for i in range(12)] + [cand("Edo castle weak", 99)]
@@ -279,6 +314,24 @@ class Renderer(unittest.TestCase):
             im, credit = rr.text_fallback_card(scene, 3, {"visual_style": {}}, Path(d), "No candidates. Diagnostics: {\"rejected\": {\"keywords\": 4}}")
             self.assertEqual(credit["diagnostics"]["rejected"]["keywords"], 4)
             self.assertTrue(Path(credit["file"]).name.endswith("_missing.jpg"))
+
+    def test_needs_modern_recheck_all_period_states(self):
+        import render_region_short as rr
+        modern = {"title": "Gardens Remember", "image_type": "modern"}
+        # Valid modern-provider image passes; no re-check needed.
+        self.assertFalse(rr._needs_modern_recheck(modern, {"provider": "Wikimedia Commons", "period_ok": True}))
+        # Historical-looking image in a modern scene must fail closed.
+        self.assertTrue(rr._needs_modern_recheck(modern, {"provider": "Wikimedia Commons", "period_ok": False}))
+        # Unknown period status in a modern scene must fail closed.
+        self.assertTrue(rr._needs_modern_recheck(modern, {"provider": "Wikimedia Commons", "period_ok": None}))
+        # Map scenes are never re-checked.
+        self.assertFalse(rr._needs_modern_recheck({"title": "Edo on the Map", "image_type": "map"}, {"provider": "Natural Earth", "period_ok": None}))
+        # Missing assets and placeholders are never re-checked (they already failed).
+        self.assertFalse(rr._needs_modern_recheck(modern, {"provider": "missing asset", "period_ok": None}))
+        self.assertFalse(rr._needs_modern_recheck(modern, {"provider": "fallback text card", "period_ok": None}))
+        self.assertFalse(rr._needs_modern_recheck(modern, {"provider": "procedural illustration", "period_ok": None}))
+        # Historic scenes are never re-checked.
+        self.assertFalse(rr._needs_modern_recheck({"title": "x", "image_type": "historic"}, {"provider": "Met", "period_ok": None}))
 
 
 if __name__ == "__main__":

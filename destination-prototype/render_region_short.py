@@ -128,10 +128,31 @@ def text_fallback_card(scene,idx,config,asset_dir,error):
   bg=color(config.get("visual_style",{}).get("palette",["warm-ivory"])[0],(242,230,206))
   im=Image.new("RGB",(W0,H0),bg)
   p=asset_dir/f"scene_{idx:02d}_missing.jpg"; im.save(p,quality=94)
-  return im,{"content_sha256":hashlib.sha256(f"missing:{idx}:{scene.get('title','Scene')}".encode("utf-8")).hexdigest(),"scene":scene["title"],"file":str(p.relative_to(ROOT)),
+  try:
+      rel_path = str(p.relative_to(ROOT))
+  except ValueError:
+      rel_path = str(p)
+  return im,{"content_sha256":hashlib.sha256(f"missing:{idx}:{scene.get('title','Scene')}".encode("utf-8")).hexdigest(),"scene":scene["title"],"file":rel_path,
    "title":"NO APPROVED SOURCE IMAGE — "+str(scene.get("title","Scene")),"author":"","license":"","license_url":"","source_url":"",
    "provider":"missing asset","match_score":None,"search_variant":"No candidate passed rights, quality and relevance checks",
    "warnings":[str(error).split(" Diagnostics:")[0]],"diagnostics":_parse_diagnostics(str(error))}
+
+def _needs_modern_recheck(scene: dict, credit: dict) -> bool:
+    """Return True if a modern-type scene needs re-check for period correctness.
+    
+    Missing/placeholder assets are not re-checked (they already failed).
+    Procedural illustrations are not re-checked (explicitly non-photographic).
+    Real providers with period_ok=None need re-check.
+    Real providers with period_ok=True pass.
+    Historic scenes never need modern re-check.
+    """
+    if scene.get("image_type") != "modern":
+        return False
+    provider = credit.get("provider", "")
+    if provider in ("missing asset", "fallback text card", "procedural illustration"):
+        return False
+    return credit.get("period_ok") is not True
+
 
 def _parse_diagnostics(message):
  import json, re
@@ -220,7 +241,7 @@ def main():
         except Exception as resolver_error:
          print(f"SAFE FALLBACK for {scene['title']}: {resolver_error}",file=sys.stderr)
          im,credit=text_fallback_card(scene,i,cfg,asset_dir,resolver_error)
-      if scene["image_type"]=="modern" and credit.get("provider")!="procedural illustration" and credit.get("period_ok") is not True:
+      if _needs_modern_recheck(scene, credit):
        # Present-day scenes must be positively identified as a modern photograph by the CLIP period probe.
        reason=f"Modern/present image check failed for scene '{scene['title']}': not confirmed as a modern photograph"
        if a.visual_review_only:
@@ -252,153 +273,153 @@ def main():
  write_approval_board(media,credits,cfg,out)
  if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
  if any(x.get("provider") in ("fallback text card", "procedural illustration", "missing asset") for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene has no approved source image. Replace every missing scene with a verified, rights-cleared, relevant image before final rendering.")
-   # Kokoro only: no silent speech-provider fallback.
-    try:
-        import torch
-        from kokoro import KPipeline
-    except Exception as e: fail(f"Kokoro import failed: {type(e).__name__}: {e}")
-    narration_language=str(cfg.get("story",{}).get("narration_language","English")).strip().lower()
-    # Map language to Kokoro pipeline code - only verified working languages
-    lang_map = {"english": "a", "british": "b", "spanish": "e", "french": "f", "hindi": "h", "portuguese": "p", "mandarin": "z"}
-    lang = lang_map.get(narration_language)
-    lang = lang_map.get(narration_language)
-    if lang is None:
-        # Fallback: try prefix matching for backwards compatibility
-        if narration_language.startswith("english"): lang = "a"
-        elif narration_language.startswith("british"): lang = "b"
-        elif narration_language.startswith("spanish"): lang = "e"
-        elif narration_language.startswith("french"): lang = "f"
-        elif narration_language.startswith("hindi"): lang = "h"
-        elif narration_language.startswith("portuguese"): lang = "p"
-        elif narration_language.startswith("mandarin") or narration_language.startswith("chinese"): lang = "z"
-    if lang is None: fail(f"Unsupported narration_language {narration_language!r}; configure a supported language (English, British, Spanish, French, Hindi, Portuguese, Mandarin)")
-    # Use configured voice or default for the language
-    default_voices = {"a": "af_heart", "b": "bf_emma", "e": "ef_dora", "f": "ff_siwis", "h": "hf_alpha", "p": "pf_dora", "z": "zf_xiaobei"}
-    voice = cfg.get("story",{}).get("kokoro_voice", default_voices.get(lang, "af_heart"))
-    voice = cfg.get("story",{}).get("kokoro_voice", default_voices.get(lang, "af_heart"))
-    torch.set_num_threads(2); print(f"Kokoro narration language: {narration_language} (pipeline={lang}, voice={voice})"); pipe=KPipeline(lang_code=lang,device="cpu")
-    chunks=[]; chunk_texts=[]
-    try:
-        for gs,_,audio in pipe(script,voice=voice,speed=1.0):
-            if audio is not None:
-                chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1)); chunk_texts.append(str(gs or ""))
-    except Exception as e: fail(f"Kokoro synthesis failed: {type(e).__name__}: {e}")
-    if not chunks: fail("Kokoro returned no narration audio")
-    voice=np.concatenate(chunks); rate=24000; duration=len(voice)/rate
-    if not 45<=duration<=60: fail(f"Narration duration {duration:.2f}s outside 45–60s; edit script, do not fallback")
-    t=np.arange(len(voice))/rate; accent=cfg["visual_style"].get("accent_color","#CC5533")
-    style=cfg.get("visual_style",{}); mood=style.get("music_mood","calm ambient").lower()
-    # Original procedural ambient bed shaped by each region's visual/music brief.
-    envelope=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
-    if any(k in mood for k in ("percussion","rhythmic","african","lagoon")):
-     pulse=(np.sin(2*np.pi*2.0*t)>0.92).astype(np.float32)
-     pulse=np.convolve(pulse,np.ones(1200,dtype=np.float32)/1200,mode="same")
-     bed=(.010*np.sin(2*np.pi*73*t)+.006*np.sin(2*np.pi*110*t)+.009*pulse*np.sin(2*np.pi*55*t)).astype(np.float32)
-    elif any(k in mood for k in ("plucked","strings","japan","reflective")):
-     pulse=np.maximum(0,np.sin(2*np.pi*.55*t))**8
-     bed=(.008*np.sin(2*np.pi*110*t)+.004*np.sin(2*np.pi*164.8*t)+.010*pulse*np.sin(2*np.pi*220*t)).astype(np.float32)
-    else:
-     bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
-    bed*=envelope
-    mixed=voice*.84+bed
-    rms=float(np.sqrt(np.mean(mixed**2)))
-    if rms<0.001: fail("Narration mix is silent or near-silent")
-    mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
-    with wave.open(str(wav),"wb") as f: f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate); f.writeframes((mixed*32767).astype("<i2").tobytes())
-    # Word times come from Kokoro chunk boundaries; scene cuts follow `starts_at` phrases (fallback: intent length).
-    import timing
-    words=script.split()
-    wtimes=timing.word_times(words,[(t,len(a)) for t,a in zip(chunk_texts,chunks)],rate,duration)
-    wordends=np.array([e for _,e in wtimes])
-    fallback=[max(1,len(sc["narration_intent"].split())) for sc,_ in media]
-    try: boundaries=np.array(timing.scene_ends([sc for sc,_ in media],words,wtimes,duration,fallback))
-    except ValueError as e: fail(f"Scene timing config error: {e}")
-    durations=np.diff(np.concatenate([[0.0],boundaries]))
-    short_scenes=[sc["title"] for (sc,_),dd in zip(media,durations) if dd<1.5]
-    if short_scenes: print(f"WARNING: scenes shorter than 1.5s: {short_scenes}",file=sys.stderr)
-    video=out/(f"{slug}-draft-preview.mp4" if a.draft_preview else f"{slug}-history-short.mp4")
-    cmd=["ffmpeg","-y","-hide_banner","-loglevel","error","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","-","-i",str(wav),"-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-ar",str(rate),"-shortest","-movflags","+faststart",str(video)]
-    proc=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=subprocess.PIPE)
-    contact=[]
-    for fi in range(round(duration*FPS)):
-     tm=fi/FPS; si=min(len(media)-1,int(np.searchsorted(boundaries,tm,side="right"))); start=0 if si==0 else boundaries[si-1]; progress=max(0,min(1,(tm-start)/max(.01,durations[si]))); scene,im=media[si]
-     # First two seconds use a full-bleed non-map visual with a 3–5-word hook overlay.
-     opening=tm < 2.0
-     if opening and scene.get("image_type")=="map":
-      alt=next(((s,im0) for s,im0 in media if s.get("image_type")!="map"),None)
-      if alt: scene,im=alt
-     frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
-     palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
-     if opening:
-      hook_font=font(78,True); hook_lines=wrap(d,hook,hook_font,W-150); hy=180
-      for line in hook_lines:
-       tw=d.textlength(line,font=hook_font); d.text(((W-tw)//2,hy),line,font=hook_font,fill="white",stroke_width=4,stroke_fill="black"); hy+=96
-     else:
-      d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
-     wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); box_top=H-450; box_bottom=H-265; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
-     bbox=d.textbbox((0,0),"Ag",font=cf); text_h=bbox[3]-bbox[1]; y=box_top+(box_bottom-box_top-text_h)//2-bbox[1]
-     d.rounded_rectangle((42,box_top,W-42,box_bottom),radius=26,fill=(0,0,0,210),outline=accent,width=4)
-     # Word-by-word karaoke emphasis; active word accent colour, all other words white.
-     full=" ".join(capwords); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
-     if total>W-130:
-      cf=font(40,True); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
-     for j,w in enumerate(capwords):
-      col=accent if lo+j==wi else "white"; d.text((x,y),w+" ",font=cf,fill=col,stroke_width=2,stroke_fill="black"); x+=widths[j]
-     # Subtle channel mark throughout; a short branded end-card replaces a long generic intro.
-     brand_font=font(25,True)
-     d.rounded_rectangle((W-360,32,W-42,78),radius=16,fill=(0,0,0,135))
-     d.text((W-340,42),"PAST THE POSTCARD",font=brand_font,fill="white")
-     if tm >= max(0.0,duration-1.5):
-      d.rounded_rectangle((110,H-700,W-110,H-535),radius=28,fill=(0,0,0,205),outline=accent,width=4)
-      brand_end=font(43,True); brand_text="PAST THE POSTCARD"
-      bw=d.textlength(brand_text,font=brand_end)
-      d.text(((W-bw)//2,H-650),brand_text,font=brand_end,fill="white")
-     # Crossfade into the next scene over the final 0.4 seconds of each scene.
-     if si < len(media)-1 and tm >= boundaries[si]-0.4:
-      alpha=max(0.0,min(1.0,(tm-(boundaries[si]-0.4))/0.4))
-      nxt_scene,nxt_im=media[si+1]
-      nxt=smart_fit(nxt_im,0.0).convert("RGBA")
-      nd=ImageDraw.Draw(nxt,"RGBA")
-      nd.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220))
-      nd.text((68,105),nxt_scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
-      frame=Image.blend(frame.convert("RGB"),nxt.convert("RGB"),alpha)
-     proc.stdin.write(np.asarray(frame.convert("RGB"),dtype=np.uint8).tobytes())
-     if fi % (FPS*5)==0: contact.append(frame.convert("RGB").resize((180,320)))
-    proc.stdin.close(); err=proc.stderr.read().decode("utf-8","replace"); rc=proc.wait()
-    if rc: fail(f"FFmpeg encode failed {rc}: {err[-3000:]}")
-    # Contact sheet includes one representative scene frame for every scene.
-    sheet=Image.new("RGB",(180*4,320*math.ceil(len(media)/4)),(24,24,24))
-    for i,(_,im) in enumerate(media):
-     thumb=smart_fit(im,.4).resize((180,320)); sheet.paste(thumb,((i%4)*180,(i//4)*320))
-    contactpath=out/"contact-sheet.jpg"; sheet.save(contactpath,quality=90)
-    (out/"credits.json").write_text(json.dumps(credits,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    block="\n".join(f"- {c['title']} — {c['author']}; {c['license']} ({c['license_url']}); source: {c['source_url']}" for c in credits)
-    (out/"credits-description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
-    (out/"description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
-    _timed("total_render",run_started)
-    # Automated validation: real audio, duration, format, non-silence, uniqueness and placeholder text.
-    probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(video)],capture_output=True,text=True)
-    if probe.returncode: fail("ffprobe failed: "+probe.stderr)
-    info=json.loads(probe.stdout); streams=info.get("streams",[]); aud=next((x for x in streams if x.get("codec_type")=="audio"),None); vid=next((x for x in streams if x.get("codec_type")=="video"),{})
-    if not aud: fail("QA failed: no audio track")
-    if float(np.max(np.abs(mixed)))<0.002 or float(np.sqrt(np.mean(mixed**2)))<0.001: fail("QA failed: audio is silent or near-silent")
-    sec=float(info["format"]["duration"])
-    if not 45<=sec<=60: fail(f"QA failed: duration {sec:.2f}s outside 45–60s")
-    if (vid.get("width"),vid.get("height"),vid.get("r_frame_rate"))!=(1080,1920,"30/1"): fail(f"QA failed: wrong video stream {vid}")
-    files=[c["file"] for c in credits if "map" not in c["file"]]
-    if len(files)!=len(set(files)): fail("QA failed: duplicate image file used")
-    # OCR frame scan via tesseract CLI if available; fail if placeholder text is detected.
-    warnings=[f"Scene shorter than 1.5s: {t}" for t in short_scenes]
-    try:
-     import pytesseract
-     for i,(_,im) in enumerate(media):
-      text=pytesseract.image_to_string(im.resize((360,640))).lower()
-      if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
-    except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
-    qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"hook_variant":a.hook_variant,"hook_text":hook,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
-    (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
-    print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
+# Kokoro only: no silent speech-provider fallback.
+ try:
+  import torch
+  from kokoro import KPipeline
+ except Exception as e: fail(f"Kokoro import failed: {type(e).__name__}: {e}")
+ narration_language=str(cfg.get("story",{}).get("narration_language","English")).strip().lower()
+ # Map language to Kokoro pipeline code - only verified working languages
+ lang_map = {"english": "a", "british": "b", "spanish": "e", "french": "f", "hindi": "h", "portuguese": "p", "mandarin": "z"}
+ lang = lang_map.get(narration_language)
+ lang = lang_map.get(narration_language)
+ if lang is None:
+  # Fallback: try prefix matching for backwards compatibility
+  if narration_language.startswith("english"): lang = "a"
+  elif narration_language.startswith("british"): lang = "b"
+  elif narration_language.startswith("spanish"): lang = "e"
+  elif narration_language.startswith("french"): lang = "f"
+  elif narration_language.startswith("hindi"): lang = "h"
+  elif narration_language.startswith("portuguese"): lang = "p"
+  elif narration_language.startswith("mandarin") or narration_language.startswith("chinese"): lang = "z"
+ if lang is None: fail(f"Unsupported narration_language {narration_language!r}; configure a supported language (English, British, Spanish, French, Hindi, Portuguese, Mandarin)")
+ # Use configured voice or default for the language
+ default_voices = {"a": "af_heart", "b": "bf_emma", "e": "ef_dora", "f": "ff_siwis", "h": "hf_alpha", "p": "pf_dora", "z": "zf_xiaobei"}
+ voice = cfg.get("story",{}).get("kokoro_voice", default_voices.get(lang, "af_heart"))
+ voice = cfg.get("story",{}).get("kokoro_voice", default_voices.get(lang, "af_heart"))
+ torch.set_num_threads(2); print(f"Kokoro narration language: {narration_language} (pipeline={lang}, voice={voice})"); pipe=KPipeline(lang_code=lang,device="cpu")
+ chunks=[]; chunk_texts=[]
+ try:
+  for gs,_,audio in pipe(script,voice=voice,speed=1.0):
+    if audio is not None:
+      chunks.append(np.asarray(audio.detach().cpu().numpy() if hasattr(audio,"detach") else audio,dtype=np.float32).reshape(-1)); chunk_texts.append(str(gs or ""))
+ except Exception as e: fail(f"Kokoro synthesis failed: {type(e).__name__}: {e}")
+ if not chunks: fail("Kokoro returned no narration audio")
+ voice=np.concatenate(chunks); rate=24000; duration=len(voice)/rate
+ if not 45<=duration<=60: fail(f"Narration duration {duration:.2f}s outside 45-60s; edit script, do not fallback")
+ t=np.arange(len(voice))/rate; accent=cfg["visual_style"].get("accent_color","#CC5533")
+ style=cfg.get("visual_style",{}); mood=style.get("music_mood","calm ambient").lower()
+ # Original procedural ambient bed shaped by each region's visual/music brief.
+ envelope=np.minimum(1,t/2)*np.minimum(1,(duration-t)/3)
+ if any(k in mood for k in ("percussion","rhythmic","african","lagoon")):
+  pulse=(np.sin(2*np.pi*2.0*t)>0.92).astype(np.float32)
+  pulse=np.convolve(pulse,np.ones(1200,dtype=np.float32)/1200,mode="same")
+  bed=(.010*np.sin(2*np.pi*73*t)+.006*np.sin(2*np.pi*110*t)+.009*pulse*np.sin(2*np.pi*55*t)).astype(np.float32)
+ elif any(k in mood for k in ("plucked","strings","japan","reflective")):
+  pulse=np.maximum(0,np.sin(2*np.pi*.55*t))**8
+  bed=(.008*np.sin(2*np.pi*110*t)+.004*np.sin(2*np.pi*164.8*t)+.010*pulse*np.sin(2*np.pi*220*t)).astype(np.float32)
+ else:
+  bed=(.009*np.sin(2*np.pi*98*t)+.005*np.sin(2*np.pi*146.8*t)+.003*np.sin(2*np.pi*196*t)).astype(np.float32)
+ bed*=envelope
+ mixed=voice*.84+bed
+ rms=float(np.sqrt(np.mean(mixed**2)))
+ if rms<0.001: fail("Narration mix is silent or near-silent")
+ mixed=np.clip(mixed*(0.12/rms),-.98,.98); wav=out/"narration_mix.wav"
+ with wave.open(str(wav),"wb") as f: f.setnchannels(1); f.setsampwidth(2); f.setframerate(rate); f.writeframes((mixed*32767).astype("<i2").tobytes())
+ # Word times come from Kokoro chunk boundaries; scene cuts follow `starts_at` phrases (fallback: intent length).
+ import timing
+ words=script.split()
+ wtimes=timing.word_times(words,[(t,len(a)) for t,a in zip(chunk_texts,chunks)],rate,duration)
+ wordends=np.array([e for _,e in wtimes])
+ fallback=[max(1,len(sc["narration_intent"].split())) for sc,_ in media]
+ try: boundaries=np.array(timing.scene_ends([sc for sc,_ in media],words,wtimes,duration,fallback))
+ except ValueError as e: fail(f"Scene timing config error: {e}")
+ durations=np.diff(np.concatenate([[0.0],boundaries]))
+ short_scenes=[sc["title"] for (sc,_),dd in zip(media,durations) if dd<1.5]
+ if short_scenes: print(f"WARNING: scenes shorter than 1.5s: {short_scenes}",file=sys.stderr)
+ video=out/(f"{slug}-draft-preview.mp4" if a.draft_preview else f"{slug}-history-short.mp4")
+ cmd=["ffmpeg","-y","-hide_banner","-loglevel","error","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","-","-i",str(wav),"-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-ar",str(rate),"-shortest","-movflags","+faststart",str(video)]
+ proc=subprocess.Popen(cmd,stdin=subprocess.PIPE,stderr=subprocess.PIPE)
+ contact=[]
+ for fi in range(round(duration*FPS)):
+  tm=fi/FPS; si=min(len(media)-1,int(np.searchsorted(boundaries,tm,side="right"))); start=0 if si==0 else boundaries[si-1]; progress=max(0,min(1,(tm-start)/max(.01,durations[si]))); scene,im=media[si]
+  # First two seconds use a full-bleed non-map visual with a 3-5-word hook overlay.
+  opening=tm < 2.0
+  if opening and scene.get("image_type")=="map":
+    alt=next(((s,im0) for s,im0 in media if s.get("image_type")!="map"),None)
+    if alt: scene,im=alt
+  frame=smart_fit(im,progress).convert("RGBA"); frame=Image.alpha_composite(frame,Image.new("RGBA",(W,H),(0,0,0,35))); d=ImageDraw.Draw(frame,"RGBA")
+  palette=style.get("palette",["dark-contrast"]); title_bg=color(palette[0],(28,28,28))
+  if opening:
+    hook_font=font(78,True); hook_lines=wrap(d,hook,hook_font,W-150); hy=180
+    for line in hook_lines:
+      tw=d.textlength(line,font=hook_font); d.text(((W-tw)//2,hy),line,font=hook_font,fill="white",stroke_width=4,stroke_fill="black"); hy+=96
+  else:
+    d.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220)); d.text((68,105),scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
+  wi=min(len(words)-1,int(np.searchsorted(wordends,tm,side="right"))); cf=font(48,True); box_top=H-450; box_bottom=H-265; lo,hi=caption_window(d,words,wi,cf,W-190); capwords=words[lo:hi]
+  bbox=d.textbbox((0,0),"Ag",font=cf); text_h=bbox[3]-bbox[1]; y=box_top+(box_bottom-box_top-text_h)//2-bbox[1]
+  d.rounded_rectangle((42,box_top,W-42,box_bottom),radius=26,fill=(0,0,0,210),outline=accent,width=4)
+  # Word-by-word karaoke emphasis; active word accent colour, all other words white.
+  full=" ".join(capwords); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
+  if total>W-130:
+    cf=font(40,True); widths=[d.textlength(w+" ",font=cf) for w in capwords]; total=sum(widths); x=max(65,(W-total)//2)
+  for j,w in enumerate(capwords):
+    col=accent if lo+j==wi else "white"; d.text((x,y),w+" ",font=cf,fill=col,stroke_width=2,stroke_fill="black"); x+=widths[j]
+  # Subtle channel mark throughout; a short branded end-card replaces a long generic intro.
+  brand_font=font(25,True)
+  d.rounded_rectangle((W-360,32,W-42,78),radius=16,fill=(0,0,0,135))
+  d.text((W-340,42),"PAST THE POSTCARD",font=brand_font,fill="white")
+  if tm >= max(0.0,duration-1.5):
+    d.rounded_rectangle((110,H-700,W-110,H-535),radius=28,fill=(0,0,0,205),outline=accent,width=4)
+    brand_end=font(43,True); brand_text="PAST THE POSTCARD"
+    bw=d.textlength(brand_text,font=brand_end)
+    d.text(((W-bw)//2,H-650),brand_text,font=brand_end,fill="white")
+  # Crossfade into the next scene over the final 0.4 seconds of each scene.
+  if si < len(media)-1 and tm >= boundaries[si]-0.4:
+    alpha=max(0.0,min(1.0,(tm-(boundaries[si]-0.4))/0.4))
+    nxt_scene,nxt_im=media[si+1]
+    nxt=smart_fit(nxt_im,0.0).convert("RGBA")
+    nd=ImageDraw.Draw(nxt,"RGBA")
+    nd.rounded_rectangle((42,85,W-42,190),radius=22,fill=(*title_bg,220))
+    nd.text((68,105),nxt_scene["title"],font=font(56,True),fill="white",stroke_width=2,stroke_fill="black")
+    frame=Image.blend(frame.convert("RGB"),nxt.convert("RGB"),alpha)
+  proc.stdin.write(np.asarray(frame.convert("RGB"),dtype=np.uint8).tobytes())
+  if fi % (FPS*5)==0: contact.append(frame.convert("RGB").resize((180,320)))
+ proc.stdin.close(); err=proc.stderr.read().decode("utf-8","replace"); rc=proc.wait()
+ if rc: fail(f"FFmpeg encode failed {rc}: {err[-3000:]}")
+ # Contact sheet includes one representative scene frame for every scene.
+ sheet=Image.new("RGB",(180*4,320*math.ceil(len(media)/4)),(24,24,24))
+ for i,(_,im) in enumerate(media):
+  thumb=smart_fit(im,.4).resize((180,320)); sheet.paste(thumb,((i%4)*180,(i//4)*320))
+ contactpath=out/"contact-sheet.jpg"; sheet.save(contactpath,quality=90)
+ (out/"credits.json").write_text(json.dumps(credits,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+ block="\n".join(f"- {c['title']} \u2014 {c['author']}; {c['license']} ({c['license_url']}); source: {c['source_url']}" for c in credits)
+ (out/"credits-description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ (out/"description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ _timed("total_render",run_started)
+ # Automated validation: real audio, duration, format, non-silence, uniqueness and placeholder text.
+ probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(video)],capture_output=True,text=True)
+ if probe.returncode: fail("ffprobe failed: "+probe.stderr)
+ info=json.loads(probe.stdout); streams=info.get("streams",[]); aud=next((x for x in streams if x.get("codec_type")=="audio"),None); vid=next((x for x in streams if x.get("codec_type")=="video"),{})
+ if not aud: fail("QA failed: no audio track")
+ if float(np.max(np.abs(mixed)))<0.002 or float(np.sqrt(np.mean(mixed**2)))<0.001: fail("QA failed: audio is silent or near-silent")
+ sec=float(info["format"]["duration"])
+ if not 45<=sec<=60: fail(f"QA failed: duration {sec:.2f}s outside 45-60s")
+ if (vid.get("width"),vid.get("height"),vid.get("r_frame_rate"))!=(1080,1920,"30/1"): fail(f"QA failed: wrong video stream {vid}")
+ files=[c["file"] for c in credits if "map" not in c["file"]]
+ if len(files)!=len(set(files)): fail("QA failed: duplicate image file used")
+ # OCR frame scan via tesseract CLI if available; fail if placeholder text is detected.
+ warnings=[f"Scene shorter than 1.5s: {t}" for t in short_scenes]
+ try:
+  import pytesseract
+  for i,(_,im) in enumerate(media):
+    text=pytesseract.image_to_string(im.resize((360,640))).lower()
+    if any(term in text for term in ("archival asset pending","editorial title card","visual needed","placeholder")): fail(f"QA failed: placeholder text OCR detected in scene {i+1}")
+ except ImportError as e: fail(f"QA OCR dependency missing; cannot certify frames: {e}")
+ qa={"region":cfg["name"],"duration_seconds":sec,"resolution":"1080x1920","fps":30,"audio_track":True,"audio_rms":float(np.sqrt(np.mean(mixed**2))),"visual_style":style,"hook_variant":a.hook_variant,"hook_text":hook,"ambient_audio":"procedurally synthesized; no external recording","scene_count":len(media),"duplicate_image_check":"passed","placeholder_ocr":"passed","claim_sources":cfg.get("claim_sources",{}),"source_list":cfg.get("sources",[]),"warnings":warnings,"scenes":[{"scene":c["scene"],"image":c["file"],"source":c["source_url"],"license":c["license"],"match_score":c["match_score"],"warnings":c["warnings"]} for c in credits]}
+ (out/"qa-report.json").write_text(json.dumps(qa,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+ (out/"narration.txt").write_text(script+"\n",encoding="utf-8")
+ print(f"QA PASSED: {video} ({sec:.2f}s), {len(media)} scenes; contact sheet and report at {out}")
 if __name__=="__main__":
- try: main()
- except Exception as e: print(f"BUILD FAILED: {type(e).__name__}: {e}",file=sys.stderr); raise
+  try: main()
+  except Exception as e: print(f"BUILD FAILED: {type(e).__name__}: {e}",file=sys.stderr); raise
