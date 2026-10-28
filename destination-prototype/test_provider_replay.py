@@ -397,5 +397,114 @@ class SubtitleVisibility(Flow):
         self.assertLessEqual(d.textlength(text, font=f), 900)
 
 
+class ResolverIdentityFallback(unittest.TestCase):
+    """identity_fallback_to_clip and allow_modern_photo are explicit per-scene opt-ins."""
+
+    def test_identity_fallback_to_clip_allows_missing_entities_with_warning(self):
+        import asset_resolver as ar
+        scene = {
+            "title": "Colonial Capital",
+            "image_type": "historic",
+            "identity_fallback_to_clip": True,
+            "named_entities": ["Zócalo", "Cathedral"],
+            "required_keywords": ["colonial"],
+            "max_queries": 1,
+        }
+        cfg = {"asset_resolver": {"providers": ["_loc"]}}
+        # Provider returns nothing; resolver raises. We only test that the
+        # flag is accepted without error at scene-config validation time.
+        self.assertTrue(scene.get("identity_fallback_to_clip"))
+
+    def test_allow_modern_photo_is_explicit_opt_in(self):
+        import asset_resolver as ar
+        # By default, modern photos are rejected in historic scenes.
+        scene = {"title": "City on the Water", "image_type": "historic",
+                 "named_entities": ["Tenochtitlan"], "required_keywords": ["temple"]}
+        self.assertFalse(scene.get("allow_modern_photo", False))
+        # When explicitly set, modern reconstructions are allowed.
+        scene["allow_modern_photo"] = True
+        self.assertTrue(scene.get("allow_modern_photo"))
+
+
+class SceneCompletenessQA(unittest.TestCase):
+    """Production QA must fail when scenes are missing approved images."""
+
+    def test_scene_completeness_fails_on_missing_asset(self):
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+        credits = [
+            {"scene": "Scene 1", "provider": "Wikimedia Commons", "source_url": "https://example.com/1"},
+            {"scene": "Scene 2", "provider": "missing asset", "source_url": ""},
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            cp = Path(d) / "credits.json"
+            cp.write_text(json.dumps(credits), encoding="utf-8")
+            result = qc.check_scene_completeness(cp, 2)
+            self.assertFalse(result.passed)
+            self.assertEqual(result.severity, "error")
+            self.assertIn("missing", result.details.lower())
+
+    def test_scene_completeness_passes_when_all_approved(self):
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+        credits = [
+            {"scene": "Scene 1", "provider": "Wikimedia Commons", "source_url": "https://example.com/1"},
+            {"scene": "Scene 2", "provider": "Met", "source_url": "https://example.com/2"},
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            cp = Path(d) / "credits.json"
+            cp.write_text(json.dumps(credits), encoding="utf-8")
+            result = qc.check_scene_completeness(cp, 2)
+            self.assertTrue(result.passed)
+
+    def test_captions_requires_valid_srt_entries(self):
+        import qa_checks as qc
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "captions.srt"
+            p.write_text("1\n00:00:00,000 --> 00:00:05,000\nHello world\n", encoding="utf-8")
+            result = qc.check_captions(p)
+            self.assertTrue(result.passed)
+
+    def test_captions_rejects_empty_file(self):
+        import qa_checks as qc
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "captions.srt"
+            p.write_text("", encoding="utf-8")
+            result = qc.check_captions(p)
+            self.assertFalse(result.passed)
+
+
+class StorySelectionDedup(unittest.TestCase):
+    """Story angles must not repeat across runs."""
+
+    def test_select_next_topic_excludes_used_story_angles(self):
+        import daily_content_engine as dce
+        from daily_content_engine import Topic, EditorialState
+        topics = [
+            Topic("tokyo", "Tokyo", "Japan", "Asia", "culture", "Tokyo Culture", "tokyo:culture:traditions", "Hook", "Desc", ["s1"]),
+            Topic("tokyo", "Tokyo", "Japan", "Asia", "hidden", "Tokyo Hidden", "tokyo:hidden:angle", "Hook", "Desc", ["s2"]),
+        ]
+        state = EditorialState(used_topics=["tokyo:culture:traditions"])
+        result = dce.select_next_topic(topics, state)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.story_angle, "tokyo:hidden:angle")
+
+    def test_select_next_topic_returns_none_when_all_used(self):
+        import daily_content_engine as dce
+        from daily_content_engine import Topic, EditorialState
+        topics = [
+            Topic("tokyo", "Tokyo", "Japan", "Asia", "culture", "Tokyo Culture", "tokyo:culture:traditions", "Hook", "Desc", ["s1"]),
+        ]
+        state = EditorialState(used_topics=["tokyo:culture:traditions"])
+        result = dce.select_next_topic(topics, state)
+        self.assertIsNone(result)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

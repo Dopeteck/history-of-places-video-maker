@@ -217,14 +217,117 @@ def check_final_video(video_path: Path) -> QAResult:
 
 
 def check_captions(captions_path: Path) -> QAResult:
-    """Verify captions file exists and is readable."""
+    """Verify captions file exists and contains readable text entries."""
     if not captions_path.exists():
         return QAResult("captions_exist", False, "Captions file not found", "error")
-    # Could add SRT/VTT format validation here
-    return QAResult("captions_exist", True, "Captions file found", "info")
+    content = captions_path.read_text(encoding="utf-8")
+    # Count SRT entries (blocks separated by blank lines)
+    blocks = [b for b in content.strip().split("\n\n") if b.strip()]
+    if not blocks:
+        return QAResult("captions_content", False, "Captions file is empty", "error")
+    # Verify each block has index, timestamp, and text
+    valid = 0
+    for b in blocks:
+        lines = b.strip().split("\n")
+        if len(lines) >= 3 and "-->" in lines[1]:
+            valid += 1
+    if valid == 0:
+        return QAResult("captions_format", False, "No valid SRT entries found", "error")
+    return QAResult("captions_content", True, f"{valid} caption entries in SRT", "info")
 
 
-def run_review_qa(script_path: Path, output_dir: Optional[Path] = None) -> List[QAResult]:
+def check_caption_visibility(video_path: Path) -> QAResult:
+    """Verify burned-in captions are present in rendered frames via OCR.
+
+    Extracts sample frames and checks that text is rendered (not invisible).
+    Requires pytesseract + tesseract binary on the runner.
+    """
+    try:
+        import pytesseract
+    except ImportError:
+        return QAResult("caption_visibility", False, "pytesseract not installed; cannot verify caption visibility", "error")
+
+    try:
+        from PIL import Image
+        import subprocess, tempfile, os
+    except ImportError:
+        return QAResult("caption_visibility", False, "PIL not available", "error")
+
+    # Extract 3 sample frames from the middle of the video where captions should be visible
+    tmpdir = tempfile.mkdtemp()
+    try:
+        frames_checked = 0
+        frames_with_text = 0
+        for i, t in enumerate([duration_approx(video_path) * 0.25,
+                               duration_approx(video_path) * 0.50,
+                               duration_approx(video_path) * 0.75]):
+            frame_path = os.path.join(tmpdir, f"frame_{i}.png")
+            r = subprocess.run(
+                ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                 "-ss", str(t), "-i", str(video_path),
+                 "-frames:v", "1", frame_path],
+                capture_output=True, text=True
+            )
+            if r.returncode != 0 or not os.path.exists(frame_path):
+                continue
+            frames_checked += 1
+            try:
+                im = Image.open(frame_path).convert("RGB")
+                # Crop to caption area (bottom center)
+                w, h = im.size
+                caption_region = im.crop((w*0.05, h*0.78, w*0.95, h*0.92))
+                text = pytesseract.image_to_string(caption_region).strip()
+                if text:
+                    frames_with_text += 1
+            except Exception:
+                pass
+        if frames_checked == 0:
+            return QAResult("caption_visibility", False, "Could not extract frames for caption check", "error")
+        if frames_with_text == 0:
+            return QAResult("caption_visibility", False, f"No visible caption text in {frames_checked} sampled frames", "error")
+        return QAResult("caption_visibility", True, f"Visible captions in {frames_with_text}/{frames_checked} sampled frames", "info")
+    finally:
+        import shutil
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def duration_approx(video_path: Path) -> float:
+    """Approximate video duration in seconds using ffprobe."""
+    try:
+        import subprocess, json
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "json", str(video_path)],
+            capture_output=True, text=True
+        )
+        if r.returncode == 0:
+            return float(json.loads(r.stdout)["format"]["duration"])
+    except Exception:
+        pass
+    return 55.0  # fallback
+
+
+def check_scene_completeness(credits_path: Path, scene_count: int) -> QAResult:
+    """Verify every planned scene has an approved source image (no missing cards)."""
+    if not credits_path.exists():
+        return QAResult("scene_completeness", False, "Credits file not found", "error")
+    with open(credits_path, encoding="utf-8") as f:
+        credits = json.load(f)
+    if not isinstance(credits, list):
+        return QAResult("scene_completeness", False, "Credits is not a list", "error")
+    missing = [c for c in credits if c.get("provider") in ("missing asset", "fallback text card", "procedural illustration")]
+    if missing:
+        missing_titles = [c.get("scene", "unknown") for c in missing]
+        return QAResult("scene_completeness", False,
+                        f"{len(missing)} scene(s) missing approved image: {', '.join(missing_titles)}", "error")
+    if len(credits) < scene_count:
+        return QAResult("scene_completeness", False,
+                        f"Only {len(credits)} credits for {scene_count} planned scenes", "error")
+    return QAResult("scene_completeness", True, f"All {len(credits)} scenes have approved images", "info")
+
+
+def run_review_qa(script_path: Path, output_dir: Optional[Path] = None,
+                  scene_count: Optional[int] = None) -> List[QAResult]:
     """Run QA for visual-review-only runs (subset of checks)."""
     results = []
     results.append(check_script_word_count(script_path))
@@ -238,10 +341,22 @@ def run_review_qa(script_path: Path, output_dir: Optional[Path] = None) -> List[
         credits_path = output_dir / "credits.json"
         results.append(check_credits(credits_path))
 
+        # Scene completeness: every planned scene must have an approved image
+        if scene_count is not None:
+            results.append(check_scene_completeness(credits_path, scene_count))
+
+        # Captions sidecar
+        captions_files = list(output_dir.glob("*.srt")) + list(output_dir.glob("*.vtt"))
+        if captions_files:
+            results.append(check_captions(captions_files[0]))
+        else:
+            results.append(QAResult("captions_exist", False, "No SRT/VTT captions found", "error"))
+
     return results
 
 
-def run_production_qa(script_path: Path, output_dir: Path, video_path: Path) -> List[QAResult]:
+def run_production_qa(script_path: Path, output_dir: Path, video_path: Path,
+                      scene_count: Optional[int] = None) -> List[QAResult]:
     """Run full production QA - all checks mandatory."""
     results = []
 
@@ -259,14 +374,19 @@ def run_production_qa(script_path: Path, output_dir: Path, video_path: Path) -> 
     credits_path = output_dir / "credits.json"
     results.append(check_credits(credits_path))
 
+    # Scene completeness: every planned scene must have an approved image
+    if scene_count is not None:
+        results.append(check_scene_completeness(credits_path, scene_count))
+
     # Video checks
     results.append(check_video_output(video_path))
     results.append(check_final_video(video_path))
 
-    # Captions
+    # Captions: sidecar SRT plus visibility in rendered frames
     captions_files = list(output_dir.glob("*.srt")) + list(output_dir.glob("*.vtt"))
     if captions_files:
         results.append(check_captions(captions_files[0]))
+        results.append(check_caption_visibility(video_path))
     else:
         results.append(QAResult("captions_exist", False, "No SRT/VTT captions found", "error"))
 
@@ -282,6 +402,7 @@ def main():
     ap.add_argument("--mode", choices=["review", "production"], default="review",
                     help="review=visual review QA, production=full production QA")
     ap.add_argument("--fail-on-error", action="store_true", help="Exit with code 1 on any error")
+    ap.add_argument("--scene-count", type=int, help="Number of planned scenes for completeness check")
     args = ap.parse_args()
 
     script_path = Path(args.script)
@@ -295,9 +416,11 @@ def main():
         if not video_path:
             print("ERROR: --video required for production mode")
             sys.exit(1)
-        results = run_production_qa(script_path, output_dir, video_path)
+        results = run_production_qa(script_path, output_dir, video_path,
+                                    scene_count=args.scene_count)
     else:
-        results = run_review_qa(script_path, output_dir)
+        results = run_review_qa(script_path, output_dir,
+                                scene_count=args.scene_count)
 
     print("=== QA RESULTS ===")
     errors = 0

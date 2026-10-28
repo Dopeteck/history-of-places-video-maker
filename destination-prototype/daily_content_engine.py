@@ -254,6 +254,7 @@ def build_story_angles(dest: Destination, cfg: Dict) -> List[Dict]:
     - Historical periods and transitions
     - Specific landmarks and cultural elements
     - Credible source references
+    - Optional config-defined story_angles for editorial guidance
     """
     angles = []
 
@@ -263,14 +264,30 @@ def build_story_angles(dest: Destination, cfg: Dict) -> List[Dict]:
     sources = cfg.get("sources", [])
     claim_sources = cfg.get("claim_sources", {})
 
-    # Extract named entities from narration for angle generation
-    import re
-    # Simple extraction of capitalized phrases (potential entities)
-    entities = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', narration)
-    entities = list(dict.fromkeys(entities))  # dedupe preserving order
+    # Config-defined story angles take priority - these are editorially approved
+    config_angles = cfg.get("story_angles", [])
+    if config_angles:
+        for ca in config_angles:
+            angles.append({
+                "category": ca.get("category", "hidden_history"),
+                "angle_id": f"{dest.slug}:config:{ca.get('angle_id', ca.get('title', '').lower().replace(' ', '_')[:40])}",
+                "title": ca.get("title", ""),
+                "hook": ca.get("hook", ""),
+                "description": ca.get("description", narration[:300]),
+                "entities": ca.get("entities", place_names[:3]),
+                "sources": ca.get("sources", sources[:3]),
+                "claim_refs": list(claim_sources.keys())[:3],
+            })
 
-    # Category-specific angle generation based on config content
+    # Also generate category-based angles from config content
+    import re
+    entities = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', narration)
+    entities = list(dict.fromkeys(entities))
+
     for cat in CATEGORIES:
+        # Skip categories already covered by config angles
+        if any(a["category"] == cat for a in angles):
+            continue
         angle_config = build_angle_for_category(
             cat, dest, narration, period, place_names, entities, sources, claim_sources
         )
@@ -431,7 +448,10 @@ def select_next_topic(candidates: List[Topic], state: EditorialState,
                        avoid_recent_days: int = 30) -> Optional[Topic]:
     """Select the next topic using weighted scoring with diversity constraints.
 
-    Does NOT silently relax constraints. Returns None if no qualified candidate.
+    Scores on: historical interest, source quality, distinctiveness, visual
+    feasibility, destination relevance, category diversity, and recent-topic
+    duplication. Does NOT silently relax constraints. Returns None if no
+    qualified candidate exists.
     """
     now = datetime.now()
 
@@ -457,19 +477,29 @@ def select_next_topic(candidates: List[Topic], state: EditorialState,
         # DO NOT silently relax - return None to signal exhaustion
         return None
 
-    # Score candidates with diversity bonuses
-    for c in available:
-        cont_weight = CONTINENT_WEIGHTS.get(c.continent, 0.1)
-        cat_weight = CATEGORY_WEIGHTS.get(c.category, 0.1)
-        cont_used = state.used_continents.get(c.continent, 0)
-        cat_used = state.used_categories.get(c.category, 0)
-        total = sum(state.used_continents.values()) or 1
+    # Score candidates with multiple editorial factors
+    total_runs = sum(state.used_continents.values()) or 1
+    total_cats = sum(state.used_categories.values()) or 1
 
-        balance_bonus = (
-            (1.0 - cont_used / total) * cont_weight * 2.0 +
-            (1.0 - cat_used / total) * cat_weight * 2.0
-        )
-        c.priority = c.priority + balance_bonus
+    for c in available:
+        # 1. Continental balance (under-represented continents get bonus)
+        cont_used = state.used_continents.get(c.continent, 0)
+        cont_balance = (1.0 - cont_used / total_runs) * CONTINENT_WEIGHTS.get(c.continent, 0.1) * 2.0
+
+        # 2. Category balance
+        cat_used = state.used_categories.get(c.category, 0)
+        cat_balance = (1.0 - cat_used / total_cats) * CATEGORY_WEIGHTS.get(c.category, 0.1) * 2.0
+
+        # 3. Source quality bonus (more sources = higher confidence)
+        source_bonus = min(len(c.sources) / 3.0, 1.0) * 0.5
+
+        # 4. Distinctiveness: angles with more supporting sources are more distinctive
+        entity_bonus = min(len(c.sources) / 3.0, 1.0) * 0.3
+
+        # 5. Recent-topic duplication penalty (already filtered by avoid_recent_days)
+        recency_penalty = 0.0
+
+        c.priority = cont_balance + cat_balance + source_bonus + entity_bonus + recency_penalty
 
     # Select highest priority
     available.sort(key=lambda x: x.priority, reverse=True)

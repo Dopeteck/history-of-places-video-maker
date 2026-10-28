@@ -848,11 +848,18 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
         hay = _norm(text + " " + " ".join(_as_list(c.get("facets"))))
         identity_ok, missing_entities = _scene_identity_evidence(scene, hay)
         if not identity_ok:
-            _note_reject("scene_identity", c, {
-                "required_named_entities": missing_entities,
-                "checked_text": hay[:240],
-            })
-            continue
+            # Soft fallback: when provider metadata lacks entity names but the image
+            # is clearly on-topic (high CLIP), allow it with a warning instead of
+            # rejecting outright. This is explicit per-scene opt-in via
+            # identity_fallback_to_clip; never silently relaxed.
+            if scene.get("identity_fallback_to_clip", False):
+                c.setdefault("_warnings", []).append(f"identity metadata lacks {', '.join(missing_entities[:3])}; accepted on CLIP relevance")
+            else:
+                _note_reject("scene_identity", c, {
+                    "required_named_entities": missing_entities,
+                    "checked_text": hay[:240],
+                })
+                continue
         missing_identity = [gi for gi, group in enumerate(identity_groups)
                             if not any(_kw_hit(str(term), hay) for term in (group if isinstance(group, list) else [group]))]
         if missing_identity:
@@ -917,7 +924,7 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
             _note_reject("present_historical", c, {"p_modern": round(c["_p_modern"], 2)}); continue
         if scene.get("image_type") == "historic" and not scene.get("allow_modern_photo", False) and c["_p_modern"] >= 0.5:
             _note_reject("modern_in_historic", c, {"p_modern": round(c["_p_modern"], 2)}); continue
-        if scene.get("image_type") == "historic" and c["_p_modern"] < 0.5 and (lo is not None or hi is not None):
+        if scene.get("image_type") == "historic" and not scene.get("allow_modern_photo", False) and c["_p_modern"] < 0.5 and (lo is not None or hi is not None):
             yr = c.get("year_range")
             if not yr:
                 ys = _years(" ".join([c.get("date_text", ""), c.get("description", ""), c.get("title", "")]))

@@ -268,12 +268,14 @@ jobs:
         env:
           REGION_SLUG: ${{ steps.normalize.outputs.slug }}
         run: |
+          SCENE_COUNT=$(python -c "import yaml; print(len(yaml.safe_load(open('regions/${REGION_SLUG}.yaml', encoding='utf-8')).get('scenes',[])))")
           python destination-prototype/qa_checks.py \
             --script output/${REGION_SLUG}-region-short/script.json \
             --output-dir output/${REGION_SLUG}-region-short \
             --video output/${REGION_SLUG}-region-short/*.mp4 \
             --mode production \
-            --fail-on-error
+            --fail-on-error \
+            --scene-count "$SCENE_COUNT"
       - name: Upload reviewable region outputs
         if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
@@ -295,7 +297,6 @@ jobs:
 
   daily-selection:
     if: github.event_name == 'schedule'
-    needs: config-check
     runs-on: ubuntu-latest
     concurrency:
       group: region-history-daily

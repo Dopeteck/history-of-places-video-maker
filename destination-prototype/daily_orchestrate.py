@@ -155,7 +155,7 @@ def render_visual_review(region_slug: str, hook_variant: str, paths: RunPaths) -
     return None
 
 
-def run_review_qa(paths: RunPaths) -> Dict:
+def run_review_qa(paths: RunPaths, scene_count: Optional[int] = None) -> Dict:
     """Run review QA checks - exits non-zero on failure."""
     cmd = [
         sys.executable, "destination-prototype/qa_checks.py",
@@ -164,6 +164,8 @@ def run_review_qa(paths: RunPaths) -> Dict:
         "--mode", "review",
         "--fail-on-error"
     ]
+    if scene_count is not None:
+        cmd += ["--scene-count", str(scene_count)]
     result = run_command(cmd)
     return {
         "passed": result.returncode == 0,
@@ -173,7 +175,7 @@ def run_review_qa(paths: RunPaths) -> Dict:
     }
 
 
-def run_production_qa(paths: RunPaths) -> Dict:
+def run_production_qa(paths: RunPaths, scene_count: Optional[int] = None) -> Dict:
     """Run production QA checks - exits non-zero on failure."""
     cmd = [
         sys.executable, "destination-prototype/qa_checks.py",
@@ -183,6 +185,8 @@ def run_production_qa(paths: RunPaths) -> Dict:
         "--mode", "production",
         "--fail-on-error"
     ]
+    if scene_count is not None:
+        cmd += ["--scene-count", str(scene_count)]
     result = run_command(cmd)
     return {
         "passed": result.returncode == 0,
@@ -305,9 +309,24 @@ def main():
     print(f"  Review artifacts: {review_dir}")
     artifacts["review_dir"] = str(review_dir)
 
+    # Determine planned scene count from config for completeness check
+    scene_count = None
+    if args.region:
+        config_path = REGIONS_DIR / f"{args.region}.yaml"
+    else:
+        # Try to get config from topic
+        config_path = REGIONS_DIR / f"{topic.get('destination_slug', '')}.yaml"
+    if config_path.exists():
+        import yaml
+        with open(config_path, encoding="utf-8") as f:
+            _cfg = yaml.safe_load(f)
+        scene_count = len(_cfg.get("scenes", []))
+    if scene_count:
+        print(f"  Planned scenes: {scene_count}")
+
     # QA for review artifacts - MANDATORY, exits non-zero on failure
     print("\n[6/8] Running QA on review artifacts...")
-    qa_result = run_review_qa(paths)
+    qa_result = run_review_qa(paths, scene_count=scene_count)
     print(f"  QA passed: {qa_result['passed']}")
     if not qa_result['passed']:
         print(f"  QA FAILED: {qa_result['stderr']}")
@@ -337,7 +356,7 @@ def main():
 
     # Stage 8: Final QA - MANDATORY, exits non-zero on failure
     print("\n[8/8] Running final video QA...")
-    prod_qa = run_production_qa(paths)
+    prod_qa = run_production_qa(paths, scene_count=scene_count)
     print(f"  Production QA passed: {prod_qa['passed']}")
     if not prod_qa['passed']:
         print(f"  PRODUCTION QA FAILED: {prod_qa['stderr']}")

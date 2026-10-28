@@ -90,6 +90,28 @@ image_banned_terms:
 - generated
 - stock photo watermark
 - cartoon
+story_angles:
+- category: culture_traditions
+  angle_id: mexico-city:culture:dia-de-muertos
+  title: "Día de Muertos: From Aztec Miccaihuitl to Modern Celebration"
+  hook: "Long before sugar skulls and marigolds, the Mexica honored the dead in a two-month summer festival."
+  description: "Explore how the Indigenous Miccaihuitl festival merged with Catholic All Saints' Day to become today's Día de Muertos, with its ofrendas, cempasúchil, and pan de muerto. Distinguish documented pre-colonial practices from later syncretic traditions."
+  entities: ["Miccaihuitl", "Mictēcacihuātl", "ofrenda", "cempasúchil"]
+  sources: ["https://en.wikipedia.org/wiki/Day_of_the_Dead", "https://www.inah.gob.mx/", "https://whc.unesco.org/en/list/412"]
+- category: hidden_history
+  angle_id: mexico-city:hidden:chinampas
+  title: "The Floating Gardens: Xochimilco's Chinampas"
+  hook: "Artificial islands built on a lake fed an empire - and still grow food today."
+  description: "How the Mexica created chinampas, highly productive floating gardens that fed Tenochtitlan's hundreds of thousands, and how these last surviving gardens persist in Xochimilco."
+  entities: ["chinampa", "Xochimilco", "Tenochtitlan", "trajinera"]
+  sources: ["https://en.wikipedia.org/wiki/Chinampa", "https://whc.unesco.org/en/list/412", "https://www.inah.gob.mx/"]
+- category: independence_colonial
+  angle_id: mexico-city:independence:1821
+  title: "Independence in 1821: The Zócalo Transformed"
+  hook: "When Mexico won independence in 1821, the colonial heart of the city became a symbol of a new nation."
+  description: "The Zócalo's transformation from the ceremonial center of Tenochtitlan, to the main square of New Spain, to the site of independence celebrations in 1821."
+  entities: ["Zócalo", "Metropolitan Cathedral", "Agustín de Iturbide", "Viceregal Palace"]
+  sources: ["https://en.wikipedia.org/wiki/Z%C3%B3calo", "https://en.wikipedia.org/wiki/Mexican_War_of_Independence", "https://www.inah.gob.mx/"]
 map:
   latitude: 19.4326
   longitude: -99.1332
@@ -144,6 +166,10 @@ scenes:
 - title: City on the Water
   narration_intent: Show Tenochtitlan's canals, chinampas, and temple precinct.
   image_type: historic
+  # No photographs exist from 1520. Modern reconstructions/models/codexes are the
+  # only available visual medium for pre-conquest Tenochtitlan. Opted in explicitly.
+  allow_modern_photo: true
+  identity_fallback_to_clip: true
   named_entities:
   - Tenochtitlan
   - chinampa
@@ -168,6 +194,9 @@ scenes:
 - title: The Fall of Tenochtitlan
   narration_intent: Represent the 1521 siege without gratuitous violence.
   image_type: historic
+  # 16th-century codexes of the siege often lack exact entity names in provider
+  # metadata; accept on CLIP relevance when identity metadata is sparse.
+  identity_fallback_to_clip: true
   named_entities:
   - Siege of Tenochtitlan
   - Cuauhtémoc
@@ -192,6 +221,9 @@ scenes:
 - title: Colonial Capital
   narration_intent: Show the Zócalo and Cathedral rising on Aztec foundations.
   image_type: historic
+  # Colonial engravings often use "Plaza Mayor" rather than "Zócalo" in metadata;
+  # accept on CLIP relevance when exact entity names are absent.
+  identity_fallback_to_clip: true
   named_entities:
   - Zócalo
   - Metropolitan Cathedral
@@ -239,6 +271,9 @@ scenes:
 - title: Reform and Revolution
   narration_intent: Show the Paseo de la Reforma and the 1910 Revolution's impact.
   image_type: historic
+  # Early-20th-century photographs may be catalogued under alternate street names;
+  # accept on CLIP relevance when exact entity names are absent.
+  identity_fallback_to_clip: true
   named_entities:
   - Paseo de la Reforma
   - Porfirio Díaz
