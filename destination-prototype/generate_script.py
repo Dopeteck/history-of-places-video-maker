@@ -37,6 +37,7 @@ class Script:
     claims_verified: int
     claims_insufficient: int
     claims_disputed: int
+    claims_provider_failures: int
     generated_at: str
     kokoro_voice: str
     narration_language: str
@@ -101,6 +102,7 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
     verified_claims = []
     insufficient_claims = []
     disputed_claims = []
+    provider_failure_claims = []
 
     if research:
         for claim in research.get("claims", []):
@@ -110,6 +112,8 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
                 insufficient_claims.append(claim["text"])
             elif claim.get("status") == "disputed":
                 disputed_claims.append(claim["text"])
+            elif claim.get("status") == "provider_failure":
+                provider_failure_claims.append(claim["text"])
 
     # Build structured script using full narration
     parts = []
@@ -157,6 +161,7 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         claims_verified=len(verified_claims),
         claims_insufficient=len(insufficient_claims),
         claims_disputed=len(disputed_claims),
+        claims_provider_failures=len(provider_failure_claims),
         generated_at=datetime.now().isoformat(),
         kokoro_voice=kokoro_voice,
         narration_language=narration_lang,
@@ -261,7 +266,7 @@ def main():
 
     print(f"Generated script for: {script.title}")
     print(f"Words: {script.word_count} | Est. duration: {script.estimated_duration}s")
-    print(f"Claims: {script.claims_verified} verified, {script.claims_insufficient} insufficient, {script.claims_disputed} disputed")
+    print(f"Claims: {script.claims_verified} verified, {script.claims_insufficient} insufficient, {script.claims_disputed} disputed, {script.claims_provider_failures} provider failures")
     print(f"Voice: {script.kokoro_voice} ({script.narration_language})")
     print(f"Research record: {script.research_record}")
     print(f"\n--- NARRATION ---\n{script.narration}")

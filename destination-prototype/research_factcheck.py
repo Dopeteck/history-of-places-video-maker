@@ -3,28 +3,47 @@
 
 Gathers evidence from credible sources for each topic before script generation.
 
-Key fixes:
-- No exact substring matching as sole verification
-- Preserves evidence excerpts, source URLs, titles, claim-to-source mappings
-- Distinguishes verified, disputed, insufficiently supported
-- Prefers authoritative primary sources and independent references
-- Does not count multiple pages from same source as independent corroboration
-- Treats zero claims, failed requests, empty results as explicit failures
-- Robust claim extraction for supported languages
+Key design:
+- Multi-provider: Wikipedia, Library of Congress, Europeana, Smithsonian
+- Provider failures (timeout, HTTP error, auth, rate limit, invalid JSON) are
+  tracked as provider_failure, never conflated with insufficient evidence.
+- Exceptions are never silently swallowed; each provider's status, HTTP status,
+  elapsed time, result count and sanitized error are recorded.
+- Evidence matching requires at least 2 key terms from the claim to appear in
+  the source excerpt, with contradiction detection.
+- Independent source counting uses domains, not raw page count.
+
+API keys are read from environment variables only and are never logged.
 """
+from __future__ import annotations
+
 import json
 import re
-import requests
-from dataclasses import dataclass, asdict
+import sys
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple, Set
-from urllib.parse import urljoin, urlparse
+from typing import List, Dict, Optional, Set
+from urllib.parse import urlparse
+
+# Import the multi-provider research engine
+from research_providers import (
+    ResearchSource as _RS,
+    ProviderDiagnostic as _PD,
+    verify_claim as _verify_claim,
+    research_topic as _providers_research_topic,
+    active_providers as _active_providers,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "destination-prototype" / "data"
 
-# Trusted source domains (prioritized)
+# Minimum independent sources for verification.
+# Set to 1 for environments where only Wikipedia is reachable.
+# In production with multiple sources (Europeana, Smithsonian, LoC), should be 2.
+MIN_INDEPENDENT_SOURCES = 1
+
+# Trusted source domains (prioritized) - used for claim_sources validation
 TRUSTED_DOMAINS = [
     "wikipedia.org",
     "britannica.com",
@@ -64,11 +83,6 @@ BLOCKED_DOMAINS = [
     "factinate.com",
 ]
 
-# Minimum independent sources for verification
-# NOTE: Set to 1 for test environment (only Wikipedia available).
-# In production with multiple sources (Britannica, UNESCO, etc.), should be 2.
-MIN_INDEPENDENT_SOURCES = 1
-
 
 @dataclass
 class EvidenceExcerpt:
@@ -85,9 +99,12 @@ class Claim:
     text: str
     evidence: List[EvidenceExcerpt]
     confidence: float  # 0-1 overall confidence
-    status: str  # "verified", "disputed", "insufficient_evidence", "failed"
+    status: str  # "verified", "disputed", "insufficient_evidence", "provider_failure"
     independent_sources: int  # Number of independent source domains
     language: str = "en"  # Claim language
+    # New: provider-level diagnostics
+    provider_diagnostics: List[Dict] = field(default_factory=list)
+    provider_failures: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -104,203 +121,46 @@ class ResearchRecord:
     extraction_failed: bool = False
     verification_failed: bool = False
     zero_claims: bool = False
+    # New: provider-level diagnostics across all claims
+    provider_diagnostics: List[Dict] = field(default_factory=list)
+    provider_failures: List[str] = field(default_factory=list)
 
 
-def extract_claims_from_narration(narration: str, language: str = "en") -> List[str]:
-    """Extract factual claims from narration text.
-
-    Robust across supported languages (en, zh, es, fr, hi, pt).
-    Falls back to simple sentence splitting for unsupported languages.
-    """
-    if not narration or len(narration.strip()) < 50:
-        return []
-
-    # Language-specific patterns for factual claims
-    # English patterns (also work reasonably for many languages)
-    patterns = [
-        r'\b\d{4}\b',  # Years
-        r'\b\d{1,2}(?:st|nd|rd|th)\b',  # Ordinals
-        r'\b[A-Z][a-z]+ [A-Z][a-z]+\b',  # Proper names (English)
-        r'\b[A-Z][a-z]+ [A-Z][a-z]+\b',  # Unicode proper names (simplified)
-        r'(?:was|were|is|are|became|changed|renamed|founded|built|established|destroyed|occupied|ceded|annexed|conquered|invaded|colonized|liberated|unified|divided|merged|split|transformed|evolved|emerged|arose|originated|began|started|ended|concluded|signed|ratified|declared|proclaimed|announced)\b',
+def _claim_from_verification(vr, language: str) -> Claim:
+    """Convert a VerificationResult from research_providers into a Claim."""
+    evidence = [
+        EvidenceExcerpt(
+            source_url=s.url,
+            source_title=s.title,
+            source_domain=urlparse(s.url).netloc if s.url else s.provider,
+            excerpt=s.excerpt,
+            confidence=0.5,  # per-excerpt confidence not tracked separately in providers
+        )
+        for s in vr.evidence
     ]
-
-    # Split into sentences
-    # Handle multiple languages: . ! ? 。 ！ ？
-    sentences = re.split(r'[.!?。！？]+', narration)
-    claims = []
-
-    for s in sentences:
-        s = s.strip()
-        if not s or len(s) < 20:
-            continue
-
-        # Check for factual indicators
-        has_factual = False
-        for pattern in patterns:
-            if re.search(pattern, s, re.IGNORECASE | re.UNICODE):
-                has_factual = True
-                break
-
-        if has_factual:
-            claims.append(s)
-
-    # Limit claims to avoid overwhelming verification
-    return claims[:10]
-
-
-# User-Agent for Wikipedia API compliance
-WIKIPEDIA_USER_AGENT = "HistoryOfPlacesVideoMaker/1.0 (https://github.com/Dopeteck/history-of-places-video-maker; contact@example.com)"
-
-
-def search_wikipedia(query: str, lang: str = "en") -> List[Dict]:
-    """Search Wikipedia API for relevant pages."""
-    try:
-        url = f"https://{lang}.wikipedia.org/w/api.php"
-        params = {
-            "action": "query",
-            "list": "search",
-            "srsearch": query,
-            "format": "json",
-            "srlimit": 5,
-        }
-        headers = {"User-Agent": WIKIPEDIA_USER_AGENT}
-        r = requests.get(url, params=params, headers=headers, timeout=10)
-        r.raise_for_status()
-        return r.json().get("query", {}).get("search", [])
-    except Exception as e:
-        return []
-
-
-def get_wikipedia_page(title: str, lang: str = "en") -> Optional[str]:
-    """Get Wikipedia page content."""
-    try:
-        url = f"https://{lang}.wikipedia.org/w/api.php"
-        params = {
-            "action": "query",
-            "prop": "extracts",
-            "exintro": True,
-            "explaintext": True,
-            "titles": title,
-            "format": "json",
-        }
-        headers = {"User-Agent": WIKIPEDIA_USER_AGENT}
-        r = requests.get(url, params=params, headers=headers, timeout=10)
-        r.raise_for_status()
-        pages = r.json().get("query", {}).get("pages", {})
-        for page in pages.values():
-            return page.get("extract", "")
-    except Exception:
-        return None
-
-
-def find_evidence_in_text(claim: str, text: str, source_url: str, source_title: str) -> List[EvidenceExcerpt]:
-    """Find evidence excerpts in source text that support the claim.
-
-    Uses semantic overlap rather than exact substring matching.
-    """
-    evidence = []
-    if not text or not claim:
-        return evidence
-
-    claim_lower = claim.lower()
-    text_lower = text.lower()
-
-    # Extract key terms from claim (nouns, proper nouns, dates, numbers)
-    key_terms = set(re.findall(r'\b[A-Z][a-z]{2,}\b|\b\d{4}\b|\b\d{1,2}(?:st|nd|rd|th)\b', claim))
-    # Also include significant words (>4 chars)
-    words = re.findall(r'\b\w{5,}\b', claim_lower)
-    key_terms.update(w for w in words if w not in {
-        'the', 'and', 'that', 'this', 'with', 'from', 'were', 'been', 'have', 'has', 'had',
-        'will', 'would', 'could', 'should', 'about', 'after', 'before', 'during', 'while',
-        'their', 'there', 'where', 'when', 'which', 'who', 'what', 'how', 'why'
-    })
-
-    if not key_terms:
-        return evidence
-
-    # Find sentences in text containing key terms
-    text_sentences = re.split(r'[.!?]+', text)
-    for sent in text_sentences:
-        sent = sent.strip()
-        if len(sent) < 30:
-            continue
-
-        sent_lower = sent.lower()
-        matches = sum(1 for term in key_terms if term.lower() in sent_lower)
-        if matches >= 2:  # At least 2 key terms in sentence
-            confidence = min(0.9, 0.3 + matches * 0.15)
-            domain = urlparse(source_url).netloc
-            evidence.append(EvidenceExcerpt(
-                source_url=source_url,
-                source_title=source_title,
-                source_domain=domain,
-                excerpt=sent[:500],  # Limit excerpt length
-                confidence=confidence
-            ))
-
-    return evidence
-
-
-def verify_claim(claim: str, destination: str, language: str = "en") -> Claim:
-    """Verify a claim against trusted sources. Returns Claim with evidence."""
-    # Build search query
-    query = f"{claim} {destination}"
-    results = search_wikipedia(query, language)
-
-    all_evidence = []
-    source_domains: Set[str] = set()
-
-    for result in results[:5]:
-        title = result.get("title", "")
-        content = get_wikipedia_page(title, language)
-        if content:
-            source_url = f"https://{language}.wikipedia.org/wiki/{title.replace(' ', '_')}"
-            excerpts = find_evidence_in_text(claim, content, source_url, title)
-            for exc in excerpts:
-                all_evidence.append(exc)
-                source_domains.add(exc.source_domain)
-
-    # Deduplicate evidence by source
-    unique_evidence = []
-    seen_sources = set()
-    for exc in all_evidence:
-        if exc.source_url not in seen_sources:
-            unique_evidence.append(exc)
-            seen_sources.add(exc.source_url)
-
-    # Count independent sources (different domains)
-    independent_count = len(source_domains)
-
-    # Determine status and confidence
-    if independent_count >= MIN_INDEPENDENT_SOURCES and unique_evidence:
-        # Weighted confidence from evidence
-        confidence = sum(e.confidence for e in unique_evidence) / len(unique_evidence)
-        confidence = min(0.95, confidence)
-        status = "verified"
-    elif independent_count == 1 and unique_evidence:
-        confidence = unique_evidence[0].confidence * 0.7  # Penalize single source
-        status = "insufficient_evidence"
-    else:
-        confidence = 0.1
-        status = "disputed" if independent_count == 0 else "insufficient_evidence"
-
     return Claim(
-        text=claim,
-        evidence=unique_evidence,
-        confidence=round(confidence, 2),
-        status=status,
-        independent_sources=independent_count,
-        language=language
+        text=vr.claim,
+        evidence=evidence,
+        confidence=vr.confidence,
+        status=vr.status,
+        independent_sources=vr.independent_sources,
+        language=language,
+        provider_diagnostics=vr.provider_diagnostics,
+        provider_failures=vr.provider_failures,
     )
 
 
 def research_topic(topic_data: Dict) -> ResearchRecord:
-    """Research a topic and build a record with verified claims."""
+    """Research a topic using multiple providers and build a record.
+
+    Uses Wikipedia, Library of Congress, Europeana and Smithsonian (when keys
+    are configured) to gather evidence for each claim extracted from the
+    narration. Provider failures are recorded explicitly and never treated
+    as evidence that a claim is false.
+    """
     narration = topic_data.get("description", "")
     language = topic_data.get("narration_language", "English").lower()
 
-    # Map narration language to wiki language code
     lang_map = {
         "english": "en", "british": "en",
         "spanish": "es", "french": "fr",
@@ -309,26 +169,48 @@ def research_topic(topic_data: Dict) -> ResearchRecord:
     }
     wiki_lang = lang_map.get(language, "en")
 
-    claims_text = extract_claims_from_narration(narration, wiki_lang)
+    # Extract claims from narration
+    claims_text = _extract_claims_from_narration(narration, wiki_lang)
 
     # Track failures
     extraction_failed = len(claims_text) == 0 and len(narration) > 50
     zero_claims = len(claims_text) == 0
 
-    claims = []
-    all_sources = []
+    claims: List[Claim] = []
+    all_sources: List[str] = []
+    all_diagnostics: List[Dict] = []
+    all_provider_failures: List[str] = []
 
     for claim_text in claims_text[:8]:
-        claim_obj = verify_claim(claim_text, topic_data.get("destination", ""), wiki_lang)
-        claims.append(claim_obj)
-        for exc in claim_obj.evidence:
-            all_sources.append(exc.source_url)
+        try:
+            vr = _verify_claim(claim_text, topic_data.get("destination", ""), wiki_lang)
+        except Exception as e:  # noqa: BLE001 - never let one claim crash research
+            vr = type("VR", (), {
+                "claim": claim_text,
+                "status": "provider_failure",
+                "confidence": 0.0,
+                "evidence": [],
+                "independent_sources": 0,
+                "provider_diagnostics": [
+                    {"provider": "unknown", "endpoint": "unknown",
+                     "query": f"{claim_text} {topic_data.get('destination','')}",
+                     "status": "failed", "error": f"{type(e).__name__}: {str(e)[:200]}"}
+                ],
+                "provider_failures": ["unknown"],
+            })()
+        claim = _claim_from_verification(vr, wiki_lang)
+        claims.append(claim)
+        for s in vr.evidence:
+            if s.url:
+                all_sources.append(s.url)
+        all_diagnostics.extend(vr.provider_diagnostics)
+        all_provider_failures.extend(vr.provider_failures)
 
     # Deduplicate sources
     all_sources = list(dict.fromkeys(all_sources))
 
-    # Check if verification completely failed
-    verification_failed = all(c.status == "disputed" for c in claims) and claims
+    # Verification failure: all providers failed for all claims
+    verification_failed = all(c.status == "provider_failure" for c in claims) and claims
 
     return ResearchRecord(
         topic_slug=topic_data.get("destination_slug", ""),
@@ -338,11 +220,67 @@ def research_topic(topic_data: Dict) -> ResearchRecord:
         claims=claims,
         sources_used=all_sources,
         research_date=datetime.now().date().isoformat(),
-        notes=f"Researched {len(claims)} claims in {language} ({wiki_lang})",
+        notes=f"Researched {len(claims)} claims across {len(_active_providers())} providers",
         extraction_failed=extraction_failed,
         verification_failed=verification_failed,
-        zero_claims=zero_claims
+        zero_claims=zero_claims,
+        provider_diagnostics=all_diagnostics,
+        provider_failures=list(dict.fromkeys(all_provider_failures)),
     )
+
+
+def extract_claims_from_narration(narration: str, language: str = "en") -> List[str]:
+    """Extract factual claims from narration text.
+
+    Robust across supported languages (en, zh, es, fr, hi, pt).
+    Falls back to simple sentence splitting for unsupported languages.
+    Public wrapper for backwards compatibility with tests.
+    """
+    return _extract_claims_from_narration(narration, language)
+
+
+def verify_claim(claim: str, destination: str, language: str = "en") -> Claim:
+    """Verify a claim against multiple research providers.
+
+    Returns a Claim with status, evidence, confidence, and provider diagnostics.
+    Provider failures are tracked separately from insufficient evidence.
+    Public wrapper for backwards compatibility with tests.
+    """
+    from research_providers import verify_claim as _providers_verify_claim
+    vr = _providers_verify_claim(claim, destination, language)
+    return _claim_from_verification(vr, language)
+
+
+def _extract_claims_from_narration(narration: str, language: str = "en") -> List[str]:
+    if not narration or len(narration.strip()) < 50:
+        return []
+
+    patterns = [
+        r'\b\d{4}\b',  # Years
+        r'\b\d{1,2}(?:st|nd|rd|th)\b',  # Ordinals
+        r'\b[A-Z][a-z]+ [A-Z][a-z]+\b',  # Proper names (English)
+        r'\b[A-Z][a-z]+ [A-Z][a-z]+\b',  # Unicode proper names (simplified)
+        r'(?:was|were|is|are|became|changed|renamed|founded|built|established|destroyed|occupied|ceded|annexed|conquered|invaded|colonized|liberated|unified|divided|merged|split|transformed|evolved|emerged|arose|originated|began|started|ended|concluded|signed|ratified|declared|proclaimed|announced)\b',
+    ]
+
+    sentences = re.split(r'[.!?。！？]+', narration)
+    claims = []
+
+    for s in sentences:
+        s = s.strip()
+        if not s or len(s) < 20:
+            continue
+
+        has_factual = False
+        for pattern in patterns:
+            if re.search(pattern, s, re.IGNORECASE | re.UNICODE):
+                has_factual = True
+                break
+
+        if has_factual:
+            claims.append(s)
+
+    return claims[:10]
 
 
 def save_research(record: ResearchRecord):
@@ -350,6 +288,58 @@ def save_research(record: ResearchRecord):
     filename = DATA_DIR / f"research_{record.topic_slug}_{record.research_date}.json"
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(asdict(record), f, indent=2, ensure_ascii=False)
+
+
+def load_research(topic_slug: str, research_date: Optional[str] = None) -> Optional[ResearchRecord]:
+    """Load a previously saved research record."""
+    if research_date is None:
+        research_date = datetime.now().date().isoformat()
+    filename = DATA_DIR / f"research_{topic_slug}_{research_date}.json"
+    if not filename.exists():
+        return None
+    try:
+        with open(filename, encoding="utf-8") as f:
+            data = json.load(f)
+        # Convert dict back to ResearchRecord with Claim objects
+        claims = []
+        for c in data.get("claims", []):
+            evidence = [
+                EvidenceExcerpt(
+                    source_url=e.get("source_url", ""),
+                    source_title=e.get("source_title", ""),
+                    source_domain=e.get("source_domain", ""),
+                    excerpt=e.get("excerpt", ""),
+                    confidence=e.get("confidence", 0.5),
+                )
+                for e in c.get("evidence", [])
+            ]
+            claims.append(Claim(
+                text=c.get("text", ""),
+                evidence=evidence,
+                confidence=c.get("confidence", 0.0),
+                status=c.get("status", "insufficient_evidence"),
+                independent_sources=c.get("independent_sources", 0),
+                language=c.get("language", "en"),
+                provider_diagnostics=c.get("provider_diagnostics", []),
+                provider_failures=c.get("provider_failures", []),
+            ))
+        return ResearchRecord(
+            topic_slug=data.get("topic_slug", ""),
+            destination=data.get("destination", ""),
+            category=data.get("category", ""),
+            title=data.get("title", ""),
+            claims=claims,
+            sources_used=data.get("sources_used", []),
+            research_date=data.get("research_date", ""),
+            notes=data.get("notes", ""),
+            extraction_failed=data.get("extraction_failed", False),
+            verification_failed=data.get("verification_failed", False),
+            zero_claims=data.get("zero_claims", False),
+            provider_diagnostics=data.get("provider_diagnostics", []),
+            provider_failures=data.get("provider_failures", []),
+        )
+    except Exception:
+        return None
 
 
 def main():
@@ -389,22 +379,35 @@ def main():
     verified = sum(1 for c in record.claims if c.status == "verified")
     insufficient = sum(1 for c in record.claims if c.status == "insufficient_evidence")
     disputed = sum(1 for c in record.claims if c.status == "disputed")
+    provider_failures = sum(1 for c in record.claims if c.status == "provider_failure")
 
     print(f"  Verified: {verified}")
     print(f"  Insufficient evidence: {insufficient}")
     print(f"  Disputed: {disputed}")
+    print(f"  Provider failures: {provider_failures}")
+    print(f"  Active providers: {', '.join(_active_providers())}")
+
+    if record.provider_failures:
+        print(f"  Provider failures: {', '.join(record.provider_failures)}")
+    if record.provider_diagnostics:
+        for d in record.provider_diagnostics:
+            print(f"  [{d.get('provider')}] {d.get('status')} "
+                  f"(HTTP={d.get('http_status')}, results={d.get('result_count')}, "
+                  f"elapsed={d.get('elapsed_ms', 0):.0f}ms)"
+                  + (f" error={d.get('error')}" if d.get('error') else ""))
 
     if record.extraction_failed:
         print("  WARNING: Claim extraction failed (no factual claims detected)")
     if record.verification_failed:
-        print("  WARNING: All claims disputed - verification failed")
+        print("  WARNING: All claims could not be verified by any provider")
     if record.zero_claims:
         print("  WARNING: Zero claims extracted from narration")
 
     for c in record.claims:
         ev_count = len(c.evidence)
         srcs = ", ".join(set(e.source_domain for e in c.evidence)) if c.evidence else "none"
-        print(f"  [{c.status}] {c.text[:80]}... (conf: {c.confidence:.2f}, sources: {ev_count}, domains: {srcs})")
+        diags = "; ".join(f"{d.get('provider')}:{d.get('status')}" for d in c.provider_diagnostics)
+        print(f"  [{c.status}] {c.text[:80]}... (conf: {c.confidence:.2f}, sources: {ev_count}, domains: {srcs} | {diags})")
 
     # Exit with error code if critical failures
     if record.extraction_failed or record.verification_failed or record.zero_claims:
@@ -412,5 +415,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import sys
     main()

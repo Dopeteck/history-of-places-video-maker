@@ -134,20 +134,35 @@ def validate_claims(script: Dict, research: Dict) -> Dict:
     if not research:
         return {"status": "no_research", "claims_mapped": 0}
 
-    verified = [c for c in research.get("claims", []) if c.get("status") == "verified"]
-    total = len(research.get("claims", []))
+    claims = research.get("claims", [])
+    total = len(claims)
+    if total == 0:
+        return {"status": "no_claims", "claims_mapped": 0, "claims_total": 0}
 
-    # Extract source URLs from evidence
+    verified = [c for c in claims if c.get("status") == "verified"]
+    insufficient = [c for c in claims if c.get("status") == "insufficient_evidence"]
+    disputed = [c for c in claims if c.get("status") == "disputed"]
+    provider_failures = [c for c in claims if c.get("status") == "provider_failure"]
+
+    # Extract source URLs from verified evidence
     mapping = {}
     for c in verified:
         sources = [e.get("source_url") for e in c.get("evidence", []) if e.get("source_url")]
         mapping[c["text"]] = sources
 
+    provider_failure_list = [p for p in research.get("provider_failures", []) if p]
+
     return {
         "status": "ok" if verified else "no_verified_claims",
         "claims_mapped": len(verified),
         "claims_total": total,
-        "mapping": mapping
+        "claims_verified": len(verified),
+        "claims_insufficient": len(insufficient),
+        "claims_disputed": len(disputed),
+        "claims_provider_failures": len(provider_failures),
+        "provider_failures": provider_failure_list,
+        "mapping": mapping,
+        "verification_ratio": round(len(verified) / total, 2) if total else 0.0,
     }
 
 

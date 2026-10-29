@@ -7,6 +7,7 @@ empty search is an HTTP 404; Cleveland: images.web is the small derivative, imag
 No network, no models."""
 import io, sys, tempfile, unittest
 from pathlib import Path
+from unittest.mock import patch
 import numpy as np
 import requests
 from PIL import Image
@@ -962,6 +963,270 @@ class ReviewQAMode(unittest.TestCase):
             credits_results = [r for r in results if r.check == "credits_exist"]
             self.assertEqual(len(credits_results), 1)
             self.assertFalse(credits_results[0].passed)
+
+
+class MultiProviderResearch(unittest.TestCase):
+    """Regression tests for the multi-provider research pipeline."""
+
+    def test_valid_supporting_evidence_multiple_providers(self):
+        """Multiple providers returning supporting evidence → verified."""
+        import research_providers as rp
+
+        # Mock both Wikipedia and LoC to return supporting evidence
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test Page",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="The Tokugawa shogunate was established in 1603 by Tokugawa Ieyasu.",
+                date_text="", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        def mock_loc(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Library of Congress", title="LOC Record",
+                url="https://loc.gov/item/123",
+                excerpt="Tokugawa Ieyasu founded the shogunate in Edo period Japan.",
+                date_text="1603", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Library of Congress", endpoint="loc.gov", query=claim,
+                status="success", http_status=200, elapsed_ms=200, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki), \
+             patch.object(rp, 'provider_loc', side_effect=mock_loc):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate in 1603", "Tokyo")
+            self.assertEqual(vr.status, "verified")
+            self.assertGreaterEqual(vr.independent_sources, 2)
+            self.assertGreater(vr.confidence, 0.5)
+
+    def test_insufficient_evidence_single_source(self):
+        """Only one provider with weak match → insufficient_evidence."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test Page",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="Some general text about Japan.", date_text="",
+                query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate in 1603", "Tokyo")
+            # Weak match (only 1-2 generic terms) should be insufficient
+            self.assertIn(vr.status, ("insufficient_evidence", "provider_failure"))
+
+    def test_contradictory_evidence(self):
+        """Evidence that explicitly contradicts the claim → disputed."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test Page",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="Tokugawa Ieyasu never established any shogunate; this is a myth.",
+                date_text="", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertEqual(vr.status, "disputed")
+            self.assertLess(vr.confidence, 0.5)
+
+    def test_provider_timeout_not_evidence_failure(self):
+        """Provider timeout → provider_failure, not insufficient_evidence."""
+        import research_providers as rp
+        import requests
+
+        def mock_wiki_timeout(claim, dest, lang="en"):
+            raise requests.Timeout("Read timed out")
+
+        def mock_loc_ok(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Library of Congress", title="LOC Record",
+                url="https://loc.gov/item/123",
+                excerpt="Tokugawa Ieyasu established the shogunate in Edo period.",
+                date_text="1603", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Library of Congress", endpoint="loc.gov", query=claim,
+                status="success", http_status=200, elapsed_ms=200, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki_timeout), \
+             patch.object(rp, 'provider_loc', side_effect=mock_loc_ok):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            # LoC succeeded, so we have evidence
+            self.assertEqual(vr.status, "verified")
+            # Wikipedia failure should be recorded
+            self.assertIn("wikipedia", vr.provider_failures)
+
+    def test_provider_http_error_recorded(self):
+        """HTTP error from provider → recorded as provider_failure."""
+        import research_providers as rp
+        import requests
+
+        def mock_wiki_403(claim, dest, lang="en"):
+            raise requests.HTTPError("403 Forbidden")
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki_403), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertIn("wikipedia", vr.provider_failures)
+            # LoC found nothing, so insufficient evidence (not provider_failure since LoC worked)
+            self.assertEqual(vr.status, "insufficient_evidence")
+
+    def test_provider_auth_failure_recorded(self):
+        """Authentication failure (401/403) → provider_failure, not claim dispute."""
+        import research_providers as rp
+        import requests
+
+        def mock_wiki_auth(claim, dest, lang="en"):
+            err = requests.HTTPError("401 Unauthorized")
+            err.response = type('resp', (), {'status_code': 401})()
+            raise err
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki_auth), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertIn("wikipedia", vr.provider_failures)
+
+    def test_no_evidence_fabricated_when_provider_fails(self):
+        """When all providers fail, no evidence is fabricated."""
+        import research_providers as rp
+        import requests
+
+        def mock_all_fail(claim, dest, lang="en"):
+            raise requests.ConnectionError("Connection refused")
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_all_fail), \
+             patch.object(rp, 'provider_loc', side_effect=mock_all_fail):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertEqual(vr.status, "provider_failure")
+            self.assertEqual(vr.confidence, 0.0)
+            self.assertEqual(len(vr.evidence), 0)
+            self.assertIn("wikipedia", vr.provider_failures)
+            self.assertIn("loc", vr.provider_failures)
+
+    def test_independent_domain_counting(self):
+        """Multiple sources from same domain count as one independent source."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            # Two sources from same domain (wikipedia.org)
+            s1 = rp.ResearchSource(
+                provider="Wikipedia", title="Page A",
+                url="https://en.wikipedia.org/wiki/Page_A",
+                excerpt="Tokugawa Ieyasu established the shogunate in Edo.", date_text="",
+                query=claim, status="success")
+            s2 = rp.ResearchSource(
+                provider="Wikipedia", title="Page B",
+                url="https://en.wikipedia.org/wiki/Page_B",
+                excerpt="The Edo period began under Tokugawa Ieyasu leadership.", date_text="",
+                query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=2)
+            return [s1, s2], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            # Both sources are from wikipedia.org = 1 independent domain
+            self.assertEqual(vr.independent_sources, 1)
+
+    def test_verification_threshold_enforcement(self):
+        """Below 70% verified claims fails the threshold."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        # Simulate 2 of 8 verified (25%)
+        script = {
+            "claims_verified": 2,
+            "claims_total": 8,
+            "claims_disputed": 0,
+            "claims_insufficient": 6,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            research = {
+                "claims": [
+                    {"status": "verified", "evidence": [{"source_url": "https://example.com/1"}]},
+                    {"status": "verified", "evidence": [{"source_url": "https://example.com/2"}]},
+                ] + [
+                    {"status": "insufficient_evidence", "evidence": []} for _ in range(6)
+                ],
+                "extraction_failed": False,
+                "verification_failed": False,
+                "zero_claims": False,
+            }
+            rp_path = Path(d) / "research.json"
+            rp_path.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp_path)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            result = qc.check_research_status(sp)
+            self.assertFalse(result.passed)
+            self.assertIn("25%", result.details)
+
+    def test_secret_redaction_in_logs(self):
+        """API keys are redacted from error messages."""
+        import research_providers as rp
+
+        error_text = "api_key=abc123def456 caused an error"
+        redacted = rp._redact(error_text)
+        self.assertNotIn("abc123def456", redacted)
+        self.assertIn("***REDACTED***", redacted)
+
+        # wskey pattern (Europeana)
+        error_text2 = "wskey=xyz789 failed"
+        redacted2 = rp._redact(error_text2)
+        self.assertNotIn("xyz789", redacted2)
+
+    def test_research_diagnostics_recorded_per_provider(self):
+        """Each provider's diagnostic includes status, HTTP status, elapsed time, result count."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="Tokugawa Ieyasu shogunate Edo 1603.", date_text="",
+                query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wikipedia.org/w/api.php", query=claim,
+                status="success", http_status=200, elapsed_ms=150.5, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki):
+            vr = rp.verify_claim("Tokugawa Ieyasu established shogunate", "Tokyo")
+            wiki_diag = next((d for d in vr.provider_diagnostics if d.provider == "Wikipedia"), None)
+            self.assertIsNotNone(wiki_diag)
+            self.assertEqual(wiki_diag.status, "success")
+            self.assertEqual(wiki_diag.http_status, 200)
+            self.assertGreater(wiki_diag.elapsed_ms, 0)
+            self.assertEqual(wiki_diag.result_count, 1)
+            self.assertIsNone(wiki_diag.error)
 
 
 if __name__ == "__main__":
