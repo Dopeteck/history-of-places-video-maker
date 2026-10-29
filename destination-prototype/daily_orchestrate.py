@@ -373,10 +373,13 @@ def main():
     print("\n[7/8] Running QA on review artifacts...")
     qa_result = run_review_qa(paths, scene_count=scene_count)
     print(f"  QA passed: {qa_result['passed']}")
+    artifacts["qa_review"] = qa_result
     if not qa_result['passed']:
         print(f"  QA FAILED: {qa_result['stderr']}")
+        # Save artifacts so the review board and diagnostics remain available
+        # for diagnosis even when the research gate fails.
+        save_artifacts(artifacts, paths)
         sys.exit(1)
-    artifacts["qa_review"] = qa_result
 
     if args.mode == "review":
         if args.draft_preview:

@@ -753,5 +753,216 @@ class RunPathsOutputDirectory(unittest.TestCase):
         self.assertEqual(paths.review_dir.name, "mexico-city-region-short")
 
 
+class ResearchQAContract(unittest.TestCase):
+    """QA must read the actual research record and report verification accurately."""
+
+    def test_research_status_eight_claims_one_verified_fails_70pct(self):
+        """1 of 8 claims verified = 12.5% < 70% → research_status fails."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        # Script links to a research record
+        script = {
+            "claims_verified": 1,
+            "claims_total": 8,
+            "claims_disputed": 7,
+            "claims_insufficient": 0,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            # Research record: 8 claims, 1 verified
+            research = {
+                "claims": [
+                    {"status": "verified", "evidence": [{"source_url": "https://example.com/1"}]},
+                ] + [
+                    {"status": "disputed", "evidence": []} for _ in range(7)
+                ],
+                "extraction_failed": False,
+                "verification_failed": False,
+                "zero_claims": False,
+            }
+            rp = Path(d) / "research.json"
+            rp.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            result = qc.check_research_status(sp)
+            self.assertFalse(result.passed)
+            self.assertEqual(result.severity, "error")
+            self.assertIn("12%", result.details)
+
+    def test_research_status_six_of_eight_verified_passes(self):
+        """6 of 8 claims verified = 75% >= 70% → research_status passes."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        script = {
+            "claims_verified": 6,
+            "claims_total": 8,
+            "claims_disputed": 2,
+            "claims_insufficient": 0,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            research = {
+                "claims": [
+                    {"status": "verified", "evidence": [{"source_url": f"https://example.com/{i}"}]}
+                    for i in range(6)
+                ] + [
+                    {"status": "disputed", "evidence": []} for _ in range(2)
+                ],
+                "extraction_failed": False,
+                "verification_failed": False,
+                "zero_claims": False,
+            }
+            rp = Path(d) / "research.json"
+            rp.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            result = qc.check_research_status(sp)
+            self.assertTrue(result.passed)
+            self.assertIn("75%", result.details)
+
+    def test_research_status_missing_record_reported(self):
+        """Missing research record is explicitly reported as error."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        script = {
+            "claims_verified": 0,
+            "claims_total": 0,
+            "research_record": "/nonexistent/research.json",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            result = qc.check_research_status(sp)
+            self.assertFalse(result.passed)
+            self.assertEqual(result.severity, "error")
+            self.assertIn("not found", result.details.lower())
+
+    def test_research_status_zero_claims_reported(self):
+        """Zero claims in research record is explicitly reported as error."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        script = {
+            "claims_verified": 0,
+            "claims_total": 0,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            research = {
+                "claims": [],
+                "extraction_failed": True,
+                "verification_failed": False,
+                "zero_claims": True,
+            }
+            rp = Path(d) / "research.json"
+            rp.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            result = qc.check_research_status(sp)
+            self.assertFalse(result.passed)
+            self.assertEqual(result.severity, "error")
+
+
+class ReviewQAMode(unittest.TestCase):
+    """Review QA must not require captions/audio/MP4; production QA must."""
+
+    def test_review_qa_does_not_fail_on_missing_captions(self):
+        """Visual review mode: no SRT/VTT → info, not error."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        script = {
+            "word_count": 130,
+            "estimated_duration": 52.0,
+            "claims_verified": 6,
+            "claims_total": 8,
+            "claims_disputed": 2,
+            "claims_insufficient": 0,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            research = {
+                "claims": [
+                    {"status": "verified", "evidence": [{"source_url": f"https://example.com/{i}"}]}
+                    for i in range(6)
+                ] + [
+                    {"status": "disputed", "evidence": []} for _ in range(2)
+                ],
+                "extraction_failed": False,
+                "verification_failed": False,
+                "zero_claims": False,
+            }
+            rp = Path(d) / "research.json"
+            rp.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            # Empty output dir (no captions, no board, no credits)
+            results = qc.run_review_qa(sp, output_dir=Path(d), scene_count=8)
+            captions_results = [r for r in results if r.check == "captions_exist"]
+            self.assertEqual(len(captions_results), 1)
+            self.assertTrue(captions_results[0].passed, "Captions should be info, not error, in review mode")
+            self.assertEqual(captions_results[0].severity, "info")
+
+    def test_review_qa_requires_credits(self):
+        """Review QA still requires credits.json and scene completeness."""
+        import qa_checks as qc
+        import tempfile, json
+        from pathlib import Path
+
+        script = {
+            "word_count": 130,
+            "estimated_duration": 52.0,
+            "claims_verified": 6,
+            "claims_total": 8,
+            "claims_disputed": 2,
+            "claims_insufficient": 0,
+            "research_record": "",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            sp = Path(d) / "script.json"
+            sp.write_text(json.dumps(script), encoding="utf-8")
+            research = {
+                "claims": [
+                    {"status": "verified", "evidence": [{"source_url": f"https://example.com/{i}"}]}
+                    for i in range(6)
+                ] + [
+                    {"status": "disputed", "evidence": []} for _ in range(2)
+                ],
+                "extraction_failed": False,
+                "verification_failed": False,
+                "zero_claims": False,
+            }
+            rp = Path(d) / "research.json"
+            rp.write_text(json.dumps(research), encoding="utf-8")
+            script["research_record"] = str(rp)
+            sp.write_text(json.dumps(script), encoding="utf-8")
+
+            # No credits.json → check_credits should fail
+            results = qc.run_review_qa(sp, output_dir=Path(d), scene_count=8)
+            credits_results = [r for r in results if r.check == "credits_exist"]
+            self.assertEqual(len(credits_results), 1)
+            self.assertFalse(credits_results[0].passed)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

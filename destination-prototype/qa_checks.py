@@ -326,13 +326,61 @@ def check_scene_completeness(credits_path: Path, scene_count: int) -> QAResult:
     return QAResult("scene_completeness", True, f"All {len(credits)} scenes have approved images", "info")
 
 
+def check_research_status(script_path: Path) -> QAResult:
+    """Report research status and verification ratio from the script record.
+
+    Used in review mode to make research quality visible without blocking
+    on production-only requirements (audio, MP4, captions).
+    """
+    with open(script_path, encoding="utf-8") as f:
+        script = json.load(f)
+    research_path = script.get("research_record", "")
+    verified = script.get("claims_verified", 0)
+    total = script.get("claims_total", 0)
+    disputed = script.get("claims_disputed", 0)
+    insufficient = script.get("claims_insufficient", 0)
+
+    if not research_path:
+        return QAResult("research_status", False, "No research record linked in script", "error")
+    if not Path(research_path).exists():
+        return QAResult("research_status", False, f"Research record not found: {research_path}", "error")
+
+    with open(research_path, encoding="utf-8") as f:
+        research = json.load(f)
+
+    extraction_failed = research.get("extraction_failed", False)
+    verification_failed = research.get("verification_failed", False)
+    zero_claims = research.get("zero_claims", False)
+
+    if zero_claims:
+        return QAResult("research_status", False, "Zero claims extracted from narration — research produced no claims", "error")
+    if extraction_failed:
+        return QAResult("research_status", False, "Claim extraction failed — no factual claims detected in narration", "error")
+    if verification_failed:
+        return QAResult("research_status", False, "All claims disputed — verification failed", "error")
+    if total == 0:
+        return QAResult("research_status", False, "No claims in research record", "error")
+
+    ratio = verified / total if total else 0.0
+    details = (f"{verified}/{total} claims verified ({ratio:.0%}), "
+               f"{disputed} disputed, {insufficient} insufficient evidence")
+    if ratio < 0.7:
+        return QAResult("research_status", False, f"Verification ratio {ratio:.0%} below 70% threshold — {details}", "error")
+    return QAResult("research_status", True, f"Research OK — {details}", "info")
+
+
 def run_review_qa(script_path: Path, output_dir: Optional[Path] = None,
                   scene_count: Optional[int] = None) -> List[QAResult]:
-    """Run QA for visual-review-only runs (subset of checks)."""
+    """Run QA for visual-review-only runs (subset of checks).
+
+    Visual review intentionally produces no narration audio and no MP4, so
+    captions, audio, and video checks are NOT required here. Research quality
+    and scene/credits completeness are mandatory.
+    """
     results = []
     results.append(check_script_word_count(script_path))
     results.append(check_estimated_duration(script_path))
-    results.append(check_claims_support(script_path))
+    results.append(check_research_status(script_path))
 
     if output_dir:
         board_path = output_dir / "approval-board.html"
@@ -345,12 +393,12 @@ def run_review_qa(script_path: Path, output_dir: Optional[Path] = None,
         if scene_count is not None:
             results.append(check_scene_completeness(credits_path, scene_count))
 
-        # Captions sidecar
+        # Captions sidecar: present in review only as info, never a hard error.
         captions_files = list(output_dir.glob("*.srt")) + list(output_dir.glob("*.vtt"))
         if captions_files:
             results.append(check_captions(captions_files[0]))
         else:
-            results.append(QAResult("captions_exist", False, "No SRT/VTT captions found", "error"))
+            results.append(QAResult("captions_exist", True, "No SRT/VTT captions (not required for visual review)", "info"))
 
     return results
 

@@ -334,6 +334,12 @@ def main():
   finally:
    print(f"TIMING scene_total[{i}:{scene['title']}]: {time.perf_counter()-scene_started:.2f}s",flush=True)
  write_approval_board(media,credits,cfg,out)
+ # Always write credits so review QA can validate scene coverage and rights,
+ # even in visual-review-only mode (no narration/audio yet).
+ block="\n".join(f"- {c['title']} \u2014 {c['author']}; {c['license']} ({c['license_url']}); source: {c['source_url']}" for c in credits)
+ (out/"credits.json").write_text(json.dumps(credits,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+ (out/"credits-description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
+ (out/"description.txt").write_text("Image and map credits\n"+block+"\n",encoding="utf-8")
  if a.visual_review_only: print(f"Visual review artifacts saved to {out}; no narration, audio, or publishing generated."); return
  if any(x.get("provider") in ("fallback text card", "procedural illustration", "missing asset") for x in credits): fail("Visual approval board saved, but production render is blocked: at least one scene has no approved source image. Replace every missing scene with a verified, rights-cleared, relevant image before final rendering.")
 # Kokoro only: no silent speech-provider fallback.

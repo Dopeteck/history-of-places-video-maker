@@ -381,6 +381,8 @@ def main():
     # Save to explicit output path
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(asdict(record), f, indent=2, ensure_ascii=False)
+    # Also persist to the standard DATA_DIR location so load_research() can find it.
+    save_research(record)
 
     # Report results with details
     print(f"Saved research record with {len(record.claims)} claims")
