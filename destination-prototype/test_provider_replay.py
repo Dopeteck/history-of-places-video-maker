@@ -1199,13 +1199,16 @@ class CreditsRightsFieldTests(unittest.TestCase):
         self.assertEqual(candidate["image_url"], "https://example.com/image.jpg")
 
     def test_map_credit_has_rights_field(self):
-        """The vector map credit carries an actual rights statement (regression
-        for the missing 'rights' field that failed credits_fields QA)."""
+        """The vector map credit carries an actual rights statement and asset_url
+        (regression for the missing 'rights'/'asset_url' fields that failed
+        credits_fields QA)."""
         import vector_map as vm
         import inspect
         src = inspect.getsource(vm.render_map)
         self.assertIn('"rights": "Public Domain"', src,
                       "render_map credit must include an actual rights statement")
+        self.assertIn('"asset_url": "https://www.naturalearthdata.com/"', src,
+                      "render_map credit must include an asset_url")
 
 
 class ModernSceneIdentityFallbackTests(unittest.TestCase):
