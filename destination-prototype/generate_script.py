@@ -138,6 +138,15 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         full_narration = expand_with_research(full_narration, verified_claims, TARGET_WORDS_MIN)
         word_count = len(full_narration.split())
 
+    # Hard floor: narration must clear the renderer's 110-word minimum. Verified
+    # claims are the preferred padding; fall back to the sourced description text
+    # only when claims are exhausted, never inventing facts.
+    if word_count < 110 and research:
+        desc = (topic_data.get("description") or "").strip()
+        if desc and desc not in full_narration:
+            full_narration = (full_narration + " " + desc).strip()
+            word_count = len(full_narration.split())
+
     estimated_duration = word_count / 150 * 60  # seconds at 150 WPM
 
     research_file = ""
@@ -195,8 +204,8 @@ def split_narration_into_structure(narration: str, destination: str) -> List[str
     if climax_start < climax_end:
         parts.append(" ".join(sentences[climax_start:climax_end]) + ".")
 
-    # Resolution: penultimate sentence
-    if total > 1:
+    # Resolution: penultimate sentence (only when climax did not already reach it)
+    if total > 1 and climax_end < total - 1:
         parts.append(sentences[-2] + ".")
 
     # Closing: last sentence

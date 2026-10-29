@@ -378,7 +378,18 @@ def main():
     with open(config_path, encoding="utf-8") as f:
         import yaml
         dest_cfg = yaml.safe_load(f)
-    scenes = plan_scenes(topic, dest_cfg)
+    # Use the destination config's human-reviewed, rights-aware scenes directly
+    # (data-driven destination support). Fall back to the story planner only when
+    # a config ships no scene list.
+    config_scenes = dest_cfg.get("scenes") or []
+    if config_scenes:
+        scenes = [dict(s) for s in config_scenes]
+        for i, s in enumerate(scenes, 1):
+            s.setdefault("scene_id", f"{topic['destination_slug']}:s{i:02d}")
+            s.setdefault("scene_order", i)
+            print(f"  config scene {i}: {s.get('title')} ({s.get('image_type')})")
+    else:
+        scenes = plan_scenes(topic, dest_cfg)
     with open(paths.scene_plan_file, "w", encoding="utf-8") as f:
         json.dump(scenes, f, indent=2, ensure_ascii=False)
     scene_count = len(scenes)
