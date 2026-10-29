@@ -291,7 +291,7 @@ def _candidate(provider, title, description, image_url, source_url, rights, righ
         STATS["non_https"] += 1; return None
     return {"provider": provider, "title": title, "description": description, "categories": [_clean(x) for x in (categories or [])],
             "facets": [_clean(x) for x in (facets or []) if _clean(x)], "year_range": year_range, "date_text": _clean(date_text),
-            "image_url": image_url.split("#")[0], "source_url": source_url, "rights_statement": rights,
+            "image_url": image_url.split("#")[0], "source_url": source_url, "rights": rights, "rights_statement": rights,
             "rights_url": rights_url, "author": author or "Not stated", "identifier": identifier}
 
 
@@ -951,8 +951,8 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     warnings += winner.get("_warnings", [])
     return im, {"content_sha256": winner["_digest"], "scene": scene["title"], "file": str(path),
       "title": winner["title"], "author": winner["author"], "license": winner["rights_statement"],
-      "rights_statement": winner["rights_statement"], "license_url": winner["rights_url"],
-      "source_url": winner["source_url"], "provider": winner["provider"], "match_score": winner["_score"],
+      "rights": winner["rights_statement"], "rights_statement": winner["rights_statement"], "license_url": winner["rights_url"],
+      "asset_url": winner["source_url"], "source_url": winner["source_url"], "provider": winner["provider"], "match_score": winner["_score"],
       "clip_score": winner["_score"], "period_ok": (winner["_p_modern"] >= 0.5) if scene.get("image_type") == "modern" else None,
       "search_variant": "CLIP ranked: " + " | ".join(prompts), "warnings": warnings, "dimensions": list(winner["_size"]),
       "top_candidates": [{"provider": x["provider"], "title": x["title"], "source_url": x["source_url"],

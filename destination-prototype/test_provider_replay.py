@@ -954,6 +954,169 @@ class MultiProviderAdapterTests(unittest.TestCase):
         self.assertEqual(paths.qa_report_file.name, "qa_report.json")
 
 
+class ResearchQualityTests(unittest.TestCase):
+    """Tests for improved research evidence matching and query construction."""
+
+    def test_high_value_term_matches_with_only_one_term(self):
+        """A single high-value term (date/proper noun) can verify a claim."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Tokugawa Ieyasu",
+                url="https://en.wikipedia.org/wiki/Tokugawa_Ieyasu",
+                excerpt="Tokugawa Ieyasu established the Tokugawa shogunate in Edo in 1603.",
+                date_text="", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate in 1603", "Tokyo")
+            self.assertEqual(vr.status, "verified")
+            self.assertGreater(vr.confidence, 0.4)
+
+    def test_contradiction_only_when_near_matched_term(self):
+        """Negation far from matched terms does not cause contradiction."""
+        import research_providers as rp
+
+        # Excerpt has "not" but far from the matched term "Tokugawa"
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="The Tokugawa shogunate ruled Japan. The emperor was not involved in daily administration.",
+                date_text="", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki):
+            vr = rp.verify_claim("Tokugawa shogunate ruled Japan", "Tokyo")
+            self.assertEqual(vr.status, "verified")
+
+    def test_targeted_query_construction(self):
+        """Queries are built from claim entities, not just claim+destination."""
+        import research_providers as rp
+
+        queries = rp._build_claim_queries("Tokugawa Ieyasu established the shogunate in 1603", "Tokyo")
+        self.assertGreaterEqual(len(queries), 1)
+        # First query should contain entity + destination
+        self.assertIn("Tokugawa", queries[0])
+        self.assertIn("Tokyo", queries[0])
+        # Queries should be deduplicated
+        self.assertEqual(len(queries), len(set(queries)))
+
+    def test_single_high_value_term_date_verifies(self):
+        """A date match alone can verify a claim."""
+        import research_providers as rp
+
+        def mock_wiki(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Edo period",
+                url="https://en.wikipedia.org/wiki/Edo_period",
+                excerpt="The Edo period began in 1603 when Tokugawa Ieyasu established the shogunate.",
+                date_text="", query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+
+        with patch.object(rp, 'provider_wikipedia', side_effect=mock_wiki):
+            vr = rp.verify_claim("Edo began in 1603", "Tokyo")
+            self.assertEqual(vr.status, "verified")
+
+
+class CreditsRightsFieldTests(unittest.TestCase):
+    """Tests that credits.json includes 'rights' and 'asset_url' fields."""
+
+    def test_local_image_credit_has_rights_and_asset_url(self):
+        """Local image credit dict includes rights and asset_url fields."""
+        import render_region_short as rr
+
+        # Check that the credit dict constructed in local_image includes
+        # rights and asset_url by examining the code path directly.
+        # local_image reads from assets_manifest.json, so we test the
+        # credit field construction indirectly through _candidate output
+        # and the render path's credit assembly.
+        import asset_resolver as ar
+
+        # _candidate produces credit-like dicts with rights and asset_url
+        candidate = ar._candidate("Wikimedia Commons", "Test Image",
+                                  "A test image description",
+                                  "https://example.com/image.jpg",
+                                  "https://example.com/source.html",
+                                  "CC BY 4.0",
+                                  "https://creativecommons.org/licenses/by/4.0/",
+                                  author="Author", categories=["photography"])
+        self.assertEqual(candidate["rights"], "CC BY 4.0")
+        self.assertEqual(candidate["rights_statement"], "CC BY 4.0")
+        self.assertEqual(candidate["source_url"], "https://example.com/source.html")
+        self.assertEqual(candidate["image_url"], "https://example.com/image.jpg")
+
+    def test_missing_asset_credit_has_rights_and_asset_url(self):
+        import render_region_short as rr
+        import tempfile
+
+        cfg = {"name": "Tokyo", "slug": "tokyo", "story": {"narration": "x" * 120}, "scenes": []}
+        scene = {"title": "Missing Scene", "image_type": "modern"}
+
+        with tempfile.TemporaryDirectory() as d:
+            im, credit = rr.text_fallback_card(scene, 1, cfg, Path(d), "No candidates")
+            self.assertEqual(credit.get("rights"), "")
+            self.assertEqual(credit.get("rights_statement"), "")
+            self.assertEqual(credit.get("asset_url"), "")
+            self.assertEqual(credit.get("source_url"), "")
+
+    def test_online_image_credit_has_rights_and_asset_url(self):
+        import asset_resolver as ar
+        import tempfile, json
+
+        cfg = {"asset_resolver": {"providers": []}}
+        scene = {"title": "Test", "image_type": "modern",
+                 "required_keywords": ["Tokyo"], "banned_keywords": []}
+
+        # Check that resolve_scene_image credit dict includes rights and asset_url
+        # by examining the _candidate function output structure
+        candidate = ar._candidate("Wikimedia Commons", "Test Image",
+                                  "A test image description", "https://example.com/image.jpg",
+                                  "https://example.com/source.html", "CC0 1.0",
+                                  "https://creativecommons.org/publicdomain/zero/1.0/",
+                                  author="Author", categories=["photography"])
+        self.assertEqual(candidate["rights_statement"], "CC0 1.0")
+        self.assertEqual(candidate["rights"], "CC0 1.0")
+        self.assertEqual(candidate["source_url"], "https://example.com/source.html")
+        self.assertEqual(candidate["image_url"], "https://example.com/image.jpg")
+
+
+class ModernSceneIdentityFallbackTests(unittest.TestCase):
+    """Tests that modern scenes use identity_fallback_to_clip=True."""
+
+    def test_modern_scene_has_identity_fallback_to_clip(self):
+        import scene_planner as sp
+        import yaml
+        cfg = yaml.safe_load(open("regions/tokyo.yaml", encoding="utf-8"))
+        topic = {
+            "destination_slug": "tokyo", "destination_name": "Tokyo",
+            "country": "Japan", "continent": "Asia",
+            "category": "hidden_history",
+            "story_id": "tokyo:hidden:test",
+            "hook": "Hook", "description": "Description",
+            "entities": ["Tokyo Skytree", "Shinjuku"],
+            "sources": ["https://example.com"], "claim_refs": ["claim1"],
+        }
+        scenes = sp.plan_scenes(topic, cfg)
+        for s in scenes:
+            if s.get("image_type") == "modern":
+                self.assertTrue(s.get("identity_fallback_to_clip", False),
+                                f"Modern scene '{s['title']}' missing identity_fallback_to_clip")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

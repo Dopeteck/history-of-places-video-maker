@@ -161,7 +161,7 @@ def local_image(scene,idx,config,used):
    digest=hashlib.sha256(im.tobytes()).hexdigest()
    if digest in used or source in used: continue
    used.add(digest); used.add(source)
-   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"license_url":licurl,"source_url":source,"match_score":match,"period_ok":True if str(rec.get("period","")).lower()=="modern" else None,"search_variant":"repository manifest (preferred local still)","warnings":[]}
+   return im,{"content_sha256":digest,"scene":scene["title"],"file":str(p.relative_to(ROOT)),"title":title,"author":str(rec.get("author") or "Unknown / not stated"),"license":lic,"rights":lic,"rights_statement":lic,"license_url":licurl,"asset_url":source,"source_url":source,"match_score":match,"period_ok":True if str(rec.get("period","")).lower()=="modern" else None,"search_variant":"repository manifest (preferred local still)","warnings":[]}
  return None
 def make_map(scene,idx,config,asset_dir):
  # Offline vector map (Natural Earth, public domain) in the region palette; see vector_map.py.
@@ -181,7 +181,7 @@ def text_fallback_card(scene,idx,config,asset_dir,error):
   except ValueError:
       rel_path = str(p)
   return im,{"content_sha256":hashlib.sha256(f"missing:{idx}:{scene.get('title','Scene')}".encode("utf-8")).hexdigest(),"scene":scene["title"],"file":rel_path,
-   "title":"NO APPROVED SOURCE IMAGE — "+str(scene.get("title","Scene")),"author":"","license":"","license_url":"","source_url":"",
+   "title":"NO APPROVED SOURCE IMAGE — "+str(scene.get("title","Scene")),"author":"","license":"","rights":"","rights_statement":"","license_url":"","asset_url":"","source_url":"",
    "provider":"missing asset","match_score":None,"search_variant":"No candidate passed rights, quality and relevance checks",
    "warnings":[str(error).split(" Diagnostics:")[0]],"diagnostics":_parse_diagnostics(str(error))}
 
@@ -226,7 +226,7 @@ def write_approval_board(media,credits,cfg,out):
  if not isinstance(old,list): old=[]
  byhash={str(x.get("content_sha256")):x for x in old if isinstance(x,dict) and x.get("content_sha256")}
  for c in credits:
-  rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights_statement","license_url","source_url","provider","match_score","dimensions","warnings")}; rec["approved"]=byhash.get(str(c.get("content_sha256")),{}).get("approved",False)
+  rec={k:c.get(k) for k in ("content_sha256","scene","file","title","author","license","rights","rights_statement","license_url","asset_url","source_url","provider","match_score","dimensions","warnings")}; rec["approved"]=byhash.get(str(c.get("content_sha256")),{}).get("approved",False)
   if c.get("content_sha256"): byhash[c["content_sha256"]]=rec
   
  manifest.write_text(json.dumps(list(byhash.values()),indent=2,ensure_ascii=False)+"\n",encoding="utf-8")

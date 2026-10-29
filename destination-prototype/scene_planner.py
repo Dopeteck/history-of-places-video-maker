@@ -287,6 +287,9 @@ def _modern_scene(story_id: str, order: int, title: str, intent: str, text: str,
         banned_keywords=_dedupe(banned),
         sources=sources[:3],
         claim_refs=claims[:2],
+        # Modern photo metadata rarely names specific landmarks; allow CLIP-based
+        # acceptance when entity names are absent from cataloguing metadata.
+        identity_fallback_to_clip=True,
     ))
 
 

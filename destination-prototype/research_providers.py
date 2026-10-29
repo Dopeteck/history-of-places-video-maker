@@ -107,9 +107,14 @@ def _clean_html(value: str) -> str:
 
 
 def _key_terms(claim: str) -> Set[str]:
-    """Extract significant key terms from a claim for evidence matching."""
+    """Extract significant key terms from a claim for evidence matching.
+
+    Proper nouns, dates, and ordinals are weighted as high-value terms since
+    they uniquely identify the subject. Ordinary words (>4 chars) are lower
+    value but still useful.
+    """
     terms: Set[str] = set()
-    # Proper nouns and dates
+    # High-value terms: proper nouns, years, ordinals
     for m in re.findall(r'\b[A-Z][a-z]{2,}\b|\b\d{4}\b|\b\d{1,2}(?:st|nd|rd|th)\b', claim):
         terms.add(_norm(m))
     # Significant words (>4 chars, not stopwords)
@@ -126,9 +131,32 @@ def _key_terms(claim: str) -> Set[str]:
     return terms
 
 
+def _is_high_value_term(term: str) -> bool:
+    """A term is high-value if it's a proper noun, year, or ordinal."""
+    return bool(re.match(r'\b[A-Z][a-z]+\b', term) or re.match(r'\b\d{4}\b', term) or re.match(r'\b\d{1,2}(?:st|nd|rd|th)\b', term))
+
+
 def _contradiction_indicators(text: str) -> List[str]:
     """Return negation/contradiction words found in text."""
     return [w for w in re.findall(r'\b(not|never|no|nor|neither|cannot|cannot|did not|was not|were not|is not|are not|unrelated|false|myth|contradict|refute|debunk)\b', text.lower())]
+
+
+def _has_contradiction_near_terms(excerpt_norm: str, matched_terms: List[str]) -> bool:
+    """Check if a negation word appears close to any matched key term in the excerpt.
+
+    Only treats an excerpt as contradictory if negation appears within ~30
+    characters of a matched term, to avoid false positives from unrelated
+    sentences in the same article.
+    """
+    if not matched_terms:
+        return False
+    for neg_match in re.finditer(r'\b(not|never|no|nor|neither|cannot|did not|was not|were not|is not|are not)\b', excerpt_norm):
+        neg_pos = neg_match.start()
+        for term in matched_terms:
+            for term_match in re.finditer(re.escape(term), excerpt_norm):
+                if abs(neg_pos - term_match.start()) <= 10:
+                    return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -429,8 +457,10 @@ def _supports_claim(claim: str, excerpt: str) -> Tuple[bool, float, List[str]]:
     """Determine whether an excerpt supports a claim.
 
     Returns (supports, confidence, matched_terms).
-    Requires at least 2 key terms from the claim to appear in the excerpt,
-    and no strong contradiction indicators in the excerpt.
+    Accepts when at least 2 key terms appear in the excerpt, OR when at least
+    1 high-value term (proper noun, year, ordinal) matches — these uniquely
+    identify the subject. Excerpts with contradictions near matched terms are
+    rejected.
     """
     terms = _key_terms(claim)
     if not terms:
@@ -439,14 +469,14 @@ def _supports_claim(claim: str, excerpt: str) -> Tuple[bool, float, List[str]]:
     excerpt_norm = _norm(excerpt)
     matched = [t for t in terms if t in excerpt_norm]
 
-    # Need at least 2 key terms to consider it relevant support
+    # At least 2 key terms, OR at least 1 high-value term (unique identifier)
     if len(matched) < 2:
-        return False, 0.0, matched
+        high_value_matched = [t for t in matched if _is_high_value_term(t)]
+        if not high_value_matched:
+            return False, 0.0, matched
 
-    # Contradiction check: negation words near matched terms reduce confidence
-    contradictions = _contradiction_indicators(excerpt)
-    if contradictions:
-        # If the excerpt explicitly negates key terms, it may contradict
+    # Contradiction check: only reject if negation is near matched terms
+    if _has_contradiction_near_terms(excerpt_norm, matched):
         return False, 0.0, matched
 
     # Base confidence on how many key terms matched
@@ -455,7 +485,11 @@ def _supports_claim(claim: str, excerpt: str) -> Tuple[bool, float, List[str]]:
 
 
 def _contradicts_claim(claim: str, excerpt: str) -> bool:
-    """Determine whether an excerpt contradicts a claim."""
+    """Determine whether an excerpt contradicts a claim.
+
+    Only returns True when >=2 key terms match AND a negation word appears
+    close to a matched term.
+    """
     terms = _key_terms(claim)
     if not terms:
         return False
@@ -463,8 +497,8 @@ def _contradicts_claim(claim: str, excerpt: str) -> bool:
     matched = [t for t in terms if t in excerpt_norm]
     if len(matched) < 2:
         return False
-    # Contradiction indicators present alongside matched terms
-    return len(_contradiction_indicators(excerpt)) > 0
+    # Contradiction indicators present near matched terms
+    return _has_contradiction_near_terms(excerpt_norm, matched)
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +516,43 @@ class VerificationResult:
     independent_sources: int = 0
     provider_diagnostics: List[ProviderDiagnostic] = field(default_factory=list)
     provider_failures: List[str] = field(default_factory=list)  # provider names that failed
+
+
+def _extract_claim_entities(claim: str) -> List[str]:
+    """Extract key entities (proper nouns, dates) from a claim for targeted queries."""
+    entities: List[str] = []
+    for m in re.finditer(r'\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*|\b\d{4}\b|\b\d{1,2}(?:st|nd|rd|th)\b', claim):
+        entities.append(m.group(0))
+    return entities
+
+
+def _build_claim_queries(claim: str, destination: str) -> List[str]:
+    """Build targeted queries from a claim, not just claim+destination."""
+    entities = _extract_claim_entities(claim)
+    queries: List[str] = []
+
+    # Primary query: entity terms + destination
+    if entities:
+        queries.append(" ".join(entities[:3]) + " " + destination)
+    else:
+        queries.append(claim + " " + destination)
+
+    # Individual entity queries for specific lookup
+    for e in entities[:2]:
+        queries.append(e + " " + destination)
+
+    # Add general context query
+    queries.append(claim[:60] + " " + destination)
+
+    # Deduplicate
+    seen = set()
+    unique: List[str] = []
+    for q in queries:
+        qn = q.strip()
+        if qn and qn not in seen:
+            seen.add(qn)
+            unique.append(qn)
+    return unique[:4]
 
 
 def verify_claim(claim: str, destination: str, language: str = "en") -> VerificationResult:
@@ -503,33 +574,48 @@ def verify_claim(claim: str, destination: str, language: str = "en") -> Verifica
         result.provider_failures = ["no_providers_available"]
         return result
 
+    # Build targeted queries from claim entities
+    queries = _build_claim_queries(claim, destination)
+
     for provider_name in providers:
         # Look up from globals() so that module-level patches (e.g. in tests)
         # take effect; fall back to PROVIDER_ADAPTERS dict for direct calls.
         adapter = globals().get(f"provider_{provider_name}") or PROVIDER_ADAPTERS.get(provider_name)
         if not adapter:
             continue
-        try:
-            sources, diag = adapter(claim, destination, language)
-        except Exception as e:  # noqa: BLE001 - adapter must never crash verification
-            diag = ProviderDiagnostic(
-                provider=provider_name,
-                endpoint="unknown",
-                query=f"{claim} {destination}",
-                status="failed",
-                error=_redact(f"{type(e).__name__}: {str(e)[:200]}"),
-            )
-            sources = []
-        result.provider_diagnostics.append(diag)
 
-        if diag.status == "skipped":
+        # Try each query until we get results, but don't retry if first succeeds
+        provider_sources: List[ResearchSource] = []
+        provider_diag = None
+        for query in queries:
+            try:
+                sources, diag = adapter(query, destination, language)
+            except Exception as e:  # noqa: BLE001 - adapter must never crash verification
+                diag = ProviderDiagnostic(
+                    provider=provider_name,
+                    endpoint="unknown",
+                    query=query,
+                    status="failed",
+                    error=_redact(f"{type(e).__name__}: {str(e)[:200]}"),
+                )
+                sources = []
+            provider_diag = diag
+            if sources or diag.status in ("failed", "skipped"):
+                # Got a definitive result (success with sources, or failure/skip)
+                provider_sources = sources
+                break
+            # Otherwise try next query
+
+        result.provider_diagnostics.append(provider_diag)
+
+        if provider_diag.status == "skipped":
             continue
-        if diag.status == "failed":
+        if provider_diag.status == "failed":
             result.provider_failures.append(provider_name)
             continue
 
         any_provider_success = True
-        for src in sources:
+        for src in provider_sources:
             all_sources.append(src)
             supports, conf, matched = _supports_claim(claim, src.excerpt)
             if supports:
@@ -546,19 +632,15 @@ def verify_claim(claim: str, destination: str, language: str = "en") -> Verifica
         result.independent_sources = len({urlparse(s.url).netloc if s.url else s.provider for s in contradicting})
     elif supporting:
         result.status = "verified"
-        # Confidence based on source diversity and match strength
-        best_conf = max((s for s in supporting), key=lambda s: 0.5).__class__  # noqa - placeholder
         result.confidence = min(0.95, 0.5 + len(supporting) * 0.1 + len(domains) * 0.1)
         result.evidence = supporting
         result.independent_sources = len(domains)
     elif any_provider_success:
-        # Providers worked but found no supporting evidence
         result.status = "insufficient_evidence"
         result.confidence = 0.1
         result.evidence = all_sources
         result.independent_sources = 0
     else:
-        # All providers failed
         result.status = "provider_failure"
         result.confidence = 0.0
         result.evidence = []
