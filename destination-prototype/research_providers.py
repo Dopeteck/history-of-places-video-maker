@@ -84,6 +84,12 @@ PROVIDER_TIMEOUTS = {
     "smithsonian": (15.0, 45.0),
 }
 
+# Bounded retry policy for transient errors and HTTP 429 rate limiting.
+MAX_RETRIES = 3
+BASE_RETRY_DELAY = 1.0          # seconds, first backoff
+MAX_RETRY_DELAY = 30.0          # seconds, cap on any single wait
+RETRYABLE_STATUS_CODES = (429, 502, 503, 504)
+
 
 def _redact(text: str) -> str:
     """Strip anything that looks like an API key or secret from text before logging."""
@@ -92,6 +98,29 @@ def _redact(text: str) -> str:
     # Redact common key patterns: key=XXXX or apikey=XXXX or wskey=XXXX
     text = re.sub(r'(api[_-]?key|apikey|wskey)=[A-Za-z0-9_\-]{5,}', r'\1=***REDACTED***', text, flags=re.I)
     return text
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse an HTTP Retry-After header into seconds, or None if absent/invalid.
+
+    Accepts either a delta-seconds integer or an HTTP-date. Never raises.
+    """
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    try:
+        from email.utils import parsedate_to_datetime
+        from datetime import timezone
+        dt = parsedate_to_datetime(value)
+        if dt is not None:
+            delta = (dt - datetime.now(timezone.utc)).total_seconds()
+            return max(0.0, delta)
+    except Exception:  # noqa: BLE001 - never fail a request over a header parse
+        pass
+    return None
 
 
 def _norm(text: str) -> str:
@@ -165,12 +194,49 @@ def _has_contradiction_near_terms(excerpt_norm: str, matched_terms: List[str]) -
 
 
 def _http_get(url: str, params: Optional[dict] = None, timeout: Tuple[float, float] = (10.0, 30.0),
-              headers: Optional[dict] = None) -> requests.Response:
-    """Perform a GET request with consistent timeouts and user-agent."""
+              headers: Optional[dict] = None, max_retries: int = MAX_RETRIES,
+              backoff: float = BASE_RETRY_DELAY) -> requests.Response:
+    """Perform a GET request with bounded retries for 429 and transient errors.
+
+    Retries on HTTP 429 (respecting Retry-After when provided) and on
+    transient 5xx (502/503/504) with exponential backoff, capped at
+    MAX_RETRY_DELAY. Never retries on 4xx other than 429. A provider that
+    keeps failing exhausts its retries and reports provider_failure; it is
+    never treated as evidence that a claim is false.
+    """
     h = {"User-Agent": WIKIPEDIA_USER_AGENT}
     if headers:
         h.update(headers)
-    return requests.get(url, params=params, headers=h, timeout=timeout)
+    last_exc: Optional[Exception] = None
+    for attempt in range(max_retries + 1):
+        try:
+            r = requests.get(url, params=params, headers=h, timeout=timeout)
+        except (requests.Timeout, requests.ConnectionError) as e:
+            last_exc = e
+            if attempt < max_retries:
+                time.sleep(min(backoff * (2 ** attempt), MAX_RETRY_DELAY))
+                continue
+            raise
+        # HTTP 429 rate limit: respect Retry-After when provided, else back off.
+        if r.status_code == 429:
+            retry_after = _parse_retry_after(r.headers.get("Retry-After"))
+            delay = retry_after if retry_after is not None else backoff * (2 ** attempt)
+            delay = min(delay, MAX_RETRY_DELAY)
+            if attempt < max_retries:
+                time.sleep(delay)
+                continue
+            r.raise_for_status()
+        # Transient server errors.
+        if r.status_code in RETRYABLE_STATUS_CODES:
+            delay = min(backoff * (2 ** attempt), MAX_RETRY_DELAY)
+            if attempt < max_retries:
+                time.sleep(delay)
+                continue
+            r.raise_for_status()
+        return r
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("unreachable: _http_get loop exited without returning or raising")
 
 
 def provider_wikipedia(claim: str, destination: str, language: str = "en") -> Tuple[List[ResearchSource], ProviderDiagnostic]:
@@ -250,8 +316,12 @@ def _fetch_wikipedia_page(title: str, language: str = "en") -> Optional[str]:
     return None
 
 
-def provider_loc(claim: str, destination: str) -> Tuple[List[ResearchSource], ProviderDiagnostic]:
-    """Query Library of Congress search API for evidence."""
+def provider_loc(claim: str, destination: str, language: str = "en") -> Tuple[List[ResearchSource], ProviderDiagnostic]:
+    """Query Library of Congress search API for evidence.
+
+    `language` is accepted for interface consistency with the verify_claim
+    dispatch path; LOC's API is language-neutral.
+    """
     diag = ProviderDiagnostic(provider="Library of Congress", endpoint="www.loc.gov/search/",
                               query=f"{claim} {destination}")
     sources: List[ResearchSource] = []
@@ -303,8 +373,12 @@ def provider_loc(claim: str, destination: str) -> Tuple[List[ResearchSource], Pr
     return sources, diag
 
 
-def provider_europeana(claim: str, destination: str) -> Tuple[List[ResearchSource], ProviderDiagnostic]:
-    """Query Europeana API for collection evidence."""
+def provider_europeana(claim: str, destination: str, language: str = "en") -> Tuple[List[ResearchSource], ProviderDiagnostic]:
+    """Query Europeana API for collection evidence.
+
+    `language` is accepted for interface consistency with the verify_claim
+    dispatch path; Europeana's API is language-neutral.
+    """
     key = os.getenv("EUROPEANA_API_KEY")
     if not key:
         diag = ProviderDiagnostic(provider="Europeana", endpoint="api.europeana.eu", query=f"{claim} {destination}")
@@ -370,8 +444,12 @@ def provider_europeana(claim: str, destination: str) -> Tuple[List[ResearchSourc
     return sources, diag
 
 
-def provider_smithsonian(claim: str, destination: str) -> Tuple[List[ResearchSource], ProviderDiagnostic]:
-    """Query Smithsonian Open Access API for collection evidence."""
+def provider_smithsonian(claim: str, destination: str, language: str = "en") -> Tuple[List[ResearchSource], ProviderDiagnostic]:
+    """Query Smithsonian Open Access API for collection evidence.
+
+    `language` is accepted for interface consistency with the verify_claim
+    dispatch path; Smithsonian's API is language-neutral.
+    """
     key = os.getenv("SMITHSONIAN_API_KEY")
     if not key:
         diag = ProviderDiagnostic(provider="Smithsonian", endpoint="api.si.edu", query=f"{claim} {destination}")

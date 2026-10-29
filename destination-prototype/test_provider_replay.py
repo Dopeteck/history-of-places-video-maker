@@ -830,7 +830,112 @@ class MultiProviderAdapterTests(unittest.TestCase):
         finally:
             del os.environ["SMITHSONIAN_API_KEY"]
 
-    def test_all_providers_fail_persists_diagnostics(self):
+    def test_loc_europeana_smithsonian_accept_three_arg_dispatch(self):
+        """verify_claim calls adapters as adapter(query, destination, language).
+
+        LOC, Europeana and Smithsonian must accept three positional arguments
+        without raising TypeError (regression for the argument-mismatch defect).
+        """
+        import research_providers as rp
+        import os
+        with patch.object(rp, '_http_get', return_value=self._mock_response(200, {"results": []})):
+            sources, diag = rp.provider_loc("Edo map", "Tokyo", "en")
+            self.assertEqual(diag.status, "success")
+        old = os.environ.pop("EUROPEANA_API_KEY", None)
+        try:
+            sources, diag = rp.provider_europeana("Edo", "Tokyo", "en")
+            self.assertEqual(diag.status, "skipped")
+        finally:
+            if old is not None:
+                os.environ["EUROPEANA_API_KEY"] = old
+        old2 = os.environ.pop("SMITHSONIAN_API_KEY", None)
+        try:
+            sources, diag = rp.provider_smithsonian("Edo", "Tokyo", "en")
+            self.assertEqual(diag.status, "skipped")
+        finally:
+            if old2 is not None:
+                os.environ["SMITHSONIAN_API_KEY"] = old2
+
+    def _retryable_get_factory(self, sequence):
+        """Factory returning a function that replays an HTTP status sequence.
+
+        Each entry is (status_code, content, headers_or_None). The final entry
+        is served for every call past the end of the list.
+        """
+        import requests
+        state = {"n": 0}
+
+        def fake_get(*args, **kwargs):
+            state["n"] += 1
+            idx = min(state["n"] - 1, len(sequence) - 1)
+            status, content, headers = sequence[idx]
+            resp = requests.Response()
+            resp.status_code = status
+            resp._content = content
+            if headers:
+                resp.headers = headers
+
+            def _raise():
+                if status >= 400:
+                    raise requests.HTTPError(f"HTTP {status}", response=resp)
+            resp.raise_for_status = _raise
+            return resp
+
+        return fake_get, state
+
+    def test_wikipedia_http_429_retries_then_succeeds(self):
+        """HTTP 429 with Retry-After is retried; a later 200 verifies the claim."""
+        import research_providers as rp
+        seq = [
+            (429, b"rate limited", {"Retry-After": "1"}),
+            (200, b'{"query":{"search":[{"title":"Tokugawa Ieyasu","snippet":"founder of the shogunate in 1603."}]}}', None),
+        ]
+        fake_get, state = self._retryable_get_factory(seq)
+        with patch.object(rp.requests, "get", side_effect=fake_get), \
+             patch.object(rp, '_fetch_wikipedia_page', return_value="Tokugawa Ieyasu founded the shogunate in 1603."):
+            sources, diag = rp.provider_wikipedia("Tokugawa Ieyasu", "Tokyo")
+        self.assertEqual(diag.status, "success")
+        self.assertEqual(diag.http_status, 200)
+        self.assertEqual(state["n"], 2, "one retry expected after 429")
+        self.assertGreaterEqual(len(sources), 1)
+
+    def test_wikipedia_http_429_exhausts_retries_reports_failure(self):
+        """Persistent 429 exhausts bounded retries and reports provider_failure,
+        never treating rate limiting as evidence the claim is false."""
+        import research_providers as rp
+        seq = [(429, b"rate limited", {"Retry-After": "1"})]
+        fake_get, state = self._retryable_get_factory(seq)
+        with patch.object(rp.requests, "get", side_effect=fake_get):
+            sources, diag = rp.provider_wikipedia("Tokugawa Ieyasu", "Tokyo")
+        self.assertEqual(diag.status, "failed")
+        self.assertEqual(diag.http_status, 429)
+        self.assertEqual(state["n"], rp.MAX_RETRIES + 1, "bounded retries exhausted")
+
+    def test_transient_5xx_retries_then_succeeds(self):
+        """A transient 503 is retried; a later 200 succeeds."""
+        import research_providers as rp
+        seq = [
+            (503, b"unavailable", None),
+            (200, b'{"query":{"search":[{"title":"Tokugawa Ieyasu","snippet":"founder of the shogunate in 1603."}]}}', None),
+        ]
+        fake_get, state = self._retryable_get_factory(seq)
+        with patch.object(rp.requests, "get", side_effect=fake_get), \
+             patch.object(rp, '_fetch_wikipedia_page', return_value="Tokugawa Ieyasu founded the shogunate in 1603."):
+            sources, diag = rp.provider_wikipedia("Tokugawa Ieyasu", "Tokyo")
+        self.assertEqual(diag.status, "success")
+        self.assertEqual(state["n"], 2, "one retry expected after 503")
+
+    def test_dispatch_passes_language_to_loc(self):
+        """The verify_claim dispatch path forwards the language argument to LOC."""
+        import research_providers as rp
+        seen = {}
+        def adapter(claim, destination, language="en"):
+            seen["language"] = language
+            return [], rp.ProviderDiagnostic(provider="Library of Congress", endpoint="x", query="q", status="success")
+        with patch.object(rp, 'provider_loc', side_effect=adapter):
+            sources, diag = rp.provider_loc("Tokugawa", "Tokyo", "en")
+        self.assertEqual(seen["language"], "en")
+
         import research_providers as rp
         import requests
         def raise_conn_err(*args, **kwargs):
@@ -1092,6 +1197,15 @@ class CreditsRightsFieldTests(unittest.TestCase):
         self.assertEqual(candidate["rights"], "CC0 1.0")
         self.assertEqual(candidate["source_url"], "https://example.com/source.html")
         self.assertEqual(candidate["image_url"], "https://example.com/image.jpg")
+
+    def test_map_credit_has_rights_field(self):
+        """The vector map credit carries an actual rights statement (regression
+        for the missing 'rights' field that failed credits_fields QA)."""
+        import vector_map as vm
+        import inspect
+        src = inspect.getsource(vm.render_map)
+        self.assertIn('"rights": "Public Domain"', src,
+                      "render_map credit must include an actual rights statement")
 
 
 class ModernSceneIdentityFallbackTests(unittest.TestCase):

@@ -158,7 +158,7 @@ def render_map(scene, config, asset_dir=None, idx=0):
 
     out = img.resize((W, H), Image.Resampling.LANCZOS)
     credit = {"title": "Vector location map (Natural Earth)", "author": "Natural Earth", "license": "Public Domain",
-              "rights_statement": "Public Domain (Natural Earth terms of use)", "license_url": LICENSE_URL,
+              "rights": "Public Domain", "rights_statement": "Public Domain (Natural Earth terms of use)", "license_url": LICENSE_URL,
               "source_url": "https://www.naturalearthdata.com/", "provider": "Natural Earth (vendored)",
               "match_score": None, "period_ok": None, "warnings": [],
               "search_variant": f"vector map centred {clat:.2f},{clon:.2f} span {span}°"}
