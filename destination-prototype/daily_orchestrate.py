@@ -96,20 +96,38 @@ def select_topic(paths: RunPaths) -> Optional[Dict]:
 
 
 def research_topic(topic: Dict, paths: RunPaths) -> Optional[Dict]:
-    """Research topic and save record to run-specific file."""
+    """Research topic and save record to run-specific file.
+
+    Even if the research subprocess exits non-zero (e.g. QA gate failure),
+    the research JSON is still written to args.output before the crash, so we
+    attempt to read it and return it for diagnostics/upload.
+    """
     with open(paths.topic_file, "w", encoding="utf-8") as f:
         json.dump(topic, f, ensure_ascii=False)
 
     result = run_command([
         sys.executable, "destination-prototype/research_factcheck.py", "--topic", str(paths.topic_file), "--output", str(paths.research_file)
     ])
-    if result.returncode != 0:
-        return None
 
-    if not paths.research_file.exists():
-        return None
-    with open(paths.research_file, encoding="utf-8") as f:
-        return json.load(f)
+    # Always try to read the research file: the subprocess writes it before
+    # any QA/exit failure, so diagnostics are available even on non-zero exit.
+    if paths.research_file.exists():
+        with open(paths.research_file, encoding="utf-8") as f:
+            research = json.load(f)
+        # Copy research artifacts into the review dir so they are uploaded
+        # regardless of whether the research subprocess succeeded.
+        try:
+            paths.review_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(paths.research_file, paths.review_dir / "research.json")
+        except Exception:
+            pass
+        if result.returncode != 0:
+            print(f"WARNING: research subprocess exited {result.returncode}; research JSON still available at {paths.research_file}")
+        return research
+
+    if result.returncode != 0:
+        print(f"ERROR: research subprocess exited {result.returncode} and no research file was written")
+    return None
 
 
 def generate_script(topic: Dict, research: Dict, paths: RunPaths) -> Optional[Dict]:

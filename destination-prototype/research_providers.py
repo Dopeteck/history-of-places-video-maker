@@ -50,7 +50,7 @@ class ProviderDiagnostic:
     provider: str
     endpoint: str
     query: str
-    status: str          # "success", "failed", "skipped"
+    status: str = "success"          # "success", "failed", "skipped"
     http_status: Optional[int] = None
     elapsed_ms: float = 0.0
     result_count: int = 0
@@ -150,6 +150,8 @@ def provider_wikipedia(claim: str, destination: str, language: str = "en") -> Tu
     diag = ProviderDiagnostic(provider="Wikipedia", endpoint="wikipedia.org/w/api.php", query=f"{claim} {destination}")
     sources: List[ResearchSource] = []
     start = time.time()
+    page_extract_ok = 0
+    page_extract_fail = 0
     try:
         r = _http_get(
             f"https://{language}.wikipedia.org/w/api.php",
@@ -166,6 +168,7 @@ def provider_wikipedia(claim: str, destination: str, language: str = "en") -> Tu
             title = result.get("title", "")
             content = _fetch_wikipedia_page(title, language)
             if content:
+                page_extract_ok += 1
                 snippet = _clean_html(result.get("snippet", ""))
                 excerpt = snippet or content[:400]
                 sources.append(ResearchSource(
@@ -176,7 +179,16 @@ def provider_wikipedia(claim: str, destination: str, language: str = "en") -> Tu
                     date_text="",
                     query=diag.query,
                 ))
-        diag.status = "success"
+            else:
+                page_extract_fail += 1
+        if page_extract_ok > 0:
+            diag.status = "success"
+        elif results:
+            # Search succeeded but no page extracts could be fetched.
+            diag.status = "failed"
+            diag.error = "page extract unavailable"
+        else:
+            diag.status = "success"  # zero results is not a failure
     except requests.HTTPError as e:
         diag.status = "failed"
         diag.http_status = getattr(getattr(e, "response", None), "status_code", None)

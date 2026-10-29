@@ -304,6 +304,7 @@ jobs:
             output/${{ steps.normalize.outputs.slug }}-region-short/qa-report.json
             output/${{ steps.normalize.outputs.slug }}-region-short/narration.txt
             output/${{ steps.normalize.outputs.slug }}-region-short/script.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/research.json
 
   daily-selection:
     if: github.event_name == 'schedule'

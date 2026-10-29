@@ -5,7 +5,7 @@ Schemas follow the providers' own documentation (AIC: image_id is a top-level fi
 what is returned; LoC: `id` is an http URL, `url` is https, image_url entries can be protocol-relative and an
 empty search is an HTTP 404; Cleveland: images.web is the small derivative, images.print the large one).
 No network, no models."""
-import io, sys, tempfile, unittest
+import io, json, os, sys, tempfile, unittest
 from pathlib import Path
 from unittest.mock import patch
 import numpy as np
@@ -644,6 +644,314 @@ class ScriptSceneConsistency(unittest.TestCase):
         self.assertIn("lagos", narration)
         self.assertGreaterEqual(script.word_count, 110)
         self.assertLessEqual(script.word_count, 155)
+
+
+class ProviderDiagnosticSerialization(unittest.TestCase):
+    """ProviderDiagnostic objects serialize correctly for diagnostics printing."""
+
+    def test_asdict_roundtrip(self):
+        import research_providers as rp
+        from dataclasses import asdict
+        d = rp.ProviderDiagnostic(
+            provider="Wikipedia", endpoint="wikipedia.org/w/api.php",
+            query="test query", status="failed",
+            http_status=403, elapsed_ms=250.5, result_count=0,
+            error="HTTP 403")
+        d_dict = asdict(d)
+        self.assertEqual(d_dict["provider"], "Wikipedia")
+        self.assertEqual(d_dict["status"], "failed")
+        self.assertEqual(d_dict["http_status"], 403)
+        self.assertEqual(d_dict["error"], "HTTP 403")
+
+    def test_provider_diagnostic_attribute_access(self):
+        import research_providers as rp
+        d = rp.ProviderDiagnostic(
+            provider="Library of Congress", endpoint="www.loc.gov/search/",
+            query="test", status="success",
+            http_status=200, elapsed_ms=100.0, result_count=5)
+        self.assertEqual(d.provider, "Library of Congress")
+        self.assertEqual(d.status, "success")
+        self.assertEqual(d.http_status, 200)
+        self.assertEqual(d.result_count, 5)
+        self.assertEqual(d.elapsed_ms, 100.0)
+
+
+class MultiProviderAdapterTests(unittest.TestCase):
+    """Mocked HTTP responses for each provider adapter."""
+
+    def _mock_response(self, status_code=200, json_data=None, text=""):
+        """Create a mock requests.Response."""
+        resp = requests.Response()
+        resp.status_code = status_code
+        if json_data is not None:
+            resp._content = json.dumps(json_data).encode("utf-8")
+        else:
+            resp._content = text.encode("utf-8")
+        resp.raise_for_status = lambda: None
+        return resp
+
+    def _mock_response_with_error(self, status_code):
+        """Create a mock response whose raise_for_status() raises HTTPError."""
+        import requests
+
+        def _factory(*args, **kwargs):
+            resp = requests.Response()
+            resp.status_code = status_code
+            resp._content = b"error"
+            def _raise():
+                raise requests.HTTPError(f"HTTP {status_code}", response=resp)
+            resp.raise_for_status = _raise
+            return resp
+        return _factory
+
+    def test_wikipedia_success(self):
+        import research_providers as rp
+        mock_json = {
+            "query": {
+                "search": [
+                    {"title": "Tokugawa Ieyasu", "snippet": "Tokugawa Ieyasu was the founder of the Tokugawa shogunate."}
+                ]
+            }
+        }
+        with patch.object(rp, '_http_get', return_value=self._mock_response(200, mock_json)), \
+             patch.object(rp, '_fetch_wikipedia_page', return_value="Tokugawa Ieyasu founded the shogunate in 1603."):
+            sources, diag = rp.provider_wikipedia("Tokugawa Ieyasu", "Tokyo")
+            self.assertEqual(diag.status, "success")
+            self.assertEqual(diag.http_status, 200)
+            self.assertGreaterEqual(len(sources), 1)
+            self.assertEqual(sources[0].provider, "Wikipedia")
+
+    def test_wikipedia_search_success_page_extract_fails(self):
+        import research_providers as rp
+        mock_json = {
+            "query": {
+                "search": [
+                    {"title": "Tokugawa Ieyasu", "snippet": "Tokugawa Ieyasu was the founder."}
+                ]
+            }
+        }
+        with patch.object(rp, '_http_get', return_value=self._mock_response(200, mock_json)), \
+             patch.object(rp, '_fetch_wikipedia_page', return_value=None):
+            sources, diag = rp.provider_wikipedia("Tokugawa Ieyasu", "Tokyo")
+            self.assertEqual(diag.status, "failed")
+            self.assertEqual(diag.error, "page extract unavailable")
+            self.assertEqual(len(sources), 0)
+
+    def test_wikipedia_http_403(self):
+        import research_providers as rp
+        import requests
+        with patch.object(rp, '_http_get', side_effect=self._mock_response_with_error(403)):
+            sources, diag = rp.provider_wikipedia("test", "Tokyo")
+            self.assertEqual(diag.status, "failed")
+            self.assertEqual(diag.http_status, 403)
+
+    def test_wikipedia_timeout(self):
+        import research_providers as rp
+        import requests
+        with patch.object(rp, '_http_get', side_effect=requests.Timeout("Read timed out")):
+            sources, diag = rp.provider_wikipedia("test", "Tokyo")
+            self.assertEqual(diag.status, "failed")
+            self.assertEqual(diag.error, "timeout")
+
+    def test_wikipedia_invalid_json(self):
+        import research_providers as rp
+        def invalid_json(*args, **kwargs):
+            resp = requests.Response()
+            resp.status_code = 200
+            resp._content = b"not json"
+            resp.raise_for_status = lambda: None
+            return resp
+        with patch.object(rp, '_http_get', side_effect=invalid_json):
+            sources, diag = rp.provider_wikipedia("test", "Tokyo")
+            self.assertEqual(diag.status, "failed")
+
+    def test_loc_success(self):
+        import research_providers as rp
+        mock_json = {
+            "results": [
+                {"title": "Edo Map", "description": ["Historic map of Edo"], "url": "https://loc.gov/item/123", "date": ["1603"]}
+            ]
+        }
+        with patch.object(rp, '_http_get', return_value=self._mock_response(200, mock_json)):
+            sources, diag = rp.provider_loc("Edo map", "Tokyo")
+            self.assertEqual(diag.status, "success")
+            self.assertEqual(diag.http_status, 200)
+            self.assertGreaterEqual(len(sources), 1)
+
+    def test_loc_404_is_not_failure(self):
+        import research_providers as rp
+        import requests
+        with patch.object(rp, '_http_get', side_effect=self._mock_response_with_error(404)):
+            sources, diag = rp.provider_loc("nonexistent", "Tokyo")
+            self.assertEqual(diag.status, "success")
+            self.assertEqual(diag.result_count, 0)
+
+    def test_loc_5xx_is_failure(self):
+        import research_providers as rp
+        import requests
+        with patch.object(rp, '_http_get', side_effect=self._mock_response_with_error(500)):
+            sources, diag = rp.provider_loc("test", "Tokyo")
+            self.assertEqual(diag.status, "failed")
+
+    def test_europeana_skipped_without_key(self):
+        import research_providers as rp
+        old_key = os.environ.pop("EUROPEANA_API_KEY", None)
+        try:
+            sources, diag = rp.provider_europeana("test", "Tokyo")
+            self.assertEqual(diag.status, "skipped")
+            self.assertIn("EUROPEANA_API_KEY", diag.error)
+        finally:
+            if old_key is not None:
+                os.environ["EUROPEANA_API_KEY"] = old_key
+
+    def test_europeana_http_401_no_key_leak(self):
+        import research_providers as rp
+        import requests
+        old_key = os.environ.setdefault("EUROPEANA_API_KEY", "test_key_12345")
+        try:
+            with patch.object(rp, '_http_get', side_effect=self._mock_response_with_error(401)):
+                sources, diag = rp.provider_europeana("test", "Tokyo")
+                self.assertEqual(diag.status, "failed")
+                self.assertEqual(diag.http_status, 401)
+                self.assertNotIn("test_key_12345", diag.error or "")
+        finally:
+            del os.environ["EUROPEANA_API_KEY"]
+
+    def test_smithsonian_http_403_no_key_leak(self):
+        import research_providers as rp
+        import requests
+        old_key = os.environ.setdefault("SMITHSONIAN_API_KEY", "sk_test_67890")
+        try:
+            with patch.object(rp, '_http_get', side_effect=self._mock_response_with_error(403)):
+                sources, diag = rp.provider_smithsonian("test", "Tokyo")
+                self.assertEqual(diag.status, "failed")
+                self.assertEqual(diag.http_status, 403)
+                self.assertNotIn("sk_test_67890", diag.error or "")
+        finally:
+            del os.environ["SMITHSONIAN_API_KEY"]
+
+    def test_all_providers_fail_persists_diagnostics(self):
+        import research_providers as rp
+        import requests
+        def raise_conn_err(*args, **kwargs):
+            raise requests.ConnectionError("Connection refused")
+        with patch.object(rp, 'provider_wikipedia', side_effect=raise_conn_err), \
+             patch.object(rp, 'provider_loc', side_effect=raise_conn_err):
+            vr = rp.verify_claim("Test claim", "Tokyo")
+            self.assertEqual(vr.status, "provider_failure")
+            self.assertEqual(vr.confidence, 0.0)
+            self.assertEqual(len(vr.evidence), 0)
+            self.assertEqual(len(vr.provider_diagnostics), 2)
+            self.assertEqual(len(vr.provider_failures), 2)
+
+    def test_one_provider_fails_other_succeeds(self):
+        import research_providers as rp
+        def wiki_ok(claim, dest, lang="en"):
+            src = rp.ResearchSource(
+                provider="Wikipedia", title="Test",
+                url="https://en.wikipedia.org/wiki/Test",
+                excerpt="Tokugawa Ieyasu established the shogunate in 1603.", date_text="",
+                query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=1)
+            return [src], diag
+        def loc_fail(claim, dest):
+            import requests
+            raise requests.ConnectionError("refused")
+        with patch.object(rp, 'provider_wikipedia', side_effect=wiki_ok), \
+             patch.object(rp, 'provider_loc', side_effect=loc_fail):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertEqual(vr.status, "verified")
+            self.assertIn("loc", vr.provider_failures)
+            self.assertGreater(len(vr.evidence), 0)
+
+    def test_independent_domain_counting(self):
+        import research_providers as rp
+        def wiki_ok(claim, dest, lang="en"):
+            s1 = rp.ResearchSource(
+                provider="Wikipedia", title="Page A",
+                url="https://en.wikipedia.org/wiki/Page_A",
+                excerpt="Tokugawa Ieyasu established the shogunate.", date_text="",
+                query=claim, status="success")
+            s2 = rp.ResearchSource(
+                provider="Wikipedia", title="Page B",
+                url="https://en.wikipedia.org/wiki/Page_B",
+                excerpt="The Edo period began under Tokugawa Ieyasu.", date_text="",
+                query=claim, status="success")
+            diag = rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=claim,
+                status="success", http_status=200, elapsed_ms=100, result_count=2)
+            return [s1, s2], diag
+        with patch.object(rp, 'provider_wikipedia', side_effect=wiki_ok), \
+             patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                 provider="Library of Congress", endpoint="loc.gov", query=c,
+                 status="success", http_status=200, elapsed_ms=50, result_count=0))):
+            vr = rp.verify_claim("Tokugawa Ieyasu established the shogunate", "Tokyo")
+            self.assertEqual(vr.independent_sources, 1)
+
+    def test_secrets_not_in_diagnostics(self):
+        import research_providers as rp
+        old_key = os.environ.setdefault("SMITHSONIAN_API_KEY", "sk_live_9876543210abcdef")
+        try:
+            import requests
+            def raise_with_key(*args, **kwargs):
+                err = requests.HTTPError("api_key=sk_live_9876543210abcdef caused error")
+                err.response = type('resp', (), {'status_code': 401})()
+                raise err
+            # Mock all providers so only Smithsonian's diagnostic is checked
+            with patch.object(rp, 'provider_wikipedia', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                provider="Wikipedia", endpoint="wiki.api", query=c, status="success", http_status=200, elapsed_ms=10, result_count=0))), \
+                 patch.object(rp, 'provider_loc', side_effect=lambda c, d, lang="en": ([], rp.ProviderDiagnostic(
+                     provider="Library of Congress", endpoint="loc.gov", query=c, status="success", http_status=200, elapsed_ms=10, result_count=0))), \
+                 patch.object(rp, 'provider_smithsonian', side_effect=raise_with_key):
+                vr = rp.verify_claim("test", "Tokyo")
+                found_smithsonian = False
+                for d in vr.provider_diagnostics:
+                    if d.provider == "smithsonian":
+                        found_smithsonian = True
+                        if d.error:
+                            self.assertNotIn("sk_live_9876543210abcdef", d.error)
+                            self.assertIn("***REDACTED***", d.error)
+                self.assertTrue(found_smithsonian, "Smithsonian diagnostic not found")
+        finally:
+            del os.environ["SMITHSONIAN_API_KEY"]
+
+    def test_research_persists_on_all_provider_failure(self):
+        import research_factcheck as rf
+        import requests
+        topic_data = {
+            "destination_slug": "test-city",
+            "destination": "Test City",
+            "category": "hidden_history",
+            "title": "Test Topic",
+            "description": "The city was founded in 1600 and grew rapidly during the industrial era.",
+            "narration_language": "English",
+        }
+        def all_fail(claim, dest, lang="en"):
+            raise requests.ConnectionError("refused")
+        # Patch the name used inside research_factcheck.research_topic
+        with patch.object(rf, '_verify_claim', side_effect=all_fail):
+            record = rf.research_topic(topic_data)
+        self.assertEqual(len(record.claims), 1)
+        self.assertEqual(record.claims[0].status, "provider_failure")
+        self.assertTrue(record.verification_failed)
+        self.assertGreater(len(record.provider_diagnostics), 0)
+        for d in record.provider_diagnostics:
+            self.assertIsInstance(d, dict)
+            self.assertIn("provider", d)
+            self.assertIn("status", d)
+
+    def test_artifact_paths_match_review_dir(self):
+        import daily_orchestrate as do
+        paths = do.RunPaths.create("20261029_120000", "mexico-city")
+        expected_research = paths.review_dir / "research.json"
+        path_str = str(expected_research)
+        self.assertTrue(
+            path_str.endswith("output/mexico-city-region-short/research.json") or
+            path_str.endswith("output\\mexico-city-region-short\\research.json")
+        )
+        self.assertEqual(paths.qa_report_file.name, "qa_report.json")
 
 
 if __name__ == "__main__":

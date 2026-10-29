@@ -145,7 +145,10 @@ def _claim_from_verification(vr, language: str) -> Claim:
         status=vr.status,
         independent_sources=vr.independent_sources,
         language=language,
-        provider_diagnostics=vr.provider_diagnostics,
+        provider_diagnostics=[
+            asdict(d) if hasattr(d, "__dataclass_fields__") else d
+            for d in vr.provider_diagnostics
+        ],
         provider_failures=vr.provider_failures,
     )
 
@@ -203,7 +206,10 @@ def research_topic(topic_data: Dict) -> ResearchRecord:
         for s in vr.evidence:
             if s.url:
                 all_sources.append(s.url)
-        all_diagnostics.extend(vr.provider_diagnostics)
+        all_diagnostics.extend(
+            asdict(d) if hasattr(d, "__dataclass_fields__") else d
+            for d in vr.provider_diagnostics
+        )
         all_provider_failures.extend(vr.provider_failures)
 
     # Deduplicate sources
