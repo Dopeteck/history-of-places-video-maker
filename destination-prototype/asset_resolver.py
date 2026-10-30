@@ -750,8 +750,108 @@ def _download(c):
             time.sleep(delay)
         finally:
             _download_semaphore.release()
-
     raise last
+
+
+def validate_pinned_asset(scene: Dict[str, Any], idx: int, config: Dict[str, Any],
+                          asset_dir: Path, used: Set[str],
+                          output: Path) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Validate and use a pre-vetted inventory asset (pinned image) without provider search.
+
+    This is the image-first render path: the asset was already discovered, vetted
+    (rights, format, size, duplicate, relevance) in the inventory stage, so here
+    we only download it, re-confirm the gates still pass, and return it. No
+    provider search and no CLIP re-scoring occur -- the inventory's relevance
+    score is preserved.
+
+    `scene` must carry:
+      - pinned_image: the asset_url (https) to download
+      - asset_metadata: dict with title, author, license/rights, rights_statement,
+        license_url, asset_url/source_url, provider, identifier, date_text,
+        year_range, dimensions, categories, facets, digest
+    """
+    meta = scene.get("asset_metadata") or {}
+    asset_url = scene.get("pinned_image") or meta.get("asset_url") or meta.get("source_url")
+    if not asset_url or not str(asset_url).startswith("https://"):
+        raise ResolverError(f"Scene '{scene.get('title')}' has no valid pinned_image asset_url.", diagnostics())
+
+    # Rights re-confirmation (gate never dropped for pinned assets).
+    rights = str(meta.get("rights") or meta.get("license") or "")
+    title_for_error = str(scene.get("title") or "Untitled")
+    if not rights or not _rights_ok(rights):
+        raise ResolverError(f"Pinned asset '{title_for_error}' has unacceptable rights: {rights or '<none>'}.", diagnostics())
+    if _needs_attribution(rights) and not _has_author(meta.get("author", "")):
+        raise ResolverError(f"Attribution-required pinned asset '{title_for_error}' has no author.", diagnostics())
+
+    # Download.
+    try:
+        started = time.perf_counter()
+        data = _download({"image_url": asset_url})
+        print(f"TIMING pinned_download scene={scene.get('title')} seconds={time.perf_counter()-started:.2f}")
+    except Exception as e:
+        raise ResolverError(f"Failed to download pinned asset for '{scene.get('title')}': {type(e).__name__}: {e}", diagnostics())
+
+    # Format + size gate (same as resolver).
+    if len(data) < 30000 or data[:4] in (b"%PDF", b"AT&TD", b"FORM"):
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' failed the format gate.", diagnostics())
+    try:
+        im = Image.open(io.BytesIO(data))
+        if im.format not in ("JPEG", "PNG", "WEBP", "TIFF"):
+            raise ResolverError(f"Pinned asset for '{scene.get('title')}' has unsupported format {im.format}.", diagnostics())
+        if not _size_ok(im, config):
+            raise ResolverError(f"Pinned asset for '{scene.get('title')}' failed the size/upscale gate at {im.size}.", diagnostics())
+    except ResolverError:
+        raise
+    except Exception as e:
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' is not a valid image: {type(e).__name__}: {e}", diagnostics())
+
+    # Duplicate gate (normalized by decoded RGB pixels).
+    digest = hashlib.sha256(im.convert("RGB").tobytes()).hexdigest()
+    if digest in used or asset_url in used:
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' is a duplicate of an already-used image.", diagnostics())
+    used.add(digest); used.add(asset_url)
+
+    dims = list(im.size)
+    saved = im.convert("RGB")
+    filename = f"scene_{idx:02d}.jpg"
+    path = Path(asset_dir) / filename
+    saved.save(path, quality=94)
+
+    image_type = scene.get("image_type", "historic")
+    period_ok = None
+    if image_type == "modern":
+        yr = meta.get("year_range")
+        dt = str(meta.get("date_text", "")).lower()
+        years = re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt)
+        if years:
+            ys = [int(y) for y in years]
+            period_ok = min(ys) >= 1950
+        elif yr and len(yr) == 2:
+            period_ok = yr[1] >= 1950
+
+    credit = {
+        "content_sha256": digest,
+        "scene": scene.get("title"),
+        "file": str(path),
+        "title": meta.get("title") or "Untitled",
+        "author": meta.get("author") or "Not stated",
+        "license": rights,
+        "rights": rights,
+        "rights_statement": meta.get("rights_statement") or rights,
+        "license_url": meta.get("license_url") or meta.get("rights_url") or "",
+        "asset_url": asset_url,
+        "source_url": meta.get("source_url") or asset_url,
+        "provider": meta.get("provider") or "inventory",
+        "match_score": meta.get("relevance_score") or meta.get("clip_score"),
+        "clip_score": meta.get("clip_score"),
+        "period_ok": period_ok,
+        "search_variant": "inventory pinned asset: " + str(meta.get("discovered_via", "")),
+        "warnings": ["Pinned from pre-vetted regional inventory; no provider re-search performed."],
+        "dimensions": dims,
+        "diagnostics": {"pinned": True, "discovered_via": meta.get("discovered_via", "")},
+    }
+    return saved, credit
+
 
 def resolve_scene_image(scene, idx, config, asset_dir, used, output):
     """Discover across providers, filter rights/format/size, rank with CLIP, save best."""

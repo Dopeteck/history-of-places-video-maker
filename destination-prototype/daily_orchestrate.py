@@ -15,7 +15,11 @@ DATA_DIR = ROOT / "destination-prototype" / "data"
 REGIONS_DIR = ROOT / "regions"
 OUTPUT_DIR = ROOT / "output"
 
-from scene_planner import plan_scenes
+# Image-first pipeline modules (story emerges from material, not the reverse).
+from image_inventory import discover_inventory, load_inventory
+from story_from_inventory import (cluster_inventory, select_story,
+                                  plan_scenes_from_story, generate_story_narration,
+                                  save_story, load_story, StorySelection)
 
 
 @dataclass
@@ -351,26 +355,8 @@ def main():
         region_slug = topic["destination_slug"]
     paths = RunPaths.create(run_id, region_slug)
 
-    # Stage 2: Research
-    print("\n[2/8] Researching and fact-checking...")
-    research = research_topic(topic, paths)
-    if not research:
-        print("ERROR: Research failed")
-        sys.exit(1)
-    print(f"  Extracted {len(research.get('claims', []))} claims")
-    artifacts["research"] = research
-
-    # Stage 3: Generate script
-    print("\n[3/8] Generating narration script...")
-    script = generate_script(topic, research, paths)
-    if not script:
-        print("ERROR: Script generation failed")
-        sys.exit(1)
-    print(f"  Words: {script.get('word_count', 0)}, Est. duration: {script.get('estimated_duration', 0)}s")
-    artifacts["script"] = script
-
-    # Stage 4: Plan scenes from the selected story
-    print("\n[4/8] Planning scenes from the selected story...")
+    # Stage 2: Discover region-first visual inventory (before any scene is authored).
+    print("\n[2/8] Discovering region-first visual inventory...")
     config_path = REGIONS_DIR / f"{topic['destination_slug']}.yaml"
     if not config_path.exists():
         print(f"ERROR: Region config not found: {config_path}")
@@ -378,23 +364,103 @@ def main():
     with open(config_path, encoding="utf-8") as f:
         import yaml
         dest_cfg = yaml.safe_load(f)
-    # Use the destination config's human-reviewed, rights-aware scenes directly
-    # (data-driven destination support). Fall back to the story planner only when
-    # a config ships no scene list.
-    config_scenes = dest_cfg.get("scenes") or []
-    if config_scenes:
-        scenes = [dict(s) for s in config_scenes]
-        for i, s in enumerate(scenes, 1):
-            s.setdefault("scene_id", f"{topic['destination_slug']}:s{i:02d}")
-            s.setdefault("scene_order", i)
-            print(f"  config scene {i}: {s.get('title')} ({s.get('image_type')})")
+    # Reuse a cached inventory when present; otherwise discover fresh.
+    inventory = load_inventory(topic["destination_slug"])
+    if inventory is None:
+        inventory = discover_inventory(dest_cfg)
+    print(f"  Inventory: {inventory.total_discovered} eligible assets, "
+          f"{len([c for c in inventory.coverage if not c.skipped])} providers attempted")
+    artifacts["inventory"] = {
+        "region": inventory.region_slug,
+        "total_discovered": inventory.total_discovered,
+        "total_eligible": inventory.total_eligible,
+        "coverage": [asdict(c) for c in inventory.coverage],
+    }
+    if inventory.total_eligible == 0:
+        print("ERROR: No eligible assets discovered; cannot build a story from an empty inventory.")
+        print("  Coverage:", [(c.provider, c.results_returned, c.skipped, c.skip_reason, len(c.errors))
+                          for c in inventory.coverage])
+        sys.exit(1)
+
+    # Stage 3: Select a story from the inventory (story emerges from material).
+    print("\n[3/8] Selecting story from inventory...")
+    story_selection = load_story(topic["destination_slug"])
+    if story_selection is None:
+        clusters = cluster_inventory(inventory)
+        story = select_story(clusters)
+        if story is None:
+            print("ERROR: No supported story could be selected from the inventory.")
+            sys.exit(1)
+        if story.rejection_reason:
+            print(f"WARNING: {story.rejection_reason}")
+        scenes = plan_scenes_from_story(story, inventory)
+        if not scenes:
+            print("ERROR: Could not plan scenes from selected assets.")
+            sys.exit(1)
+        narration = generate_story_narration(story, scenes)
+        story_selection = StorySelection(
+            region_slug=topic["destination_slug"],
+            region_name=topic["destination_name"],
+            selected_theme=story.selected_theme,
+            story_title=story.title,
+            story_summary=story.summary,
+            story_assets=story.assets,
+            candidates=story.candidates if hasattr(story, 'candidates') else [],
+            claims=[],
+            claim_support={},
+        )
+        save_story(topic["destination_slug"], story_selection)
     else:
-        scenes = plan_scenes(topic, dest_cfg)
-    with open(paths.scene_plan_file, "w", encoding="utf-8") as f:
-        json.dump(scenes, f, indent=2, ensure_ascii=False)
+        story = None  # loaded from cache; scenes rebuilt below
+        narration = generate_story_narration(story_selection, plan_scenes_from_story(
+            type("SC", (), {"theme": story_selection.selected_theme, "assets": story_selection.story_assets})(),
+            inventory))
+    print(f"  Selected: {story_selection.story_title} ({story_selection.selected_theme}) — "
+          f"{len(story_selection.story_assets)} assets")
+    artifacts["story"] = story_selection.to_dict()
+
+    # Stage 4: Plan scenes from selected assets (each scene references a pinned asset).
+    print("\n[4/8] Planning scenes from selected assets...")
+    if story is not None:
+        scenes = plan_scenes_from_story(story, inventory)
+    else:
+        scenes = plan_scenes_from_story(
+            type("SC", (), {"theme": story_selection.selected_theme,
+                            "assets": story_selection.story_assets})(),
+            inventory)
+    if not scenes:
+        print("ERROR: Could not plan scenes from selected assets.")
+        sys.exit(1)
     scene_count = len(scenes)
     print(f"  Planned scenes: {scene_count}")
+    for s in scenes:
+        print(f"  scene {s.get('scene_order')}: {s.get('title')} ({s.get('image_type')}) "
+              f"pinned={bool(s.get('pinned_image'))}")
+    with open(paths.scene_plan_file, "w", encoding="utf-8") as f:
+        json.dump(scenes, f, indent=2, ensure_ascii=False)
     artifacts["scene_plan"] = scenes
+
+    # Stage 5: Research claims suggested by the selected story.
+    print("\n[5/8] Researching claims from the selected story...")
+    topic_for_research = dict(topic)
+    topic_for_research["description"] = narration
+    topic_for_research["title"] = story_selection.story_title
+    research = research_topic(topic_for_research, paths)
+    if not research:
+        print("ERROR: Research failed")
+        sys.exit(1)
+    print(f"  Extracted {len(research.get('claims', []))} claims")
+    artifacts["research"] = research
+
+    # Stage 6: Generate narration script from the story (not from a prewritten config story).
+    print("\n[6/8] Generating narration script from story...")
+    topic_for_script = dict(topic_for_research)
+    script = generate_script(topic_for_script, research, paths)
+    if not script:
+        print("ERROR: Script generation failed")
+        sys.exit(1)
+    print(f"  Words: {script.get('word_count', 0)}, Est. duration: {script.get('estimated_duration', 0)}s")
+    artifacts["script"] = script
 
     # Stage 5: Validate claims
     print("\n[5/8] Validating claims...")

@@ -126,8 +126,13 @@ def score_candidate(title,description,cats,required):
  hay=(title+" "+description+" "+" ".join(cats)).lower()
  return sum(3 if k.lower() in title.lower() else 2 if k.lower() in description.lower() else 1 for k in required if k.lower() in hay)
 def get_image(scene,idx,config,asset_dir,used,output):
- from asset_resolver import resolve_scene_image
- return resolve_scene_image(scene,idx,config,asset_dir,used,output)
+  from asset_resolver import resolve_scene_image, validate_pinned_asset
+  # Image-first path: if the scene carries a pinned inventory asset, validate
+  # and use it directly (no provider re-search, no CLIP re-scoring). Otherwise
+  # fall back to the resolver's provider search.
+  if scene.get("pinned_image"):
+    return validate_pinned_asset(scene,idx,config,asset_dir,used,output)
+  return resolve_scene_image(scene,idx,config,asset_dir,used,output)
 def local_image(scene,idx,config,used):
  # Prefer repository stills only when the manifest proves both provenance and license.
  manifest_path=ROOT/"destination-prototype"/"assets_manifest.json"
