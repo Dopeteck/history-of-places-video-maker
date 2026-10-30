@@ -351,8 +351,8 @@ def _provider_enabled(name: str, config: Dict[str, Any]) -> bool:
 
 
 def discover_inventory(config: Dict[str, Any],
-                       max_items_per_provider: int = 12,
-                       max_downloads: int = 30,
+                       max_items_per_provider: int = 25,
+                       max_downloads: int = 80,
                        persist: bool = True) -> RegionInventory:
     """Discover and vet a region-first visual inventory.
 
