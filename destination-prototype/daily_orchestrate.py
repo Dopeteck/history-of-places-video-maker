@@ -19,7 +19,7 @@ OUTPUT_DIR = ROOT / "output"
 from image_inventory import discover_inventory, load_inventory
 from story_from_inventory import (cluster_inventory, select_story,
                                   plan_scenes_from_story, generate_story_narration,
-                                  save_story, load_story, StorySelection)
+                                  save_story, load_story, StorySelection, StoryCandidate)
 
 
 @dataclass
@@ -390,9 +390,9 @@ def main():
         story = select_story(clusters)
         if story is None:
             print("ERROR: No supported story could be selected from the inventory.")
+            print("  Coverage:", [(c.provider, c.results_returned, c.skipped, c.skip_reason, len(c.errors))
+                              for c in inventory.coverage])
             sys.exit(1)
-        if story.rejection_reason:
-            print(f"WARNING: {story.rejection_reason}")
         scenes = plan_scenes_from_story(story, inventory)
         if not scenes:
             print("ERROR: Could not plan scenes from selected assets.")
@@ -401,33 +401,40 @@ def main():
         story_selection = StorySelection(
             region_slug=topic["destination_slug"],
             region_name=topic["destination_name"],
-            selected_theme=story.selected_theme,
+            selected_theme=story.theme,
             story_title=story.title,
             story_summary=story.summary,
             story_assets=story.assets,
-            candidates=story.candidates if hasattr(story, 'candidates') else [],
+            candidates=[],
             claims=[],
             claim_support={},
         )
         save_story(topic["destination_slug"], story_selection)
     else:
-        story = None  # loaded from cache; scenes rebuilt below
-        narration = generate_story_narration(story_selection, plan_scenes_from_story(
-            type("SC", (), {"theme": story_selection.selected_theme, "assets": story_selection.story_assets})(),
-            inventory))
+        # Reconstruct a typed StoryCandidate from the cached selection so
+        # scene planning uses the winning story's assets exclusively.
+        story = StoryCandidate(
+            theme=story_selection.selected_theme,
+            title=story_selection.story_title,
+            summary=story_selection.story_summary,
+            assets=story_selection.story_assets,
+            claims=story_selection.claims,
+            claim_support=story_selection.claim_support,
+        )
+        scenes = plan_scenes_from_story(story, inventory)
+        if not scenes:
+            print("ERROR: Could not plan scenes from selected assets.")
+            sys.exit(1)
+        narration = generate_story_narration(story, scenes,
+                                             claims=story_selection.claims,
+                                             claim_support=story_selection.claim_support)
     print(f"  Selected: {story_selection.story_title} ({story_selection.selected_theme}) — "
           f"{len(story_selection.story_assets)} assets")
     artifacts["story"] = story_selection.to_dict()
 
     # Stage 4: Plan scenes from selected assets (each scene references a pinned asset).
     print("\n[4/8] Planning scenes from selected assets...")
-    if story is not None:
-        scenes = plan_scenes_from_story(story, inventory)
-    else:
-        scenes = plan_scenes_from_story(
-            type("SC", (), {"theme": story_selection.selected_theme,
-                            "assets": story_selection.story_assets})(),
-            inventory)
+    scenes = plan_scenes_from_story(story, inventory)
     if not scenes:
         print("ERROR: Could not plan scenes from selected assets.")
         sys.exit(1)

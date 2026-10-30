@@ -276,8 +276,7 @@ class StorySelectionTests(unittest.TestCase):
                                  created_at=str(date.today()), items=few)
         clusters = sfi.cluster_inventory(inv)
         story = sfi.select_story(clusters)
-        self.assertIsNotNone(story.rejection_reason)
-        self.assertIn("insufficient", story.rejection_reason[0])
+        self.assertIsNone(story, "select_story must return None when <6 viable assets")
 
     def test_empty_inventory_yields_no_story(self):
         inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
@@ -350,5 +349,292 @@ class ScenePlanningTests(unittest.TestCase):
         self.assertEqual(len(scenes), 1)
 
 
+class StoryCandidateToSelectionTests(unittest.TestCase):
+    """Defect 1: StoryCandidate converts correctly to StorySelection."""
+
+    def test_story_candidate_to_selection_preserves_all_fields(self):
+        assets = [
+            sfi.AssetRef(provider="_loc", title="Asset A", image_url="https://a.com/a.jpg",
+                         source_url="https://a.com/item/a", rights="Public Domain",
+                         rights_statement="Public Domain", rights_url="", license_url="",
+                         author="A", identifier="1", date_text="1860", year_range=[1860, 1870],
+                         dimensions=[800, 600], digest="d-a", clip_score=0.5, relevance_score=0.8,
+                         image_type="historic"),
+            sfi.AssetRef(provider="_met", title="Asset B", image_url="https://a.com/b.jpg",
+                         source_url="https://a.com/item/b", rights="CC0", rights_statement="CC0",
+                         rights_url="", license_url="", author="B", identifier="2",
+                         date_text="1900", year_range=[1900, 1910], dimensions=[800, 600],
+                         digest="d-b", clip_score=0.6, relevance_score=0.9, image_type="modern"),
+        ]
+        story = sfi.StoryCandidate(
+            theme="architecture", title="Arch story", summary="A story about architecture",
+            assets=assets, total_score=0.85, claims=["Claim one"],
+            claim_support={"Claim one": ["https://source.com/1"]})
+        # Construct StorySelection exactly as daily_orchestrate does.
+        selection = sfi.StorySelection(
+            region_slug="test-city", region_name="Test City",
+            selected_theme=story.theme,
+            story_title=story.title,
+            story_summary=story.summary,
+            story_assets=story.assets,
+            candidates=[],
+            claims=story.claims,
+            claim_support=story.claim_support,
+        )
+        self.assertEqual(selection.selected_theme, "architecture")
+        self.assertEqual(selection.story_title, "Arch story")
+        self.assertEqual(len(selection.story_assets), 2)
+        self.assertEqual(selection.claims, ["Claim one"])
+        self.assertEqual(selection.claim_support, {"Claim one": ["https://source.com/1"]})
+        # Serialisation round-trip preserves the theme field.
+        d = selection.to_dict()
+        self.assertEqual(d["selected_theme"], "architecture")
+        self.assertEqual(d["story_title"], "Arch story")
+
+    def test_load_story_round_trip_preserves_theme(self):
+        assets = [
+            sfi.AssetRef(provider="_loc", title="Asset A", image_url="https://a.com/a.jpg",
+                         source_url="https://a.com/item/a", rights="Public Domain",
+                         rights_statement="Public Domain", rights_url="", license_url="",
+                         author="A", identifier="1", date_text="1860", year_range=[1860, 1870],
+                         dimensions=[800, 600], digest="d-a", clip_score=0.5, relevance_score=0.8,
+                         image_type="historic"),
+        ]
+        selection = sfi.StorySelection(
+            region_slug="tc", region_name="Test City", selected_theme="architecture",
+            story_title="Arch", story_summary="s", story_assets=assets,
+            candidates=[], claims=["c"], claim_support={"c": ["https://x.com"]})
+        sfi.save_story("tc", selection)
+        loaded = sfi.load_story("tc")
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.selected_theme, "architecture")
+        self.assertEqual(loaded.story_title, "Arch")
+        self.assertEqual(len(loaded.story_assets), 1)
+        self.assertEqual(loaded.claims, ["c"])
+
+
+class SceneAssetsExclusivityTests(unittest.TestCase):
+    """Defect 2: scenes use only the selected story's assets, no cross-cluster leakage."""
+
+    def _make_inv_item(self, theme, j, digest, provider="_loc"):
+        return ii.InventoryItem(
+            provider=provider, title=f"{theme} item {j}", description=f"a {theme} thing",
+            image_url=f"https://ex.com/{theme}/{j}.jpg",
+            source_url=f"https://ex.com/item/{theme}/{j}", rights="Public Domain",
+            rights_statement="Public Domain", rights_url="", license_url="",
+            author="A", identifier=str(j), date_text="1850", year_range=[1850, 1860],
+            dimensions=[400, 400], digest=digest, clip_score=0.5, relevance_score=0.7,
+            eligible=True, discovered_via=theme, discovered_at=str(date.today()))
+
+    def _make_asset_ref(self, item: ii.InventoryItem) -> sfi.AssetRef:
+        return sfi.AssetRef(
+            provider=item.provider, title=item.title, image_url=item.image_url,
+            source_url=item.source_url, rights=item.rights,
+            rights_statement=item.rights_statement, rights_url=item.rights_url,
+            license_url=item.license_url, author=item.author, identifier=item.identifier,
+            date_text=item.date_text, year_range=item.year_range, dimensions=item.dimensions,
+            digest=item.digest, categories=item.categories, facets=item.facets,
+            clip_score=item.clip_score, relevance_score=item.relevance_score,
+            image_type="historic")
+
+    def test_scenes_use_only_selected_story_assets(self):
+        # Two distinct clusters: architecture and trade.
+        arch_items = [self._make_inv_item("architecture", j, f"arch-d-{j}") for j in range(8)]
+        trade_items = [self._make_inv_item("trade", j, f"trade-d-{j}") for j in range(8)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=arch_items + trade_items)
+
+        # Winning story = architecture cluster only.
+        arch_assets = [self._make_asset_ref(i) for i in arch_items]
+        story = sfi.StoryCandidate(theme="architecture", title="Arch story", summary="s",
+                                   assets=arch_assets, total_score=0.9)
+        scenes = sfi.plan_scenes_from_story(story, inv)
+        self.assertGreaterEqual(len(scenes), 1)
+        # No scene may reference a trade asset.
+        pinned_urls = {s["pinned_image"] for s in scenes}
+        trade_urls = {i.image_url for i in trade_items}
+        self.assertTrue(pinned_urls.isdisjoint(trade_urls),
+                        f"Trade assets leaked into architecture scenes: {pinned_urls & trade_urls}")
+        # Every scene's pinned image belongs to the architecture cluster.
+        arch_urls = {i.image_url for i in arch_items}
+        self.assertTrue(pinned_urls.issubset(arch_urls),
+                        f"Non-architecture assets used: {pinned_urls - arch_urls}")
+
+    def test_no_cross_cluster_substitution(self):
+        arch_items = [self._make_inv_item("architecture", j, f"arch-d-{j}") for j in range(6)]
+        trade_items = [self._make_inv_item("trade", j, f"trade-d-{j}") for j in range(6)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=arch_items + trade_items)
+        story = sfi.StoryCandidate(theme="architecture", title="Arch story", summary="s",
+                                   assets=[self._make_asset_ref(i) for i in arch_items],
+                                   total_score=0.9)
+        scenes = sfi.plan_scenes_from_story(story, inv)
+        self.assertEqual(len(scenes), 6)
+        for s in scenes:
+            self.assertIn(s["pinned_image"], {i.image_url for i in arch_items})
+            self.assertNotIn(s["pinned_image"], {i.image_url for i in trade_items})
+
+
+class NarrationTests(unittest.TestCase):
+    """Defect 3: narration is historical, not a catalogue of assets/licences."""
+
+    def test_narration_excludes_licence_and_provider_filler(self):
+        assets = [
+            sfi.AssetRef(provider="_loc", title="Cathedral", image_url="https://a.com/c.jpg",
+                         source_url="https://a.com/item/c", rights="CC BY",
+                         rights_statement="CC BY", rights_url="https://creativecommons.org/licenses/by/4.0/",
+                         license_url="https://creativecommons.org/licenses/by/4.0/", author="Photographer",
+                         identifier="1", date_text="1880", year_range=[1880, 1890],
+                         dimensions=[800, 600], digest="d-c", clip_score=0.5, relevance_score=0.8,
+                         image_type="historic"),
+        ]
+        story = sfi.StoryCandidate(theme="architecture", title="Cathedrals of Test City",
+                                   summary="Historic cathedrals", assets=assets,
+                                   claims=["The cathedral was consecrated in 1880."],
+                                   claim_support={"The cathedral was consecrated in 1880.": ["https://source.com"]})
+        scenes = [{"asset_metadata": {"title": "Cathedral", "provider": "_loc", "rights": "CC BY"}}]
+        narration = sfi.generate_story_narration(story, scenes,
+                                                 claims=story.claims,
+                                                 claim_support=story.claim_support)
+        lower = narration.lower()
+        # Licence and attribution language must not appear in spoken narration.
+        self.assertNotIn("cc by", lower)
+        self.assertNotIn("creative commons", lower)
+        self.assertNotIn("licence", lower)
+        self.assertNotIn("license", lower)
+        self.assertNotIn("provider", lower)
+        self.assertNotIn("rights", lower)
+        # Historical claim must be present.
+        self.assertIn("consecrated in 1880", lower)
+        self.assertIn("cathedrals of test city", lower)
+
+
+class InsufficientStoryTests(unittest.TestCase):
+    """Defect 4: insufficient inventory stops the story honestly (select_story returns None)."""
+
+    def test_select_story_returns_none_for_insufficient_assets(self):
+        items = [ii.InventoryItem(
+            provider="_loc", title=f"Old building {j}", description=f"historic building scene {j}",
+            image_url=f"https://ex.com/a{j}.jpg", source_url=f"https://ex.com/item/j{j}",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="A", identifier=str(j), date_text="1860",
+            year_range=[1860, 1870], dimensions=[800, 600], digest=f"d-{j}",
+            clip_score=0.5, relevance_score=0.8, eligible=True,
+            discovered_via="q", discovered_at=str(date.today())) for j in range(3)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=items)
+        clusters = sfi.cluster_inventory(inv)
+        story = sfi.select_story(clusters)
+        self.assertIsNone(story, "select_story must return None when <6 viable assets")
+
+    def test_select_story_returns_story_for_sufficient_assets(self):
+        items = [ii.InventoryItem(
+            provider="_loc", title=f"Old building {j}", description=f"historic building scene {j}",
+            image_url=f"https://ex.com/a{j}.jpg", source_url=f"https://ex.com/item/j{j}",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="A", identifier=str(j), date_text="1860",
+            year_range=[1860, 1870], dimensions=[800, 600], digest=f"d-{j}",
+            clip_score=0.5, relevance_score=0.8, eligible=True,
+            discovered_via="q", discovered_at=str(date.today())) for j in range(8)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=items)
+        clusters = sfi.cluster_inventory(inv)
+        story = sfi.select_story(clusters)
+        self.assertIsNotNone(story)
+        self.assertGreaterEqual(len(story.assets), 6)
+
+
+class GlobalRegionTests(unittest.TestCase):
+    """Defect 5: same code works with unrelated regions without regional branching."""
+
+    def test_unrelated_region_inventory_and_story(self):
+        # A completely different region (Lagos-style) with items all matching
+        # the trade theme, so they cluster into one viable story.
+        items = [
+            ii.InventoryItem(provider="_loc", title="Lagos market", description="historic market and port trade scene",
+                             image_url="https://ex.com/lm1.jpg", source_url="https://ex.com/i1",
+                             rights="Public Domain", rights_statement="Public Domain",
+                             rights_url="", license_url="", author="A", identifier="1",
+                             date_text="1950", year_range=[1950, 1960], dimensions=[800, 600],
+                             digest="dlm1", clip_score=0.5, relevance_score=0.9,
+                             eligible=True, discovered_via="lagos market", discovered_at=str(date.today())),
+            ii.InventoryItem(provider="_met", title="Lagos port", description="historic port and harbour trade",
+                             image_url="https://ex.com/lp1.jpg", source_url="https://ex.com/i2",
+                             rights="CC0", rights_statement="CC0", rights_url="",
+                             license_url="", author="B", identifier="2", date_text="1960",
+                             year_range=[1960, 1970], dimensions=[800, 600], digest="dlp1",
+                             clip_score=0.5, relevance_score=0.9, eligible=True,
+                             discovered_via="lagos port", discovered_at=str(date.today())),
+            ii.InventoryItem(provider="_aic", title="Lagos harbour", description="historic harbour commerce",
+                             image_url="https://ex.com/lh1.jpg", source_url="https://ex.com/i3",
+                             rights="Public Domain", rights_statement="Public Domain",
+                             rights_url="", license_url="", author="C", identifier="3",
+                             date_text="1940", year_range=[1940, 1950], dimensions=[800, 600],
+                             digest="dlh1", clip_score=0.5, relevance_score=0.9, eligible=True,
+                             discovered_via="lagos harbour", discovered_at=str(date.today())),
+            ii.InventoryItem(provider="_nga", title="Lagos bazaar", description="historic bazaar marketplace",
+                             image_url="https://ex.com/lbz1.jpg", source_url="https://ex.com/i4",
+                             rights="CC BY", rights_statement="CC BY", rights_url="",
+                             license_url="", author="D", identifier="4", date_text="1930",
+                             year_range=[1930, 1940], dimensions=[800, 600], digest="dlbz1",
+                             clip_score=0.5, relevance_score=0.9, eligible=True,
+                             discovered_via="lagos bazaar", discovered_at=str(date.today())),
+            ii.InventoryItem(provider="_loc", title="Lagos docks", description="historic docks and shipping",
+                             image_url="https://ex.com/ldk1.jpg", source_url="https://ex.com/i5",
+                             rights="Public Domain", rights_statement="Public Domain",
+                             rights_url="", license_url="", author="E", identifier="5",
+                             date_text="1970", year_range=[1970, 1980], dimensions=[800, 600],
+                             digest="dldk1", clip_score=0.5, relevance_score=0.8, eligible=True,
+                             discovered_via="lagos docks", discovered_at=str(date.today())),
+            ii.InventoryItem(provider="_met", title="Lagos warehouse", description="historic warehouse and storage",
+                             image_url="https://ex.com/lw1.jpg", source_url="https://ex.com/i6",
+                             rights="CC0", rights_statement="CC0", rights_url="",
+                             license_url="", author="F", identifier="6", date_text="1955",
+                             year_range=[1955, 1965], dimensions=[800, 600], digest="dlw1",
+                             clip_score=0.5, relevance_score=0.8, eligible=True,
+                             discovered_via="lagos warehouse", discovered_at=str(date.today())),
+        ]
+        inv = ii.RegionInventory(region_slug="lagos", region_name="Lagos", country="Nigeria",
+                                 created_at=str(date.today()), items=items)
+        clusters = sfi.cluster_inventory(inv)
+        # Should discover clusters without any Lagos-specific code.
+        self.assertGreaterEqual(len(clusters), 1)
+        story = sfi.select_story(clusters)
+        self.assertIsNotNone(story)
+        self.assertGreaterEqual(len(story.assets), 6)
+        scenes = sfi.plan_scenes_from_story(story, inv)
+        self.assertGreaterEqual(len(scenes), 1)
+        # Narration should not contain licence filler.
+        narration = sfi.generate_story_narration(story, scenes)
+        self.assertNotIn("cc by", narration.lower())
+        self.assertNotIn("creative commons", narration.lower())
+
+    def test_no_city_specific_code_paths(self):
+        # The same functions handle Tokyo, Lagos, Paris with no branching.
+        for slug, name, country in [("tokyo", "Tokyo", "Japan"), ("lagos", "Lagos", "Nigeria"),
+                                     ("paris", "Paris", "France")]:
+            items = [ii.InventoryItem(
+                provider="_loc", title=f"Old {name} building {j}",
+                description=f"historic {name.lower()} building and temple scene",
+                image_url=f"https://ex.com/{slug}/a{j}.jpg",
+                source_url=f"https://ex.com/{slug}/i{j}", rights="Public Domain",
+                rights_statement="Public Domain", rights_url="", license_url="",
+                author="A", identifier=str(j), date_text="1880", year_range=[1880, 1890],
+                dimensions=[800, 600], digest=f"{slug}-d-{j}", clip_score=0.5,
+                relevance_score=0.8, eligible=True, discovered_via=f"{name} history",
+                discovered_at=str(date.today())) for j in range(8)]
+            inv = ii.RegionInventory(region_slug=slug, region_name=name, country=country,
+                                     created_at=str(date.today()), items=items)
+            clusters = sfi.cluster_inventory(inv)
+            story = sfi.select_story(clusters)
+            self.assertIsNotNone(story, f"select_story failed for {name}")
+            scenes = sfi.plan_scenes_from_story(story, inv)
+            self.assertGreaterEqual(len(scenes), 1, f"plan_scenes failed for {name}")
+            for s in scenes:
+                self.assertTrue(s["pinned_image"].startswith("https://"))
+                self.assertIn("asset_metadata", s)
+
+
 if __name__ == "__main__":
     unittest.main()
+

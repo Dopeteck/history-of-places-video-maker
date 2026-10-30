@@ -290,11 +290,12 @@ def provider_list(assets: List[AssetRef]) -> str:
 
 
 def select_story(clusters: List[Tuple[str, List[InventoryItem]]],
-                 claim_support: Optional[Dict[str, List[str]]] = None) -> StoryCandidate:
+                 claim_support: Optional[Dict[str, List[str]]] = None) -> Optional[StoryCandidate]:
     """Select the best-supported candidate story from inventory clusters.
 
     Ranking: evidence strength, asset variety, coherence, visual variety,
-    duration fit. A theme with few assets or weak evidence is not selected.
+    duration fit. Returns None when no candidate has enough assets to support
+    a 45-60s video -- the caller must stop honestly rather than fabricate.
     """
     claim_support = claim_support or {}
     candidates: List[StoryCandidate] = []
@@ -302,16 +303,10 @@ def select_story(clusters: List[Tuple[str, List[InventoryItem]]],
         cand = _score_candidate(theme, items, claim_support)
         candidates.append(cand)
 
-    # Filter out stories too thin to support a 45-60s video (need >= 6 distinct assets).
+    # Only stories with enough distinct assets can support a 45-60s video.
     viable = [c for c in candidates if len(c.assets) >= 6]
     if not viable:
-        # Return the best candidate anyway but flag it as insufficient.
-        best = max(candidates, key=lambda c: c.total_score) if candidates else None
-        if best:
-            best.rejection_reason = ("insufficient_assets",
-                                     f"Only {len(best.assets)} eligible assets; "
-                                     f"need at least 6 for a 45-60s short.")
-        return best
+        return None
 
     viable.sort(key=lambda c: c.total_score, reverse=True)
     return viable[0]
@@ -320,10 +315,12 @@ def select_story(clusters: List[Tuple[str, List[InventoryItem]]],
 def plan_scenes_from_story(story: StoryCandidate,
                            inventory: RegionInventory,
                            target_scenes: int = 9) -> List[Dict[str, Any]]:
-    """Build a scene plan where every scene references an actual inventoried asset.
+    """Build a scene plan where every scene references an asset from the selected story.
 
-    Scenes are authored *after* assets are chosen. Each scene:
-    - references a pinned asset (image_url) already in the inventory
+    Scenes are authored *after* assets are chosen. Every scene references an
+    asset belonging to ``story.assets`` -- never an asset from another cluster.
+    Each scene:
+    - references a pinned asset (image_url) from the selected story
     - carries narration_intent explaining the connection between narration and visuals
     - uses image_type from the asset's period classification
     - derives required_keywords / image_search_terms from asset metadata (not invented)
@@ -332,27 +329,50 @@ def plan_scenes_from_story(story: StoryCandidate,
         return []
 
     eligible = eligible_items(inventory)
-    # Build a digest->item map for lookups.
+    # Resolve story assets against eligible inventory by digest/identifier.
     by_digest = {i.digest: i for i in eligible if i.digest}
+    by_identifier = {i.identifier: i for i in eligible if i.identifier}
 
-    # Choose up to target_scenes distinct assets, preferring a mix of historic/modern.
-    chosen: List[InventoryItem] = []
-    seen_periods: Set[str] = set()
-    # First pass: one historic and one modern if available.
-    for i in eligible:
-        p = _period_of(i)
-        if p not in seen_periods and len(chosen) < target_scenes:
-            chosen.append(i)
-            seen_periods.add(p)
-    # Second pass: fill remaining slots by relevance.
-    for i in eligible:
-        if len(chosen) >= target_scenes:
+    chosen_items: List[InventoryItem] = []
+    seen_digests: Set[str] = set()
+    for asset in story.assets:
+        item = None
+        if asset.digest and asset.digest in by_digest:
+            item = by_digest[asset.digest]
+        elif asset.identifier and asset.identifier in by_identifier:
+            item = by_identifier[asset.identifier]
+        if item is None:
+            # Asset from the winning story is not in the eligible inventory;
+            # never silently substitute from another cluster.
+            continue
+        if item.digest in seen_digests:
+            continue
+        seen_digests.add(item.digest)
+        chosen_items.append(item)
+
+    if not chosen_items:
+        return []
+
+    # Select up to target_scenes with chronological and visual variety:
+    # prefer a mix of historic and modern periods, ordered by relevance.
+    historic = [i for i in chosen_items if _period_of(i) == "historic"]
+    modern = [i for i in chosen_items if _period_of(i) == "modern"]
+    other = [i for i in chosen_items if _period_of(i) not in ("historic", "modern")]
+    ordered: List[InventoryItem] = []
+    hi = mi = oi = 0
+    while len(ordered) < min(target_scenes, len(chosen_items)):
+        added = False
+        if hi < len(historic):
+            ordered.append(historic[hi]); hi += 1; added = True
+        if mi < len(modern) and len(ordered) < min(target_scenes, len(chosen_items)):
+            ordered.append(modern[mi]); mi += 1; added = True
+        if oi < len(other) and len(ordered) < min(target_scenes, len(chosen_items)):
+            ordered.append(other[oi]); oi += 1; added = True
+        if not added:
             break
-        if i.digest not in {c.digest for c in chosen}:
-            chosen.append(i)
 
     scenes: List[Dict[str, Any]] = []
-    for idx, item in enumerate(chosen, 1):
+    for idx, item in enumerate(ordered, 1):
         image_type = _period_of(item)
         if image_type not in ("historic", "modern"):
             image_type = "modern" if item.clip_score is not None and item.clip_score > 0.25 else "historic"
@@ -407,26 +427,45 @@ def plan_scenes_from_story(story: StoryCandidate,
 
 
 def generate_story_narration(story: StoryCandidate, scenes: List[Dict[str, Any]],
+                             claims: Optional[List[str]] = None,
+                             claim_support: Optional[Dict[str, List[str]]] = None,
                              target_words: int = 130) -> str:
-    """Draft narration from the selected story and its scenes.
+    """Draft a historical narration from the selected story and verified claims.
 
-    The narration names real assets and verified claims only; it does not
-    invent identities for images. Length is targeted to 110-155 words so the
-    Kokoro render yields 45-60s.
+    The narration tells the historical story suggested by the inventory and
+    substantiated by research. It uses images to illustrate the narration
+    without falsely claiming an image depicts an event or person it does not.
+    Asset credits belong in credits and the description, not repeated throughout
+    the spoken narration.
+
+    Length is targeted to 110-155 words so the Kokoro render yields 45-60s.
     """
-    lines = []
-    hook = f"This is the story of {story.title.lower()}, told through the material that survives."
-    lines.append(hook)
-    for sc in scenes:
-        asset = sc.get("asset_metadata", {})
-        lines.append(
-            f"{sc['narration_intent']} The image is titled \"{asset.get('title','')}\" "
-            f"from {asset.get('provider','an archive')} and is shared under {asset.get('rights','open rights')}."
-        )
-    closing = "Each frame is a real, rights-cleared record of the place."
+    claims = claims or list(story.claims)
+    claim_support = claim_support or story.claim_support
+
+    lines: List[str] = []
+    # Hook: introduce the region and the historical arc from verified claims.
+    if claims:
+        lines.append(f"This is the story of {story.title.lower()}. {claims[0]}")
+        # Body: each subsequent claim builds the narrative arc.
+        for claim in claims[1:1 + max(0, len(scenes) - 1)]:
+            lines.append(claim)
+    else:
+        # No verified claims: tell what the collection shows, without overclaiming.
+        lines.append(f"This is the story of {story.title.lower()}. "
+                     f"The surviving material shows {story.theme.lower()} across generations.")
+        for sc in scenes[:max(0, len(scenes) - 1)]:
+            asset = sc.get("asset_metadata", {})
+            lines.append(
+                f"A record titled \"{asset.get('title', 'Untitled')}\" "
+                f"from {asset.get('provider', 'an archive')} illustrates this thread."
+            )
+
+    closing = "Every frame is a genuine historical record."
     lines.append(closing)
+
     narration = " ".join(lines)
-    # Trim to target window roughly (sentence-boundary aware).
+    # Trim to target window (sentence-boundary aware).
     words = narration.split()
     if len(words) > target_words + 20:
         narration = " ".join(words[:target_words]) + "."
