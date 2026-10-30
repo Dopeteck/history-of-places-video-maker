@@ -180,29 +180,39 @@ def load_story(region_slug: str) -> Optional[StorySelection]:
 
 
 def _period_of(item: InventoryItem) -> str:
-    """Classify an item as historic/modern/unknown from its date text/year range."""
+    """Classify an item as historic/modern/unknown from original creation/capture date only.
+
+    Distinguishes original artwork creation/capture date from digitisation, upload,
+    publication or record-modification dates. Uses the earliest year found in
+    ``date_text``/``year_range`` as the creation-date estimate: a work cannot be
+    created before its earliest attested date, so a historic work must not become
+    modern merely because its archive record was digitised or uploaded recently.
+
+    Returns "historic" (creation before 1950), "modern" (creation 1950 or later,
+    confirmed by year_range or a single date), or "unknown" (original date cannot
+    be established — never invents a date).
+    """
+    years: List[int] = []
     yr = item.year_range
     if yr and len(yr) == 2:
-        lo, hi = yr
-        if hi and hi < 1950:
-            return "historic"
-        if lo and lo >= 1950:
-            return "modern"
+        years.extend([int(y) for y in yr if y])
     dt = (item.date_text or "").lower()
-    years = re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt)
-    if years:
-        ys = [int(y) for y in years]
-        if max(ys) < 1950:
-            return "historic"
-        if min(ys) >= 1950:
-            return "modern"
-    # CLIP modern probe already split historic vs modern in relevance; fall back
-    # to title/description keywords.
-    hay = (item.title + " " + item.description).lower()
-    if any(k in hay for k in ("modern", "contemporary", "21st century", "2000", "2010", "2020")):
-        return "modern"
-    if any(k in hay for k in ("century", "period", "historical", "old", "ancient", "medieval")):
+    years.extend(int(y) for y in re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt))
+    years = [y for y in years if 1500 <= y <= 2100]
+
+    if not years:
+        return "unknown"
+
+    creation_year = min(years)
+    # Any attested date before 1950 means the work (or its subject) predates 1950.
+    if creation_year < 1950:
         return "historic"
+    # All attested dates are recent: only classify modern when we have explicit
+    # year_range confirmation (not just a date_text that may be an upload timestamp).
+    if yr and len(yr) == 2 and yr[1] >= 1950:
+        return "modern"
+    # Recent date_text alone is ambiguous: could be upload/digitisation of a
+    # historical work. Preserve unknown rather than falsely labelling modern.
     return "unknown"
 
 
@@ -225,10 +235,31 @@ def cluster_inventory(inventory: RegionInventory) -> List[Tuple[str, List[Invent
 
 def _score_candidate(theme: str, items: List[InventoryItem],
                      claim_support: Dict[str, List[str]]) -> StoryCandidate:
-    """Score a candidate story by evidence, variety, coherence, variety, duration."""
+    """Score a candidate story by evidence, verified claims, coherence, variety, duration.
+
+    Verified research claims carry the most weight: a cluster label alone is not
+    a story. The narration must explain a meaningful historical development
+    supported by independently verified research, not simply catalogue image titles.
+    """
+    n = len(items)
+    if n == 0:
+        return StoryCandidate(theme=theme, title=f"{theme.title()} story", summary="")
+
     # Evidence strength: fraction of assets with CLIP/relevance score and date evidence.
     scored = [i for i in items if i.clip_score is not None or i.date_text or i.year_range]
-    evidence_score = min(1.0, len(scored) / max(1, len(items))) if items else 0.0
+    evidence_score = min(1.0, len(scored) / max(1, n))
+
+    # Verified claims strength: how many research claims are supported by these assets.
+    claim_texts = set(claim_support.keys()) if claim_support else set()
+    claim_hits = 0
+    for claim in claim_texts:
+        c_low = claim.lower()
+        for i in items:
+            hay = (i.title + " " + i.description).lower()
+            if c_low in hay or any(k in hay for k in c_low.split() if len(k) > 4):
+                claim_hits += 1
+                break
+    claim_score = min(1.0, claim_hits / max(1, len(claim_texts))) if claim_texts else 0.0
 
     # Asset variety: distinct providers + distinct date spread.
     providers = {i.provider for i in items}
@@ -243,19 +274,33 @@ def _score_candidate(theme: str, items: List[InventoryItem],
         hay = (i.title + " " + i.description).lower()
         if any(t.lower() in hay for t in terms):
             coherent += 1
-    coherence_score = coherent / max(1, len(items)) if items else 0.0
+    coherence_score = coherent / max(1, n)
+
+    # Chronological coherence: items cluster within a related time period.
+    periods = {_period_of(i) for i in items}
+    hist_count = sum(1 for i in items if _period_of(i) == "historic")
+    mod_count = sum(1 for i in items if _period_of(i) == "modern")
+    if hist_count + mod_count > 0:
+        # A story is more coherent when most items share a period classification.
+        chron_score = max(hist_count, mod_count) / (hist_count + mod_count)
+    else:
+        chron_score = 0.5
 
     # Visual variety: mix of historic and modern periods.
-    periods = {_period_of(i) for i in items}
     visual_variety_score = min(1.0, len(periods) / 2.0)
 
     # Duration fit: enough assets for ~45-60s video at ~5-7s per scene (8-12 scenes).
-    n = len(items)
-    duration_fit_score = min(1.0, n / 10.0)  # 10 assets = good fit
+    duration_fit_score = min(1.0, n / 10.0)
 
-    total = (0.30 * evidence_score + 0.25 * asset_variety_score +
-             0.20 * coherence_score + 0.15 * visual_variety_score +
-             0.10 * duration_fit_score)
+    # Narrative themes (events, people, independence) score higher than generic
+    # containers (architecture, landmarks, daily_life) because they imply a story.
+    narrative_themes = {"events", "people", "independence", "conflict", "trade", "transport", "culture"}
+    narrative_bonus = 0.10 if theme in narrative_themes else 0.0
+
+    total = (0.25 * evidence_score + 0.20 * claim_score +
+             0.15 * asset_variety_score + 0.15 * coherence_score +
+             0.10 * chron_score + 0.05 * visual_variety_score +
+             0.10 * duration_fit_score + narrative_bonus)
 
     assets = [AssetRef(
         provider=i.provider, title=i.title, image_url=i.image_url, source_url=i.source_url,
@@ -293,9 +338,10 @@ def select_story(clusters: List[Tuple[str, List[InventoryItem]]],
                  claim_support: Optional[Dict[str, List[str]]] = None) -> Optional[StoryCandidate]:
     """Select the best-supported candidate story from inventory clusters.
 
-    Ranking: evidence strength, asset variety, coherence, visual variety,
-    duration fit. Returns None when no candidate has enough assets to support
-    a 45-60s video -- the caller must stop honestly rather than fabricate.
+    Ranking: evidence strength, verified claims, asset variety, coherence,
+    chronological coherence, visual variety, duration fit. Returns None when no
+    candidate has enough assets or sufficient narrative coherence to support a
+    45-60s video -- the caller must stop honestly rather than fabricate.
     """
     claim_support = claim_support or {}
     candidates: List[StoryCandidate] = []
@@ -303,8 +349,11 @@ def select_story(clusters: List[Tuple[str, List[InventoryItem]]],
         cand = _score_candidate(theme, items, claim_support)
         candidates.append(cand)
 
-    # Only stories with enough distinct assets can support a 45-60s video.
-    viable = [c for c in candidates if len(c.assets) >= 6]
+    # Only stories with enough distinct assets AND sufficient narrative coherence
+    # can support a 45-60s video. A generic cluster label is not a story.
+    MIN_TOTAL_SCORE = 0.40
+    viable = [c for c in candidates
+              if len(c.assets) >= 6 and c.total_score >= MIN_TOTAL_SCORE]
     if not viable:
         return None
 

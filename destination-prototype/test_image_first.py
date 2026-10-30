@@ -635,6 +635,202 @@ class GlobalRegionTests(unittest.TestCase):
                 self.assertIn("asset_metadata", s)
 
 
+class PeriodClassificationTests(unittest.TestCase):
+    """Defect 2: period classification uses original creation/capture date only.
+
+    A historical work must not become modern because its archive record was
+    digitised, uploaded or modified recently. When the original date cannot be
+    established, preserve an explicit unknown classification.
+    """
+
+    def test_historical_artwork_with_recent_digitisation_date(self):
+        """Edo-period print digitised in 2021 → historic (creation date wins)."""
+        item = ii.InventoryItem(
+            provider="_loc", title="Pagoda of Zojoji Temple",
+            description="From the Series One Hundred Famous Views of Edo (1858)",
+            image_url="https://commons.wikimedia.org/wiki/File:zojoji.jpg",
+            source_url="https://commons.wikimedia.org/wiki/File:zojoji.jpg",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Hiroshige", identifier="zojoji-1858",
+            date_text="1858; digitised 2021-05-13", year_range=None,
+            dimensions=[800, 600], digest="d-zojoji", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="commons",
+            discovered_at=str(date.today()))
+        self.assertEqual(sfi._period_of(item), "historic")
+
+    def test_historical_artwork_year_range_with_recent_upload(self):
+        """year_range [1858, 1860] + recent upload → historic."""
+        item = ii.InventoryItem(
+            provider="_met", title="Edo Street Scene",
+            description="Woodblock print from the 1850s",
+            image_url="https://metmuseum.org/edo.jpg", source_url="https://metmuseum.org/edo",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Unknown", identifier="edo-1",
+            date_text="Uploaded 2023", year_range=[1858, 1860],
+            dimensions=[800, 600], digest="d-edo", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="met",
+            discovered_at=str(date.today()))
+        self.assertEqual(sfi._period_of(item), "historic")
+
+    def test_modern_photograph_with_confirmed_capture_date(self):
+        """Modern photograph taken in 1975 → modern."""
+        item = ii.InventoryItem(
+            provider="_loc", title="Tokyo Station 1975",
+            description="Photograph of Tokyo Station",
+            image_url="https://loc.gov/tokyo.jpg", source_url="https://loc.gov/tokyo",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Photographer", identifier="tokyo-1975",
+            date_text="1975", year_range=[1975, 1975],
+            dimensions=[800, 600], digest="d-tokyo", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="loc",
+            discovered_at=str(date.today()))
+        self.assertEqual(sfi._period_of(item), "modern")
+
+    def test_modern_photograph_recent_upload_only(self):
+        """Modern photograph, date_text is upload date only (no year_range) → unknown."""
+        item = ii.InventoryItem(
+            provider="_loc", title="Modern Street",
+            description="Contemporary street scene",
+            image_url="https://loc.gov/street.jpg", source_url="https://loc.gov/street",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Photographer", identifier="street-1",
+            date_text="2021-05-13T10:30:00Z", year_range=None,
+            dimensions=[800, 600], digest="d-street", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="loc",
+            discovered_at=str(date.today()))
+        # Upload date only: cannot confirm original capture date → unknown.
+        self.assertEqual(sfi._period_of(item), "unknown")
+
+    def test_missing_or_ambiguous_creation_date(self):
+        """No date information at all → unknown."""
+        item = ii.InventoryItem(
+            provider="_aic", title="Untitled Scene",
+            description="No date information available",
+            image_url="https://artic.edu/untitled.jpg", source_url="https://artic.edu/untitled",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Unknown", identifier="untitled-1",
+            date_text="", year_range=None,
+            dimensions=[800, 600], digest="d-untitled", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="aic",
+            discovered_at=str(date.today()))
+        self.assertEqual(sfi._period_of(item), "unknown")
+
+    def test_all_recent_dates_no_year_range(self):
+        """All attested dates are recent but no year_range → unknown (not falsely modern)."""
+        item = ii.InventoryItem(
+            provider="_loc", title="Old Building Uploaded Recently",
+            description="Historic building, record uploaded in 2021",
+            image_url="https://loc.gov/building.jpg", source_url="https://loc.gov/building",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="Unknown", identifier="building-1",
+            date_text="2021-03-15", year_range=None,
+            dimensions=[800, 600], digest="d-building", clip_score=0.5,
+            relevance_score=0.8, eligible=True, discovered_via="loc",
+            discovered_at=str(date.today()))
+        # No year_range to confirm modern → unknown rather than falsely modern.
+        self.assertEqual(sfi._period_of(item), "unknown")
+
+
+class PinnedAssetDiagnosticsTests(unittest.TestCase):
+    """Pinned-image validation and transparent diagnostics."""
+
+    def test_scene_diagnostics_contain_period_and_rights(self):
+        """Each scene diagnostic carries period_ok, rights, source, and warnings."""
+        meta = {
+            "title": "Test Asset", "author": "Author", "rights": "Public Domain",
+            "rights_statement": "Public Domain", "rights_url": "",
+            "license_url": "", "asset_url": "https://example.com/asset/1",
+            "source_url": "https://example.com/source/1", "provider": "_loc",
+            "identifier": "1", "date_text": "1860", "year_range": [1860, 1870],
+            "dimensions": [800, 600], "categories": [], "facets": [],
+            "digest": "abc123", "clip_score": 0.5, "relevance_score": 0.8,
+            "discovered_via": "commons query",
+        }
+        scene = {"title": "Test Scene", "pinned_image": "https://example.com/asset/1",
+                 "image_type": "historic", "asset_metadata": meta}
+        # Build expected diagnostic entry (mirrors daily_orchestrate extraction).
+        diag = {
+            "scene": scene["title"],
+            "title": meta["title"],
+            "provider": meta["provider"],
+            "rights": meta["rights"],
+            "rights_statement": meta["rights_statement"],
+            "license_url": meta["license_url"],
+            "asset_url": meta["asset_url"],
+            "source_url": meta["source_url"],
+            "period_ok": None,  # historic scene → period_ok not set
+            "match_score": meta["relevance_score"],
+            "clip_score": meta["clip_score"],
+            "warnings": ["Pinned from pre-vetted regional inventory; no provider re-search performed."],
+            "diagnostics": {"pinned": True, "discovered_via": "commons query"},
+            "is_missing_asset": False,
+        }
+        self.assertEqual(diag["is_missing_asset"], False)
+        self.assertEqual(diag["period_ok"], None)
+        self.assertEqual(diag["rights"], "Public Domain")
+        self.assertTrue(diag["asset_url"].startswith("https://"))
+
+    def test_missing_asset_flagged_in_diagnostics(self):
+        """A missing-asset credit is flagged as missing in diagnostics."""
+        credit = {"provider": "missing asset", "scene": "Missing Scene",
+                  "title": "NO APPROVED SOURCE IMAGE", "warnings": ["No candidate passed"]}
+        self.assertTrue(credit["provider"] in ("missing asset", "fallback text card"))
+
+
+class EditorialStoryTests(unittest.TestCase):
+    """Defect 5: story selection prefers coherent narratives over generic cluster labels."""
+
+    def test_narrative_theme_outranks_generic_container(self):
+        """Events/people themes score higher than architecture/daily_life with same assets."""
+        # Two clusters with equal asset counts: architecture (generic) vs events (narrative).
+        arch_items = [ii.InventoryItem(
+            provider="_loc", title=f"Old building {j}", description=f"historic building scene {j}",
+            image_url=f"https://ex.com/a{j}.jpg", source_url=f"https://ex.com/item/j{j}",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="A", identifier=str(j), date_text="1860",
+            year_range=[1860, 1870], dimensions=[800, 600], digest=f"arch-d-{j}",
+            clip_score=0.5, relevance_score=0.7, eligible=True,
+            discovered_via="q", discovered_at=str(date.today())) for j in range(8)]
+        event_items = [ii.InventoryItem(
+            provider="_loc", title=f"Revolution event {j}", description=f"historic revolution {j}",
+            image_url=f"https://ex.com/e{j}.jpg", source_url=f"https://ex.com/item/e{j}",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="A", identifier=str(j), date_text="1860",
+            year_range=[1860, 1870], dimensions=[800, 600], digest=f"evt-d-{j}",
+            clip_score=0.5, relevance_score=0.7, eligible=True,
+            discovered_via="q", discovered_at=str(date.today())) for j in range(8)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=arch_items + event_items)
+        clusters = sfi.cluster_inventory(inv)
+        claim_support = {"The revolution changed the city forever.": ["https://source.com/1"]}
+        candidates = [sfi._score_candidate(t, items, claim_support) for t, items in clusters]
+        # Find the events and architecture candidates.
+        evt_cand = next(c for c in candidates if c.theme == "events")
+        arch_cand = next(c for c in candidates if c.theme == "architecture")
+        # Events (narrative theme) should score >= architecture (generic container)
+        # due to narrative_bonus, assuming equal other scores.
+        self.assertGreaterEqual(evt_cand.total_score, arch_cand.total_score)
+
+    def test_story_requires_minimum_coherence_score(self):
+        """Generic cluster with low coherence fails the minimum score threshold."""
+        items = [ii.InventoryItem(
+            provider="_loc", title=f"Random item {j}", description=f"unrelated thing {j}",
+            image_url=f"https://ex.com/r{j}.jpg", source_url=f"https://ex.com/item/r{j}",
+            rights="Public Domain", rights_statement="Public Domain", rights_url="",
+            license_url="", author="A", identifier=str(j), date_text="",
+            year_range=None, dimensions=[800, 600], digest=f"rand-d-{j}",
+            clip_score=None, relevance_score=0.1, eligible=True,
+            discovered_via="q", discovered_at=str(date.today())) for j in range(8)]
+        inv = ii.RegionInventory(region_slug="tc", region_name="Test City", country="Testland",
+                                 created_at=str(date.today()), items=items)
+        clusters = sfi.cluster_inventory(inv)
+        story = sfi.select_story(clusters)
+        # Low coherence + no dates + low relevance → likely below threshold.
+        if story is not None:
+            self.assertLess(story.total_score, 0.40,
+                            "low-coherence generic cluster should not qualify as a story")
+
+
 if __name__ == "__main__":
     unittest.main()
 

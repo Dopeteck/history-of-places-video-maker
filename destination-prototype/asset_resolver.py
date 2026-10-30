@@ -820,14 +820,19 @@ def validate_pinned_asset(scene: Dict[str, Any], idx: int, config: Dict[str, Any
     image_type = scene.get("image_type", "historic")
     period_ok = None
     if image_type == "modern":
+        # Classify period from original creation/capture date only, not from
+        # digitisation/upload dates in date_text. Use earliest year as creation
+        # estimate; classify modern only when year_range confirms it.
         yr = meta.get("year_range")
         dt = str(meta.get("date_text", "")).lower()
-        years = re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt)
-        if years:
-            ys = [int(y) for y in years]
-            period_ok = min(ys) >= 1950
-        elif yr and len(yr) == 2:
-            period_ok = yr[1] >= 1950
+        years = [int(y) for y in re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt)]
+        years.extend([int(y) for y in (yr or []) if y])
+        years = [y for y in years if 1500 <= y <= 2100]
+        if years and min(years) >= 1950 and yr and len(yr) == 2:
+            period_ok = True
+        elif years and min(years) < 1950:
+            period_ok = False  # historically created; scene should not be "modern"
+        # Otherwise period_ok stays None: original date cannot be established.
 
     credit = {
         "content_sha256": digest,

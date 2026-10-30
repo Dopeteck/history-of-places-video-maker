@@ -70,18 +70,17 @@ class OrchestrationResult:
 
 
 def run_command(cmd: List[str], cwd: Path = ROOT, env: Optional[Dict] = None) -> subprocess.CompletedProcess:
-    """Run a command and return result. Prints captured output on failure for diagnostics."""
+    """Run a command and return result. Always prints captured output for diagnostics."""
     full_env = os.environ.copy()
     if env:
         full_env.update(env)
     result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=full_env)
-    if result.returncode != 0:
-        cmd_str = " ".join(str(c) for c in cmd)
-        print(f"COMMAND FAILED (exit={result.returncode}): {cmd_str}", file=sys.stderr)
-        if result.stdout.strip():
-            print(f"STDOUT:\n{result.stdout}", file=sys.stderr)
-        if result.stderr.strip():
-            print(f"STDERR:\n{result.stderr}", file=sys.stderr)
+    cmd_str = " ".join(str(c) for c in cmd)
+    print(f"COMMAND (exit={result.returncode}): {cmd_str}", file=sys.stderr)
+    if result.stdout.strip():
+        print(f"STDOUT:\n{result.stdout}", file=sys.stderr)
+    if result.stderr.strip():
+        print(f"STDERR:\n{result.stderr}", file=sys.stderr)
     return result
 
 
@@ -474,6 +473,13 @@ def main():
     claim_validation = validate_claims(script, research)
     print(f"  Verified claims: {claim_validation['claims_mapped']}/{claim_validation['claims_total']}")
     artifacts["claim_validation"] = claim_validation
+    # The narration must explain a meaningful historical development supported by
+    # independently verified research, not simply catalogue image titles.
+    if claim_validation.get("verification_ratio", 0) < 0.5 and claim_validation.get("claims_total", 0) > 0:
+        print("ERROR: Less than half of researched claims are independently verified; "
+              "refusing to build a narrative on unverified claims.")
+        save_artifacts(artifacts, paths)
+        sys.exit(1)
 
     # Stage 6: Visual review
     print("\n[6/8] Rendering visual review board...")
@@ -485,6 +491,39 @@ def main():
         sys.exit(1)
     print(f"  Review artifacts: {review_dir}")
     artifacts["review_dir"] = str(review_dir)
+
+    # Persist per-scene diagnostics from the renderer (rights, format, size,
+    # duplicate, period classification, rejection reasons) for transparent QA.
+    credits_path = Path(review_dir) / "credits.json"
+    scene_diagnostics = []
+    if credits_path.exists():
+        try:
+            credits = json.loads(credits_path.read_text(encoding="utf-8"))
+            for c in credits:
+                scene_diagnostics.append({
+                    "scene": c.get("scene"),
+                    "title": c.get("title"),
+                    "provider": c.get("provider"),
+                    "rights": c.get("rights"),
+                    "rights_statement": c.get("rights_statement"),
+                    "license_url": c.get("license_url"),
+                    "asset_url": c.get("asset_url"),
+                    "source_url": c.get("source_url"),
+                    "period_ok": c.get("period_ok"),
+                    "match_score": c.get("match_score"),
+                    "clip_score": c.get("clip_score"),
+                    "warnings": c.get("warnings", []),
+                    "diagnostics": c.get("diagnostics", {}),
+                    "is_missing_asset": c.get("provider") in ("missing asset", "fallback text card"),
+                })
+        except Exception:
+            pass
+    artifacts["scene_diagnostics"] = scene_diagnostics
+    missing = [d for d in scene_diagnostics if d["is_missing_asset"]]
+    if missing:
+        print(f"  WARNING: {len(missing)} scene(s) have no approved source image:")
+        for d in missing:
+            print(f"    - {d['title']} ({d['provider']}): {d['warnings']}")
 
     # QA for review artifacts - MANDATORY, exits non-zero on failure
     print("\n[7/8] Running QA on review artifacts...")
