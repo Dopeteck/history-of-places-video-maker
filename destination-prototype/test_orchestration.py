@@ -29,6 +29,7 @@ from daily_content_engine import (
 from daily_orchestrate import run_review_qa as orch_run_review_qa, run_production_qa as orch_run_production_qa
 from generate_script import build_script_from_research
 from research_factcheck import extract_claims_from_narration, verify_claim, research_topic
+from research_providers import ProviderDiagnostic
 from qa_checks import run_review_qa as qa_run_review_qa, run_production_qa as qa_run_production_qa, validate_video_with_ffprobe
 
 
@@ -66,7 +67,9 @@ def test_topic_identity_deduplication():
         story_angle="tokyo:hidden:forgotten_edo",
         hook="Hook 1",
         description="Desc 1",
-        sources=[],
+        sources=["https://en.wikipedia.org/wiki/Edo"],
+        entities=["Edo", "Tokugawa"],
+        claim_refs=["Edo founded 1603"],
     )
     topic2 = Topic(
         destination_slug="tokyo",
@@ -78,7 +81,9 @@ def test_topic_identity_deduplication():
         story_angle="tokyo:hidden:lost_cities",
         hook="Hook 2",
         description="Desc 2",
-        sources=[],
+        sources=["https://en.wikipedia.org/wiki/Tokyo"],
+        entities=["Tokyo", "Edo"],
+        claim_refs=["Tokyo renamed 1868"],
     )
 
     available = select_next_topic([topic1, topic2], state)
@@ -103,7 +108,9 @@ def test_no_silent_relaxation():
         story_angle="tokyo:hidden:forgotten_edo",
         hook="Hook 1",
         description="Desc 1",
-        sources=[],
+        sources=["https://en.wikipedia.org/wiki/Edo"],
+        entities=["Edo", "Tokugawa"],
+        claim_refs=["Edo founded 1603"],
     )
     topic2 = Topic(
         destination_slug="lagos",
@@ -115,7 +122,9 @@ def test_no_silent_relaxation():
         story_angle="lagos:wonders:eko",
         hook="Hook 2",
         description="Desc 2",
-        sources=[],
+        sources=["https://en.wikipedia.org/wiki/Lagos"],
+        entities=["Lagos", "Eko"],
+        claim_refs=["Lagos founded 15th century"],
     )
 
     available = select_next_topic([topic1, topic2], state)
@@ -141,7 +150,9 @@ def test_destination_recency_filter():
         story_angle="tokyo:test:angle",
         hook="Hook",
         description="Desc",
-        sources=[],
+        sources=["https://en.wikipedia.org/wiki/Tokyo"],
+        entities=["Tokyo"],
+        claim_refs=["Tokyo founded 1603"],
     )
 
     available = select_next_topic([topic], state, avoid_recent_days=30)
@@ -191,28 +202,57 @@ def test_qa_review_mode_rejects_failures():
             "claims_total": 5,
             "claims_insufficient": 2,
             "claims_disputed": 1,
-            "research_record": "",
+            "research_record": "dummy_research.json",
         }
         json.dump(script, f)
         script_path = Path(f.name)
 
+    # Create a dummy research record file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        research = {
+            "topic_slug": "tokyo",
+            "destination": "Tokyo",
+            "category": "hidden_history",
+            "title": "Test Topic",
+            "claims": [
+                {"text": "Claim 1", "status": "verified"},
+                {"text": "Claim 2", "status": "verified"},
+                {"text": "Claim 3", "status": "insufficient_evidence"},
+                {"text": "Claim 4", "status": "insufficient_evidence"},
+                {"text": "Claim 5", "status": "disputed"},
+            ],
+            "sources_used": [],
+            "research_date": "2026-10-31",
+            "extraction_failed": False,
+            "verification_failed": False,
+            "zero_claims": False,
+        }
+        json.dump(research, f)
+        research_path = Path(f.name)
+
     try:
+        # Update script to point to the research record
+        with open(script_path, 'w') as f:
+            script["research_record"] = str(research_path)
+            json.dump(script, f)
+
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[]")
 
             results = qa_run_review_qa(script_path, output_dir)
-            claims_check = next((r for r in results if r.check == "claims_support"), None)
-            assert claims_check is not None, "Should have claims_support check"
+            claims_check = next((r for r in results if r.check == "research_status"), None)
+            assert claims_check is not None, "Should have research_status check"
             assert not claims_check.passed, "Should fail with <70% verified claims"
             assert "below 70% threshold" in claims_check.details
 
             assert any(not r.passed for r in results), "Should have at least one failure"
     finally:
-        script_path.unlink()
+        script_path.unlink(missing_ok=True)
+        research_path.unlink(missing_ok=True)
 
-    # Test 2: Script with disputed claims should fail review QA
+    # Test 2: Script with disputed claims should fail review QA only if ALL claims are disputed (verification_failed)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         script = {
             "word_count": 130,
@@ -221,23 +261,114 @@ def test_qa_review_mode_rejects_failures():
             "claims_total": 6,
             "claims_insufficient": 0,
             "claims_disputed": 1,
-            "research_record": "",
+            "research_record": "dummy_research.json",
         }
         json.dump(script, f)
         script_path = Path(f.name)
 
+    # Create a dummy research record file with disputed claim but NOT verification_failed
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        research = {
+            "topic_slug": "tokyo",
+            "destination": "Tokyo",
+            "category": "hidden_history",
+            "title": "Test Topic",
+            "claims": [
+                {"text": "Claim 1", "status": "verified"},
+                {"text": "Claim 2", "status": "verified"},
+                {"text": "Claim 3", "status": "verified"},
+                {"text": "Claim 4", "status": "verified"},
+                {"text": "Claim 5", "status": "verified"},
+                {"text": "Claim 6", "status": "disputed"},
+            ],
+            "sources_used": [],
+            "research_date": "2026-10-31",
+            "extraction_failed": False,
+            "verification_failed": False,  # NOT all claims disputed
+            "zero_claims": False,
+        }
+        json.dump(research, f)
+        research_path = Path(f.name)
+
     try:
+        # Update script to point to the research record
+        with open(script_path, 'w') as f:
+            script["research_record"] = str(research_path)
+            json.dump(script, f)
+
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
             (output_dir / "approval-board.html").write_text("<html>test</html>")
             (output_dir / "credits.json").write_text("[]")
 
             results = qa_run_review_qa(script_path, output_dir)
-            claims_check = next((r for r in results if r.check == "claims_support"), None)
-            assert claims_check is not None
-            assert claims_check.passed, "5/6 verified should pass review threshold"
+            claims_check = next((r for r in results if r.check == "research_status"), None)
+            assert claims_check is not None, "Should have research_status check"
+            # With 5/6 verified (83%) and verification_failed=False, review QA should PASS
+            # (production QA has check_claims_no_disputed which would fail)
+            assert claims_check.passed, "Review QA should pass with 83% verified and verification_failed=False"
+            assert "Research OK" in claims_check.details
+
     finally:
-        script_path.unlink()
+        script_path.unlink(missing_ok=True)
+        research_path.unlink(missing_ok=True)
+
+    # Test 3: Script with ALL claims disputed (verification_failed=True) should fail review QA
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        script = {
+            "word_count": 130,
+            "estimated_duration": 52.0,
+            "claims_verified": 0,
+            "claims_total": 3,
+            "claims_insufficient": 0,
+            "claims_disputed": 3,
+            "research_record": "dummy_research.json",
+        }
+        json.dump(script, f)
+        script_path = Path(f.name)
+
+    # Create a dummy research record file with ALL claims disputed
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        research = {
+            "topic_slug": "tokyo",
+            "destination": "Tokyo",
+            "category": "hidden_history",
+            "title": "Test Topic",
+            "claims": [
+                {"text": "Claim 1", "status": "disputed"},
+                {"text": "Claim 2", "status": "disputed"},
+                {"text": "Claim 3", "status": "disputed"},
+            ],
+            "sources_used": [],
+            "research_date": "2026-10-31",
+            "extraction_failed": False,
+            "verification_failed": True,  # ALL claims disputed
+            "zero_claims": False,
+        }
+        json.dump(research, f)
+        research_path = Path(f.name)
+
+    try:
+        # Update script to point to the research record
+        with open(script_path, 'w') as f:
+            script["research_record"] = str(research_path)
+            json.dump(script, f)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir)
+            (output_dir / "approval-board.html").write_text("<html>test</html>")
+            (output_dir / "credits.json").write_text("[]")
+
+            results = qa_run_review_qa(script_path, output_dir)
+            claims_check = next((r for r in results if r.check == "research_status"), None)
+            assert claims_check is not None, "Should have research_status check"
+            assert not claims_check.passed, "Should fail with verification_failed=True"
+            assert "verification failed" in claims_check.details.lower()
+
+            assert any(not r.passed for r in results), "Should have at least one failure"
+    finally:
+        script_path.unlink(missing_ok=True)
+        research_path.unlink(missing_ok=True)
 
     print("OK test_qa_review_mode_rejects_failures passed")
 
@@ -315,9 +446,19 @@ def test_qa_production_rejects_failures():
 
 def test_research_http_failure_stops_pipeline():
     """Test that mocked research HTTP failures stop the pipeline."""
+    from research_providers import VerificationResult, ProviderDiagnostic
+    
     # Test that research_factcheck.py exits with code 1 on verification_failed
-    # Mock Wikipedia API to return no results
-    with patch('research_factcheck.search_wikipedia', return_value=[]):
+    # Mock _verify_claim to return provider_failure for all claims
+    with patch('research_factcheck._verify_claim', return_value=VerificationResult(
+        claim="Tokyo was founded in 1603",
+        status="provider_failure",
+        confidence=0.0,
+        evidence=[],
+        independent_sources=0,
+        provider_diagnostics=[ProviderDiagnostic(provider="Wikipedia", endpoint="test", query="test", status="failed", error="HTTP 429")],
+        provider_failures=["Wikipedia"]
+    )):
         # Create a topic that will trigger extraction
         topic_data = {
             "destination_slug": "tokyo",
@@ -328,8 +469,8 @@ def test_research_http_failure_stops_pipeline():
             "narration_language": "English",
         }
         record = research_topic(topic_data)
-        # With no Wikipedia results, all claims should be disputed
-        assert record.verification_failed, "Should have verification_failed=True when all claims disputed"
+        # With all providers failing, all claims should be provider_failure
+        assert record.verification_failed, "Should have verification_failed=True when all claims provider_failure"
         assert record.extraction_failed is False, "Should still extract claims"
 
     # Test that research_factcheck.py exits with code 1 on zero_claims

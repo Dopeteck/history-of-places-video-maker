@@ -51,6 +51,9 @@ class SceneSpec:
     map_lat: Optional[float] = None
     map_lon: Optional[float] = None
     map_label: Optional[str] = None
+    # Geographic relevance parameters
+    geo_max_radius_km: Optional[float] = None
+    banned_location_keywords: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
         d = asdict(self)
@@ -173,33 +176,39 @@ def plan_scenes(topic: Dict, dest_cfg: Dict) -> List[Dict]:
     story_id = topic.get("story_id", topic.get("angle_id", f"{dest_slug}:story"))
     story_title = topic.get("title", f"History of {destination}")
 
+    # Extract geographic config for relevance checking
+    geo_max_radius_km = dest_cfg.get("geo_max_radius_km")
+    banned_location_keywords = dest_cfg.get("banned_location_keywords", [])
+    map_lat = dest_cfg.get("map", {}).get("center_lat")
+    map_lon = dest_cfg.get("map", {}).get("center_lon")
+
     # Build category-specific scene templates
     scenes: List[SceneSpec] = []
 
     if category == "culture_traditions":
-        scenes.extend(_culture_traditions_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_culture_traditions_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("founding_political", "independence_colonial", "wars_revolutions"):
-        scenes.extend(_political_turning_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_political_turning_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("ancient_civilization", "archaeology"):
-        scenes.extend(_ancient_civilization_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_ancient_civilization_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("urban_transformation", "trade_migration"):
-        scenes.extend(_urban_growth_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_urban_growth_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("people_communities", "historical_people"):
-        scenes.extend(_people_story_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_people_story_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("architecture_engineering", "wonders"):
-        scenes.extend(_architecture_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_architecture_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("music_film_entertainment", "popular_culture"):
-        scenes.extend(_culture_pop_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_culture_pop_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("disasters_resilience", "survival_recovery"):
-        scenes.extend(_disaster_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_disaster_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     elif category in ("surprising_lesser_known", "hidden_history"):
-        scenes.extend(_hidden_history_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs))
+        scenes.extend(_hidden_history_scenes(destination, dest_slug, story_id, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     else:
-        scenes.extend(_generic_story_scenes(destination, dest_slug, story_id, category, entities, description, sources, claim_refs))
+        scenes.extend(_generic_story_scenes(destination, dest_slug, story_id, category, entities, description, sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
 
     # Ensure 8-12 scenes
     if len(scenes) < 8:
-        scenes.extend(_filler_scenes(destination, dest_slug, story_id, entities, len(scenes), sources, claim_refs))
+        scenes.extend(_filler_scenes(destination, dest_slug, story_id, entities, len(scenes), sources, claim_refs, geo_max_radius_km, banned_location_keywords, map_lat, map_lon))
     scenes = scenes[:12]
 
     # Map scene: pick a geographic anchor if available
@@ -220,9 +229,11 @@ def plan_scenes(topic: Dict, dest_cfg: Dict) -> List[Dict]:
             banned_keywords=["portrait", "banner", "poster", "event", "flyer"],
             sources=sources[:2],
             claim_refs=claim_refs[:1],
-            map_lat=dest_cfg.get("map", {}).get("center_lat"),
-            map_lon=dest_cfg.get("map", {}).get("center_lon"),
+            map_lat=map_lat,
+            map_lon=map_lon,
             map_label=destination,
+            geo_max_radius_km=geo_max_radius_km,
+            banned_location_keywords=banned_location_keywords,
         )
         scenes.insert(1, scene_dict(map_spec))
         # Renumber orders
@@ -248,7 +259,9 @@ def _historic_scene(story_id: str, order: int, title: str, intent: str, text: st
                     entities: List[str], tags: List[str], search_terms: List[str],
                     keywords: List[str], banned: List[str], max_year: Optional[int],
                     sources: List[str], claims: List[str], modern_ok: bool = False,
-                    clip_fallback: bool = False) -> Dict:
+                    clip_fallback: bool = False, geo_max_radius_km: Optional[float] = None,
+                    banned_location_keywords: Optional[List[str]] = None,
+                    map_lat: Optional[float] = None, map_lon: Optional[float] = None) -> Dict:
     return scene_dict(SceneSpec(
         scene_id=f"{story_id}:s{order:02d}",
         scene_order=order,
@@ -266,13 +279,19 @@ def _historic_scene(story_id: str, order: int, title: str, intent: str, text: st
         claim_refs=claims[:2],
         allow_modern_photo=modern_ok,
         identity_fallback_to_clip=clip_fallback,
+        geo_max_radius_km=geo_max_radius_km,
+        banned_location_keywords=banned_location_keywords or [],
+        map_lat=map_lat,
+        map_lon=map_lon,
     ))
 
 
 def _modern_scene(story_id: str, order: int, title: str, intent: str, text: str,
                   entities: List[str], tags: List[str], search_terms: List[str],
                   keywords: List[str], banned: List[str],
-                  sources: List[str], claims: List[str]) -> Dict:
+                  sources: List[str], claims: List[str], geo_max_radius_km: Optional[float] = None,
+                  banned_location_keywords: Optional[List[str]] = None,
+                  map_lat: Optional[float] = None, map_lon: Optional[float] = None) -> Dict:
     return scene_dict(SceneSpec(
         scene_id=f"{story_id}:s{order:02d}",
         scene_order=order,
@@ -290,12 +309,17 @@ def _modern_scene(story_id: str, order: int, title: str, intent: str, text: str,
         # Modern photo metadata rarely names specific landmarks; allow CLIP-based
         # acceptance when entity names are absent from cataloguing metadata.
         identity_fallback_to_clip=True,
+        geo_max_radius_km=geo_max_radius_km,
+        banned_location_keywords=banned_location_keywords or [],
+        map_lat=map_lat,
+        map_lon=map_lon,
     ))
 
 
-def _culture_traditions_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _culture_traditions_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for a cultural tradition story."""
     main_entity = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination}: The Tradition Today",
             "Open with the living practice as people experience it now.",
@@ -303,55 +327,56 @@ def _culture_traditions_scenes(destination, dest_slug, story_id, entities, descr
             [main_entity], [destination, "celebration", "tradition", "culture"],
             [f"{destination} {main_entity} today", f"{main_entity} celebration"],
             [main_entity, "celebration", "tradition"], ["poster", "banner", "event flyer"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"Origins of {main_entity}",
             "Trace the practice back to its earliest documented roots.",
             f"The roots of {main_entity} reach back centuries, before modern borders.",
             entities[:3], ["ancient", "origin", "artifact", "tradition", "heritage"],
             [f"{main_entity} origin history", f"{destination} ancient tradition"],
             entities[:2], ["modern", "poster", "banner", "event"],
-            1900, sources, claims),
+            1900, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"Colonial Encounter and {main_entity}",
             "Show how outside contact changed or merged with the tradition.",
             f"Colonial contact reshaped {main_entity}, blending old and new meanings.",
             entities[:3], ["colonial", "encounter", "meeting", "cultural exchange"],
             [f"{main_entity} colonial history", f"{destination} colonial encounter"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"{main_entity} Through the 19th Century",
             "Show the practice as it existed before photography became common.",
             f"By the 1800s, {main_entity} had taken forms still recognizable today.",
             entities[:3], ["19th century", "historic", "document", "engraving", "painting"],
             [f"{main_entity} 19th century", f"{destination} historic tradition"],
             entities[:2], ["modern photo", "poster", "banner"],
-            1900, sources, claims),
+            1900, sources, claims, **geo_args),
         _modern_scene(story_id, 5, f"{main_entity} in Living Memory",
             "Show the tradition as practiced in recent decades.",
             f"Photographs from the last century show {main_entity} still thriving.",
             entities[:3], ["modern celebration", "photograph", "community", "festival"],
             [f"{main_entity} 20th century photograph", f"{destination} {main_entity} modern"],
             entities[:2], ["painting", "engraving", "illustration", "poster"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{main_entity} Today",
             "Show the practice as it exists now.",
             f"Today, {main_entity} continues in {destination}, passed hand to hand.",
             entities[:3], ["modern photograph", "contemporary", "celebration", "community"],
             [f"{main_entity} today photograph", f"{destination} contemporary tradition"],
             entities[:2], ["painting", "engraving", "historic illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"The Meaning of {main_entity} Now",
             "Close with why the tradition matters to the city's identity.",
             f"{main_entity} remains a living thread through {destination}'s story.",
             entities[:3], ["community", "identity", "heritage", "modern photograph"],
             [f"{destination} cultural identity today", f"{main_entity} meaning today"],
             entities[:2], ["painting", "engraving", "historic illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _political_turning_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _political_turning_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for political turning points (independence, revolution, founding)."""
     main_entity = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination} Before the Turning Point",
             "Establish the status quo that the story disrupts.",
@@ -359,55 +384,56 @@ def _political_turning_scenes(destination, dest_slug, story_id, entities, descri
             entities[:3], ["historic", "city view", "colonial", "establishment"],
             [f"{destination} before {main_entity}", f"{destination} historic city"],
             entities[:2], ["modern", "poster", "banner", "event"],
-            1900, sources, claims),
+            1900, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"The Spark: {main_entity}",
             "Introduce the central person, event, or idea.",
             f"{main_entity} stood at the center of what came next.",
             entities[:3], ["portrait", "person", "leader", "figure", "historic"],
             [f"{main_entity} portrait historic", f"{main_entity} historical figure"],
             entities[:2], ["modern", "poster", "banner", "cartoon"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 3, f"The Moment of Change",
             "Show the event itself or its immediate setting.",
             f"The turning point unfolded in {destination}'s own streets and squares.",
             entities[:3], ["square", "plaza", "gathering", "crowd", "historic"],
             [f"{destination} historic square", f"{main_entity} event location"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 4, f"Resistance and Response",
             "Show how people met the change - opposition, support, adaptation.",
             f"Not everyone welcomed the change; {destination} was divided.",
             entities[:3], ["protest", "meeting", "document", "newspaper", "historic"],
             [f"{destination} resistance history", f"{main_entity} opposition"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"The New Order Takes Shape",
             "Show the result of the change in institutions and daily life.",
             f"The old symbols came down; new ones went up across {destination}.",
             entities[:3], ["building", "institution", "government", "historic"],
             [f"{destination} new government building", f"{main_entity} aftermath"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{destination} Remembers",
             "Show memorials, plaques, or preserved sites from the era.",
             f"Today, {destination} marks this chapter with plaques and preserved places.",
             entities[:3], ["memorial", "plaque", "museum", "modern photograph"],
             [f"{destination} memorial {main_entity}", f"{destination} historic site today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"The Legacy Lives",
             "Close with how the turning point shaped today's city.",
             f"The story of {main_entity} is still written in {destination}'s streets.",
             entities[:3], ["modern photograph", "street", "cityscape", "contemporary"],
             [f"{destination} modern cityscape", f"{main_entity} legacy today"],
             entities[:2], ["painting", "engraving", "historic illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _ancient_civilization_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _ancient_civilization_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for ancient civilization / archaeology stories."""
     main_entity = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"Before the City: {destination}'s Ancient Setting",
             "Show the landscape and first settlement.",
@@ -415,55 +441,56 @@ def _ancient_civilization_scenes(destination, dest_slug, story_id, entities, des
             entities[:3], ["landscape", "settlement", "ancient", "archaeology"],
             [f"{destination} ancient settlement", f"{main_entity} early history"],
             entities[:2], ["modern city", "poster", "banner", "photograph"],
-            1500, sources, claims),
+            1500, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"The Rise of {main_entity}",
             "Show the civilization at its height.",
             f"{main_entity} grew into a center of power and culture.",
             entities[:3], ["temple", "palace", "monument", "civilization", "historic"],
             [f"{main_entity} ancient city", f"{destination} archaeological site"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1500, sources, claims),
+            1500, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"Daily Life in Ancient {destination}",
             "Show artifacts, tools, and scenes of ordinary life.",
             f"Ordinary people built lives around {main_entity}'s temples and markets.",
             entities[:3], ["artifact", "pottery", "tool", "daily life", "historic"],
             [f"{main_entity} artifact museum", f"{destination} ancient daily life"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1500, sources, claims),
+            1500, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"Sacred Space and {main_entity}",
             "Show religious or ceremonial structures.",
             f"The sacred center of {main_entity} drew people from across the region.",
             entities[:3], ["temple", "shrine", "ceremonial", "sacred", "historic"],
             [f"{main_entity} temple historic", f"{destination} sacred site"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1500, sources, claims),
+            1500, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"Decline and Abandonment",
             "Show the civilization's end or transformation.",
             f"Empires rise and fall; {main_entity} was no exception.",
             entities[:3], ["ruin", "abandoned", "historic", "decline"],
             [f"{main_entity} ruins historic", f"{destination} civilization decline"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1500, sources, claims),
+            1500, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"Rediscovering {main_entity}",
             "Show archaeological excavation and modern rediscovery.",
             f"Modern archaeology brought {main_entity} back into view.",
             entities[:3], ["excavation", "archaeology", "dig", "modern photograph"],
             [f"{main_entity} excavation photograph", f"{destination} archaeological dig"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"{main_entity} Today",
             "Show the site as visitors encounter it now.",
             f"Today, {main_entity} stands as a link to {destination}'s deepest past.",
             entities[:3], ["ruin today", "historic site", "modern photograph", "visitor"],
             [f"{main_entity} today photograph", f"{destination} archaeological site today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _urban_growth_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _urban_growth_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for urban transformation / trade / migration stories."""
     main_entity = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination} as a Trading Post",
             "Show the city's early commercial role.",
@@ -471,55 +498,56 @@ def _urban_growth_scenes(destination, dest_slug, story_id, entities, description
             entities[:3], ["market", "port", "trading post", "historic"],
             [f"{destination} historic market", f"{main_entity} early trade"],
             entities[:2], ["modern skyscraper", "poster", "banner", "photograph"],
-            1900, sources, claims),
+            1900, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"Migration Shapes {destination}",
             "Show the people who came and built the city.",
             f"Waves of migrants brought new languages, foods, and skills.",
             entities[:3], ["migration", "arrival", "community", "neighborhood", "historic"],
             [f"{destination} migration history", f"{main_entity} immigrant community"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"The Port and the World",
             "Show the harbor, docks, or trade routes.",
             f"Goods and ideas flowed through {destination}'s gates to the world.",
             entities[:3], ["port", "harbor", "dock", "ship", "trade", "historic"],
             [f"{destination} historic port", f"{main_entity} trading harbor"],
             entities[:2], ["modern", "poster", "banner", "photograph"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"{destination} Transformed",
             "Show industrialization or rapid growth.",
             f"The city grew fast - new streets, new buildings, new lives.",
             entities[:3], ["industrial", "factory", "railway", "growth", "historic"],
             [f"{destination} industrial history", f"{main_entity} urban growth"],
             entities[:2], ["modern skyscraper", "poster", "banner", "photograph"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 5, f"{destination} at Mid-Century",
             "Show the city as it looked in the 20th century.",
             f"By the 1900s, {destination} had become a modern metropolis.",
             entities[:3], ["mid-century", "cityscape", "modern photograph", "street"],
             [f"{destination} 20th century photograph", f"{main_entity} mid-century"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"The City Today",
             "Show contemporary {destination}.",
             f"Today's {destination} carries all its layers at once.",
             entities[:3], ["modern photograph", "cityscape", "skyline", "contemporary"],
             [f"{destination} modern photograph", f"{destination} skyline today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"Layers of Time",
             "Close with how old and new coexist.",
             f"Every street in {destination} holds centuries of stories.",
             entities[:3], ["layers", "heritage", "modern photograph", "identity"],
             [f"{destination} heritage today", f"{main_entity} layers of time"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _people_story_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _people_story_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for a historical person / forgotten community story."""
     person = entities[0] if entities else "a historical figure"
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"Meet {person}",
             "Introduce the person and why they matter.",
@@ -527,55 +555,56 @@ def _people_story_scenes(destination, dest_slug, story_id, entities, description
             entities[:3], ["portrait", "person", "historic figure", "biography"],
             [f"{person} portrait historic", f"{destination} {person}"],
             entities[:2], ["modern", "poster", "banner", "cartoon"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 2, f"{person}'s World in {destination}",
             "Show the city as the person knew it.",
             f"{destination} was the stage for {person}'s life and choices.",
             entities[:3], ["street", "neighborhood", "historic city", "period"],
             [f"{destination} historic street", f"{person} time period city"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"The Work of {person}",
             "Show what the person created, built, or changed.",
             f"{person}'s work reshaped part of {destination}'s story.",
             entities[:3], ["workshop", "studio", "office", "creation", "historic"],
             [f"{person} work historic", f"{destination} {person} contribution"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"Opposition and Challenge",
             "Show the obstacles the person faced.",
             f"Not everyone agreed with {person}; the path was contested.",
             entities[:3], ["conflict", "challenge", "document", "historic"],
             [f"{person} challenge history", f"{destination} opposition"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"The Turning Point",
             "Show the climax of the person's story.",
             f"One moment defined {person}'s place in {destination}'s history.",
             entities[:3], ["event", "gathering", "decisive", "historic"],
             [f"{person} turning point", f"{destination} historic event"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"Remembering {person}",
             "Show memorials, plaques, or preserved places tied to the person.",
             f"{destination} remembers {person} in stone and story.",
             entities[:3], ["memorial", "plaque", "museum", "modern photograph"],
             [f"{destination} {person} memorial", f"{person} historic site today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"{person}'s Legacy",
             "Close with how the person shaped today's city.",
             f"{person}'s story is still part of {destination}'s identity.",
             entities[:3], ["modern photograph", "legacy", "identity", "contemporary"],
             [f"{destination} modern identity", f"{person} legacy today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _architecture_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _architecture_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for architecture / engineering / wonders."""
     landmark = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"The Vision for {landmark}",
             "Show the idea and planning stage.",
@@ -583,55 +612,56 @@ def _architecture_scenes(destination, dest_slug, story_id, entities, description
             entities[:3], ["blueprint", "plan", "drawing", "architect", "historic"],
             [f"{landmark} design historic", f"{destination} architecture vision"],
             entities[:2], ["modern photograph", "poster", "banner"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 2, f"Building {landmark}",
             "Show construction and craftsmanship.",
             f"Workers raised {landmark} stone by stone, by hand.",
             entities[:3], ["construction", "building", "craft", "historic"],
             [f"{landmark} construction historic", f"{destination} building history"],
             entities[:2], ["modern photograph", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"{landmark} Completed",
             "Show the finished work as it first appeared.",
             f"When {landmark} opened, it changed {destination}'s skyline.",
             entities[:3], ["completed", "opening", "inauguration", "historic"],
             [f"{landmark} completed historic", f"{destination} landmark opening"],
             entities[:2], ["modern photograph", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"{landmark} in Use",
             "Show the building serving its purpose.",
             f"People worked, worshipped, or gathered inside {landmark}.",
             entities[:3], ["interior", "use", "people", "historic"],
             [f"{landmark} interior historic", f"{destination} landmark in use"],
             entities[:2], ["modern photograph", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"Changes and Survival",
             "Show alterations, damage, or preservation efforts.",
             f"Time left its mark on {landmark}; some parts survived, others changed.",
             entities[:3], ["alteration", "preservation", "damage", "historic"],
             [f"{landmark} restoration historic", f"{destination} landmark changes"],
             entities[:2], ["modern photograph", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{landmark} Today",
             "Show the landmark as visitors see it now.",
             f"Today, {landmark} stands as {destination}'s signature.",
             entities[:3], ["modern photograph", "landmark", "visitor", "contemporary"],
             [f"{landmark} today photograph", f"{destination} landmark today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"Why {landmark} Matters",
             "Close with the building's meaning for the city.",
             f"{landmark} is more than stone - it is {destination}'s memory.",
             entities[:3], ["meaning", "identity", "modern photograph", "heritage"],
             [f"{destination} heritage meaning", f"{landmark} significance today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _culture_pop_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _culture_pop_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for music / film / entertainment / popular culture."""
     subject = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination}'s Cultural Scene Begins",
             "Show the origins of the tradition.",
@@ -639,55 +669,56 @@ def _culture_pop_scenes(destination, dest_slug, story_id, entities, description,
             entities[:3], ["origin", "early", "venue", "historic"],
             [f"{destination} {subject} origin", f"{subject} history"],
             entities[:2], ["modern", "poster", "banner", "album cover"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"The Golden Era of {subject}",
             "Show the peak period.",
             f"The golden age of {subject} filled {destination}'s stages and screens.",
             entities[:3], ["golden era", "stage", "screen", "historic"],
             [f"{subject} golden age", f"{destination} entertainment history"],
             entities[:2], ["modern", "poster", "banner", "album cover"],
-            1980, sources, claims),
+            1980, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"Key Figures of {subject}",
             "Show the artists, musicians, or performers.",
             f"Names from {destination} defined {subject} for the world.",
             entities[:3], ["artist", "performer", "portrait", "historic"],
             [f"{subject} artist portrait", f"{destination} cultural figure"],
             entities[:2], ["modern", "poster", "banner", "album cover"],
-            1980, sources, claims),
+            1980, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"Iconic Venues of {subject}",
             "Show theaters, clubs, or studios.",
             f"Certain rooms in {destination} witnessed history being made.",
             entities[:3], ["theater", "club", "studio", "venue", "historic"],
             [f"{subject} venue historic", f"{destination} entertainment venue"],
             entities[:2], ["modern", "poster", "banner", "album cover"],
-            1980, sources, claims),
+            1980, sources, claims, **geo_args),
         _modern_scene(story_id, 5, f"{subject} in Recent Decades",
             "Show the tradition continuing.",
             f"{subject} kept evolving through the late 20th century.",
             entities[:3], ["modern photograph", "concert", "performance", "contemporary"],
             [f"{subject} modern photograph", f"{destination} entertainment today"],
             entities[:2], ["painting", "engraving", "illustration", "album cover"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{subject} Today",
             "Show the living practice.",
             f"Today, {destination}'s {subject} still draws crowds.",
             entities[:3], ["modern photograph", "performance", "crowd", "contemporary"],
             [f"{subject} today photograph", f"{destination} culture now"],
             entities[:2], ["painting", "engraving", "illustration", "album cover"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"The Sound and Image of {destination}",
             "Close with the city's cultural signature.",
             f"{subject} is how the world hears and sees {destination}.",
             entities[:3], ["signature", "identity", "modern photograph", "heritage"],
             [f"{destination} cultural signature", f"{subject} meaning today"],
             entities[:2], ["painting", "engraving", "illustration", "album cover"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _disaster_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _disaster_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for disasters / survival / resilience."""
     event = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination} Before the Disaster",
             "Show the city in its normal state.",
@@ -695,55 +726,56 @@ def _disaster_scenes(destination, dest_slug, story_id, entities, description, so
             entities[:3], ["city view", "daily life", "normal", "historic"],
             [f"{destination} before {event}", f"{destination} historic city"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 2, f"The Event: {event}",
             "Show the disaster itself or its immediate setting.",
             f"{event} struck {destination} and changed everything.",
             entities[:3], ["disaster", "crisis", "emergency", "historic"],
             [f"{event} historic", f"{destination} disaster"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"Destruction and Loss",
             "Show the aftermath - damaged buildings, displaced people.",
             f"The city counted its losses in ruins and lives.",
             entities[:3], ["ruin", "damage", "destruction", "historic"],
             [f"{event} aftermath historic", f"{destination} destruction"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"The First Response",
             "Show rescue, aid, and immediate recovery.",
             f"People helped each other; aid arrived; survival began.",
             entities[:3], ["rescue", "aid", "relief", "historic"],
             [f"{event} rescue historic", f"{destination} recovery"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"Rebuilding {destination}",
             "Show reconstruction and new construction.",
             f"The city rose again, sometimes in a new form.",
             entities[:3], ["rebuilding", "construction", "renewal", "historic"],
             [f"{destination} rebuilding historic", f"{event} reconstruction"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{destination} Remembers",
             "Show memorials, markers, or preserved ruins.",
             f"Today, {destination} remembers {event} in stone and story.",
             entities[:3], ["memorial", "marker", "museum", "modern photograph"],
             [f"{destination} {event} memorial", f"{event} historic site today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"Resilience as Identity",
             "Close with how survival shapes the city today.",
             f"Surviving {event} became part of {destination}'s character.",
             entities[:3], ["resilience", "identity", "modern photograph", "contemporary"],
             [f"{destination} resilience today", f"{event} legacy today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _hidden_history_scenes(destination, dest_slug, story_id, entities, description, sources, claims):
+def _hidden_history_scenes(destination, dest_slug, story_id, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Scene sequence for surprising / lesser-known / hidden history."""
     subject = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"The {destination} You Don't Know",
             "Open with a question that challenges assumptions.",
@@ -751,55 +783,56 @@ def _hidden_history_scenes(destination, dest_slug, story_id, entities, descripti
             entities[:3], ["hidden", "lesser known", "surprising", "historic"],
             [f"{destination} hidden history", f"{subject} lesser known"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 2, f"The Forgotten {subject}",
             "Introduce the overlooked person, place, or event.",
             f"{subject} shaped {destination} without getting the credit.",
             entities[:3], ["forgotten", "overlooked", "person", "place", "historic"],
             [f"{subject} forgotten history", f"{destination} overlooked"],
             entities[:2], ["modern", "poster", "banner", "cartoon"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 3, f"Evidence of {subject}",
             "Show artifacts, documents, or traces that survive.",
             f"The evidence is there - if you know where to look.",
             entities[:3], ["artifact", "document", "trace", "evidence", "historic"],
             [f"{subject} artifact museum", f"{destination} hidden evidence"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"Why {subject} Was Hidden",
             "Show the forces that obscured the story.",
             f"Power, politics, or prejudice kept {subject} out of the official record.",
             entities[:3], ["suppression", "omission", "document", "historic"],
             [f"{subject} suppressed history", f"{destination} overlooked story"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims),
+            None, sources, claims, **geo_args),
         _historic_scene(story_id, 5, f"Rediscovering {subject}",
             "Show modern research, excavation, or documentation.",
             f"New research is bringing {subject} back into view.",
             entities[:3], ["research", "rediscovery", "documentation", "historic"],
             [f"{subject} rediscovered", f"{destination} new research"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{subject} Today",
             "Show where the story can be encountered now.",
             f"Today, {subject} can be found in {destination} - if you look.",
             entities[:3], ["modern photograph", "site", "marker", "contemporary"],
             [f"{subject} today photograph", f"{destination} hidden site today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"What {subject} Teaches Us",
             "Close with the lesson for today's city.",
             f"{subject} reminds us that {destination}'s story has many layers.",
             entities[:3], ["lesson", "identity", "modern photograph", "heritage"],
             [f"{destination} heritage lesson", f"{subject} meaning today"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _generic_story_scenes(destination, dest_slug, story_id, category, entities, description, sources, claims):
+def _generic_story_scenes(destination, dest_slug, story_id, category, entities, description, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Fallback generic story sequence when category is unknown."""
     subject = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     return [
         _historic_scene(story_id, 1, f"{destination} and the Story of {subject}",
             "Introduce the destination and central subject.",
@@ -807,55 +840,56 @@ def _generic_story_scenes(destination, dest_slug, story_id, category, entities, 
             entities[:3], [destination, "history", "story", "historic"],
             [f"{destination} {subject} history", f"{subject} story"],
             entities[:2], ["modern", "poster", "banner"],
-            None, sources, claims, clip_fallback=True),
+            None, sources, claims, clip_fallback=True, **geo_args),
         _historic_scene(story_id, 2, f"Early Days of {subject}",
             "Show origins.",
             f"{subject} began in {destination}'s early period.",
             entities[:3], ["origin", "early", "historic"],
             [f"{subject} origin", f"{destination} early history"],
             entities[:2], ["modern", "poster", "banner"],
-            1900, sources, claims),
+            1900, sources, claims, **geo_args),
         _historic_scene(story_id, 3, f"{subject} Grows",
             "Show development.",
             f"{subject} expanded and shaped the city.",
             entities[:3], ["growth", "expansion", "historic"],
             [f"{subject} growth", f"{destination} development"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _historic_scene(story_id, 4, f"{subject} at a Turning Point",
             "Show a key change.",
             f"A turning point redefined {subject} in {destination}.",
             entities[:3], ["turning point", "change", "historic"],
             [f"{subject} turning point", f"{destination} change"],
             entities[:2], ["modern", "poster", "banner"],
-            1950, sources, claims),
+            1950, sources, claims, **geo_args),
         _modern_scene(story_id, 5, f"{subject} in the 20th Century",
             "Show modern period.",
             f"{subject} continued through the 1900s.",
             entities[:3], ["20th century", "modern photograph"],
             [f"{subject} 20th century", f"{destination} modern"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 6, f"{subject} Today",
             "Show present day.",
             f"{subject} remains part of {destination} today.",
             entities[:3], ["modern photograph", "today", "contemporary"],
             [f"{subject} today", f"{destination} contemporary"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
         _modern_scene(story_id, 7, f"The Legacy of {subject}",
             "Close with meaning.",
             f"{subject} is part of {destination}'s identity.",
             entities[:3], ["legacy", "identity", "modern photograph"],
             [f"{destination} identity", f"{subject} legacy"],
             entities[:2], ["painting", "engraving", "illustration"],
-            sources, claims),
+            sources, claims, **geo_args),
     ]
 
 
-def _filler_scenes(destination, dest_slug, story_id, entities, current_count, sources, claims):
+def _filler_scenes(destination, dest_slug, story_id, entities, current_count, sources, claims, geo_max_radius_km, banned_location_keywords, map_lat, map_lon):
     """Add filler scenes to reach minimum 8."""
     subject = entities[0] if entities else destination
+    geo_args = dict(geo_max_radius_km=geo_max_radius_km, banned_location_keywords=banned_location_keywords, map_lat=map_lat, map_lon=map_lon)
     fillers = []
     order = current_count + 1
     while len(fillers) + current_count < 8:
@@ -865,7 +899,7 @@ def _filler_scenes(destination, dest_slug, story_id, entities, current_count, so
             entities[:2], ["context", "modern photograph"],
             [f"{destination} context", f"{subject} broader story"],
             entities[:1], ["painting", "engraving", "illustration"],
-            sources, claims))
+            sources, claims, **geo_args))
         order += 1
     return fillers
 

@@ -53,8 +53,12 @@ def load_region_config(destination_slug: str) -> Optional[Dict]:
         return yaml.safe_load(f)
 
 
-def load_research(topic_slug: str) -> Optional[Dict]:
-    """Load latest research record for topic."""
+def load_research(topic_slug: str, research_path: Optional[str] = None) -> Optional[Dict]:
+    """Load research record for topic. If research_path is provided, use it directly."""
+    if research_path and Path(research_path).exists():
+        with open(research_path, encoding="utf-8") as f:
+            return json.load(f)
+    # Fallback: search in DATA_DIR for backwards compatibility
     files = glob.glob(str(DATA_DIR / f"research_{topic_slug}_*.json"))
     if not files:
         return None
@@ -63,34 +67,30 @@ def load_research(topic_slug: str) -> Optional[Dict]:
         return json.load(f)
 
 
-def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Script:
-    """Generate a complete script from topic config and research."""
+def build_script_from_research(topic_data: Dict, research: Optional[Dict], research_file: str = "") -> Script:
+    """Generate a complete script from topic config and research.
+    
+    Narration is built from verified research claims, not from config narration.
+    Every factual claim in the output must be traceable to a verified claim.
+    """
     destination_slug = topic_data.get("destination_slug", "")
     destination = topic_data.get("destination", "")
     category = topic_data.get("category", "")
     title = topic_data.get("title", "")
 
-    # Load full region config for defaults (voice, language, fallback narration)
+    # Load full region config for defaults (voice, language)
     region_cfg = load_region_config(destination_slug)
     if region_cfg:
         story = region_cfg.get("story", {})
         hook_variants = story.get("hook_variants", {})
         kokoro_voice = story.get("kokoro_voice", "af_heart")
         narration_lang = story.get("narration_language", "English")
-        config_narration = story.get("narration", "")
     else:
         hook_variants = {}
         kokoro_voice = topic_data.get("kokoro_voice", "af_heart")
         narration_lang = topic_data.get("narration_language", "English")
-        config_narration = ""
 
-    # Use story-specific narration from the topic when available;
-    # fall back to config narration, then to topic description.
-    narration_base = (
-        topic_data.get("narration")
-        or topic_data.get("description")
-        or config_narration
-    )
+    # Use the story-specific hook
     hook = (
         topic_data.get("hook")
         or hook_variants.get("A")
@@ -98,7 +98,7 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         or f"{destination} was once a very different place than the {destination} you know today."
     )
 
-    # Extract claims from research
+    # Extract and organize verified claims
     verified_claims = []
     insufficient_claims = []
     disputed_claims = []
@@ -107,54 +107,38 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
     if research:
         for claim in research.get("claims", []):
             if claim.get("status") == "verified":
-                verified_claims.append(claim["text"])
+                verified_claims.append(claim)
             elif claim.get("status") == "insufficient_evidence":
-                insufficient_claims.append(claim["text"])
+                insufficient_claims.append(claim)
             elif claim.get("status") == "disputed":
-                disputed_claims.append(claim["text"])
+                disputed_claims.append(claim)
             elif claim.get("status") == "provider_failure":
-                provider_failure_claims.append(claim["text"])
+                provider_failure_claims.append(claim)
 
-    # Build structured script using full narration
-    parts = []
-
-    # 1. HOOK (use hook variant A)
-    parts.append(hook if hook else f"{destination} was once a very different place than the {destination} you know today.")
-
-    # 2-6. Use the full narration, split into structural parts
-    script_parts = split_narration_into_structure(narration_base, destination)
-    parts.extend(script_parts)
-
-    full_narration = " ".join(parts)
-    word_count = len(full_narration.split())
+    # Build narration from verified claims only
+    narration = build_narration_from_claims(hook, verified_claims, destination, category)
+    word_count = len(narration.split())
 
     # Trim if too long
     if word_count > TARGET_WORDS_MAX:
-        full_narration = trim_to_word_count(full_narration, TARGET_WORDS_MAX)
-        word_count = len(full_narration.split())
+        narration = trim_to_word_count(narration, TARGET_WORDS_MAX)
+        word_count = len(narration.split())
 
-    # Pad if too short (add detail from verified claims only)
+    # If too short, add more verified claims to reach minimum (110 words for renderer)
+    # We don't pad with generic filler or description text - only verified claims
     if word_count < TARGET_WORDS_MIN and research:
-        full_narration = expand_with_research(full_narration, verified_claims, TARGET_WORDS_MIN)
-        word_count = len(full_narration.split())
-
-    # Hard floor: narration must clear the renderer's 110-word minimum. Verified
-    # claims are the preferred padding; fall back to the sourced description text
-    # only when claims are exhausted, never inventing facts.
-    if word_count < 110 and research:
-        desc = (topic_data.get("description") or "").strip()
-        if desc and desc not in full_narration:
-            full_narration = (full_narration + " " + desc).strip()
-            word_count = len(full_narration.split())
+        remaining = [c for c in _sort_claims_chronologically(verified_claims)
+                     if c not in _select_claims_for_beat(_sort_claims_chronologically(verified_claims), "opening", max_claims=2)
+                     + _select_claims_for_beat(_sort_claims_chronologically(verified_claims), "development", max_claims=3)
+                     + _select_claims_for_beat(_sort_claims_chronologically(verified_claims), "climax", max_claims=2)
+                     + _select_claims_for_beat(_sort_claims_chronologically(verified_claims), "resolution", max_claims=2)]
+        for claim in remaining[:3]:
+            narration += " " + _claim_to_narrative_sentence(claim, "development")
+            word_count = len(narration.split())
+            if word_count >= TARGET_WORDS_MIN:
+                break
 
     estimated_duration = word_count / 150 * 60  # seconds at 150 WPM
-
-    research_file = ""
-    if research:
-        # Find the research file path
-        files = glob.glob(str(DATA_DIR / f"research_{destination_slug}_*.json"))
-        if files:
-            research_file = max(files)
 
     return Script(
         topic_slug=destination_slug,
@@ -162,7 +146,7 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         category=category,
         title=title,
         hook=hook,
-        narration=full_narration,
+        narration=narration,
         word_count=word_count,
         estimated_duration=round(estimated_duration, 1),
         claims_supported=len(verified_claims) + len(insufficient_claims),
@@ -176,6 +160,115 @@ def build_script_from_research(topic_data: Dict, research: Optional[Dict]) -> Sc
         narration_language=narration_lang,
         research_record=research_file
     )
+
+
+def build_narration_from_claims(hook: str, verified_claims: List[Dict], destination: str, category: str) -> str:
+    """Build a coherent narration from verified claims.
+    
+    Organizes claims into a narrative arc: context -> development -> climax -> resolution.
+    Each sentence must be traceable to a verified claim.
+    """
+    if not verified_claims:
+        # Fallback: minimal narration with just the hook
+        return f"{hook} The history of {destination} awaits deeper research."
+    
+    # Sort claims by chronological hints (years, periods) if available
+    sorted_claims = _sort_claims_chronologically(verified_claims)
+    
+    # Build narrative structure
+    parts = [hook]
+    
+    # Group claims into narrative beats
+    # Opening: Establish context (earliest period, founding, origin)
+    opening_claims = _select_claims_for_beat(sorted_claims, "opening", max_claims=2)
+    for claim in opening_claims:
+        parts.append(_claim_to_narrative_sentence(claim, "opening"))
+    
+    # Development: Key events, changes, growth
+    development_claims = _select_claims_for_beat(sorted_claims, "development", max_claims=3)
+    for claim in development_claims:
+        parts.append(_claim_to_narrative_sentence(claim, "development"))
+    
+    # Climax: Turning point, peak, transformation
+    climax_claims = _select_claims_for_beat(sorted_claims, "climax", max_claims=2)
+    for claim in climax_claims:
+        parts.append(_claim_to_narrative_sentence(claim, "climax"))
+    
+    # Resolution: Legacy, present day, what remains
+    resolution_claims = _select_claims_for_beat(sorted_claims, "resolution", max_claims=2)
+    for claim in resolution_claims:
+        parts.append(_claim_to_narrative_sentence(claim, "resolution"))
+    
+    # Ensure we have enough content
+    narration = " ".join(parts)
+    if len(narration.split()) < TARGET_WORDS_MIN:
+        # Add more claims if available
+        remaining = [c for c in sorted_claims if c not in opening_claims + development_claims + climax_claims + resolution_claims]
+        for claim in remaining[:3]:
+            parts.append(_claim_to_narrative_sentence(claim, "development"))
+            narration = " ".join(parts)
+            if len(narration.split()) >= TARGET_WORDS_MIN:
+                break
+    
+    return narration
+
+
+def _sort_claims_chronologically(claims: List[Dict]) -> List[Dict]:
+    """Sort claims by chronological order based on years mentioned in claim text."""
+    def extract_earliest_year(claim_text: str) -> int:
+        import re
+        years = re.findall(r'\b(1[0-9]{3}|20[0-2][0-9])\b', claim_text)
+        if years:
+            return min(int(y) for y in years)
+        return 9999  # Claims without dates go to the end
+    
+    return sorted(claims, key=lambda c: extract_earliest_year(c["text"]))
+
+
+def _select_claims_for_beat(claims: List[Dict], beat: str, max_claims: int) -> List[Dict]:
+    """Select appropriate claims for a narrative beat without overlap."""
+    if not claims:
+        return []
+    
+    n = len(claims)
+    # Define non-overlapping ranges for each beat
+    # opening: first 2 claims (indices 0, 1)
+    # development: claims 2 to n-3 (if available)
+    # climax: claim n-2 (if n > 3)
+    # resolution: last claim only (index n-1)
+    if beat == "opening":
+        # First 1-2 claims
+        return claims[:min(2, max_claims, n)]
+    elif beat == "development":
+        # Claims after opening, before climax/resolution
+        start = min(2, n)
+        end = n - 2 if n > 3 else n
+        return claims[start:min(end, start + max_claims)]
+    elif beat == "climax":
+        # Second-to-last claim (if enough claims)
+        if n <= 3:
+            return []
+        return [claims[n - 2]]
+    elif beat == "resolution":
+        # Last claim only (avoid overlap with climax)
+        return claims[-1:] if n > 0 else []
+    return []
+
+
+def _claim_to_narrative_sentence(claim: Dict, beat: str) -> str:
+    """Convert a verified claim into a natural narrative sentence."""
+    text = claim["text"].strip()
+    
+    # Clean up the claim text for narration
+    # Remove redundant phrases
+    text = text.replace("The city ", f"{claim.get('destination', 'The city')} ")
+    text = text.replace("It was ", "It ")
+    
+    # Ensure it ends with a period
+    if not text.endswith("."):
+        text += "."
+    
+    return text
 
 
 def split_narration_into_structure(narration: str, destination: str) -> List[str]:
@@ -249,6 +342,7 @@ def main():
     import argparse
     ap = argparse.ArgumentParser(description="Generate narration script from topic and research")
     ap.add_argument("--topic", required=True, help="Path to topic JSON or 'latest' from schedule")
+    ap.add_argument("--research", help="Path to research JSON (explicit path from orchestrator)")
     ap.add_argument("--output", required=True, help="Output script path")
     args = ap.parse_args()
 
@@ -269,8 +363,8 @@ def main():
         with open(args.topic, encoding="utf-8") as f:
             topic_data = json.load(f)
 
-    research = load_research(topic_data.get("destination_slug", ""))
-    script = build_script_from_research(topic_data, research)
+    research = load_research(topic_data.get("destination_slug", ""), args.research)
+    script = build_script_from_research(topic_data, research, args.research or "")
     save_script(script, Path(args.output))
 
     print(f"Generated script for: {script.title}")

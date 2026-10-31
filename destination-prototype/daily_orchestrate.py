@@ -138,8 +138,9 @@ def generate_script(topic: Dict, research: Dict, paths: RunPaths) -> Optional[Di
     with open(paths.topic_file, "w", encoding="utf-8") as f:
         json.dump(topic, f, ensure_ascii=False)
 
+    # Pass the research file path explicitly so generate_script.py can link it correctly
     result = run_command([
-        sys.executable, "destination-prototype/generate_script.py", "--topic", str(paths.topic_file), "--output", str(paths.script_file)
+        sys.executable, "destination-prototype/generate_script.py", "--topic", str(paths.topic_file), "--research", str(paths.research_file), "--output", str(paths.script_file)
     ])
     if result.returncode != 0:
         return None

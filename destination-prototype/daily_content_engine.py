@@ -89,6 +89,9 @@ class Topic:
     hook: str
     description: str
     sources: List[str]
+    # Story coherence fields
+    entities: List[str] = field(default_factory=list)
+    claim_refs: List[str] = field(default_factory=list)
     priority: float = 0.0
     selected_at: Optional[str] = None
     # Production status
@@ -300,110 +303,184 @@ def build_story_angles(dest: Destination, cfg: Dict) -> List[Dict]:
 def build_angle_for_category(category: str, dest: Destination, narration: str,
                               period: str, place_names: List[str], entities: List[str],
                               sources: List[str], claim_sources: Dict) -> Optional[Dict]:
-    """Build a specific, grounded story angle for a category."""
+    """Build a specific, grounded story angle for a category.
+    
+    Returns None if the category cannot be grounded in specific entities/events
+    from the config (prevents generic category-only stories).
+    """
 
     # Extract key historical periods from period_focus
     period_start = ""
+    period_end = ""
     if period:
-        # Try to extract start year/era
         import re
-        year_match = re.search(r'\b(\d{3,4})\b', period)
-        if year_match:
-            period_start = year_match.group(1)
+        years = re.findall(r'\b(\d{3,4})\b', period)
+        if years:
+            period_start = years[0]
+            if len(years) > 1:
+                period_end = years[1]
+
+    # Extract specific entities that are meaningful for storytelling
+    # Filter out generic words and keep proper nouns that appear in context
+    meaningful_entities = []
+    for e in entities:
+        e_lower = e.lower()
+        # Skip generic words
+        if e_lower in {"the", "and", "but", "for", "with", "from", "this", "that", "city", "town", "place", "history", "historical", "modern", "ancient", "early", "late", "new", "old", "first", "last", "great", "major", "capital", "region", "area", "period", "era", "century", "year", "time", "people", "person", "life", "world", "land", "sea", "river", "mountain", "valley", "coast", "port", "harbor", "bridge", "road", "street", "square", "park", "garden", "temple", "palace", "castle", "tower", "wall", "gate", "tower"}:
+            continue
+        # Must appear in narration (not just extracted from capitalization)
+        if e in narration:
+            meaningful_entities.append(e)
+    
+    # Also add place_names as they're explicitly defined in config
+    for p in place_names:
+        if p not in meaningful_entities and p in narration:
+            meaningful_entities.append(p)
+    
+    # Need at least 2 meaningful entities to build a specific story
+    if len(meaningful_entities) < 2:
+        return None
 
     # Build angle based on category with concrete grounding
     if category == "hidden_history":
         # Look for pre-colonial, lost, forgotten, buried aspects
         angle_parts = []
-        if place_names:
-            angle_parts.append(f"Pre-colonial {place_names[0]}")
-        if "before" in narration.lower() or "was once" in narration.lower():
-            angle_parts.append("the city before its modern name")
-        angle = " ".join(angle_parts) if angle_parts else f"Hidden history of {dest.name}"
+        forgotten_subject = meaningful_entities[0] if meaningful_entities else place_names[0] if place_names else dest.name
+        if "before" in narration.lower() or "was once" in narration.lower() or "forgotten" in narration.lower() or "hidden" in narration.lower() or "lost" in narration.lower():
+            angle_parts.append(f"the forgotten {forgotten_subject}")
+        elif period_start:
+            angle_parts.append(f"{forgotten_subject} before {period_start}")
+        else:
+            angle_parts.append(f"hidden {forgotten_subject}")
+        angle = " ".join(angle_parts)
         return {
             "category": category,
             "angle_id": f"{dest.slug}:hidden:{angle.lower().replace(' ', '_')[:40]}",
-            "title": f"The Forgotten {angle}",
-            "hook": f"Before {dest.name} was {dest.name}, it was {angle.lower()}.",
+            "title": f"The Forgotten {forgotten_subject.title()}",
+            "hook": f"Before {dest.name} was {dest.name}, the story of {angle} shaped everything.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": [e for e in entities if e in narration][:3],
+            "entities": meaningful_entities[:3],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "wonders_landmarks":
-        # Focus on specific landmarks from place_names
-        landmark = place_names[0] if place_names else dest.name
+        # Focus on specific landmarks from place_names and entities
+        landmark = None
+        for e in meaningful_entities:
+            if any(kw in e.lower() for kw in ["temple", "palace", "castle", "tower", "bridge", "shrine", "monument", "statue", "cathedral", "mosque", "pyramid", "citadel", "fortress", "wall", "gate", "square", "plaza", "park", "garden"]):
+                landmark = e
+                break
+        if not landmark and place_names:
+            landmark = place_names[0]
+        if not landmark:
+            landmark = meaningful_entities[0]
+        
         return {
             "category": category,
             "angle_id": f"{dest.slug}:wonders:{landmark.lower().replace(' ', '_')[:40]}",
             "title": f"The {landmark} of {dest.name}",
             "hook": f"{landmark} is {dest.name}'s most iconic landmark, but its origins are surprising.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": [landmark] + [e for e in entities if e != landmark][:2],
+            "entities": [landmark] + [e for e in meaningful_entities if e != landmark][:2],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "culture_traditions":
+        # Need specific cultural practices, festivals, or traditions mentioned
+        cultural_entities = [e for e in meaningful_entities if any(kw in e.lower() for kw in ["festival", "tradition", "ceremony", "ritual", "dance", "music", "art", "craft", "cuisine", "food", "tea", "theatre", "theater", "performance", "celebration", "holiday", "custom", "practice"])]
+        if not cultural_entities:
+            # Fall back to place names that might have cultural significance
+            cultural_entities = [e for e in meaningful_entities if e in place_names]
+        if not cultural_entities:
+            return None  # No specific cultural content found
+        
+        tradition = cultural_entities[0]
         return {
             "category": category,
-            "angle_id": f"{dest.slug}:culture:traditions",
-            "title": f"Living Traditions of {dest.name}",
-            "hook": f"In {dest.name}, ancient traditions still shape daily life in ways most visitors miss.",
+            "angle_id": f"{dest.slug}:culture:{tradition.lower().replace(' ', '_')[:40]}",
+            "title": f"The Living Tradition of {tradition} in {dest.name}",
+            "hook": f"{tradition} has shaped {dest.name}'s identity for generations — and it's still practiced today.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": place_names[:3],
+            "entities": meaningful_entities[:3],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "entertainment_popculture":
+        # Need specific entertainment/cultural figures or movements
+        entertainment_entities = [e for e in meaningful_entities if any(kw in e.lower() for kw in ["film", "movie", "cinema", "music", "band", "singer", "actor", "actress", "director", "studio", "anime", "manga", "game", "television", "tv", "pop", "culture", "star", "celebrity", "artist", "performer"])]
+        if not entertainment_entities:
+            return None  # No specific entertainment content found
+        
+        subject = entertainment_entities[0]
         return {
             "category": category,
-            "angle_id": f"{dest.slug}:entertainment:popculture",
-            "title": f"Entertainment Origins in {dest.name}",
-            "hook": f"Before it went global, {dest.name} gave the world a cultural phenomenon you've never connected to its streets.",
+            "angle_id": f"{dest.slug}:entertainment:{subject.lower().replace(' ', '_')[:40]}",
+            "title": f"How {subject} Put {dest.name} on the World Stage",
+            "hook": f"Before {subject} went global, it was born in the streets of {dest.name}.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": place_names[:3],
+            "entities": meaningful_entities[:3],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "remarkable_destinations":
+        # Focus on a specific journey, transformation, or layer
+        if not period_start:
+            return None  # Need a historical period to anchor the story
+        
         return {
             "category": category,
-            "angle_id": f"{dest.slug}:remarkable:journey",
-            "title": f"{dest.name}: Beyond the Postcard",
+            "angle_id": f"{dest.slug}:remarkable:{period_start}",
+            "title": f"{dest.name}: The {period_start} Transformation",
             "hook": f"Most visitors see the landmarks. Few discover the {period_start} layers beneath {dest.name}'s streets.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": place_names[:3],
+            "entities": meaningful_entities[:3],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "people_turning_points":
-        # Extract key people from entities
-        people = [e for e in entities if len(e.split()) == 2 and e[0].isupper()]
-        person = people[0] if people else "a pivotal figure"
+        # Extract key people from entities (proper nouns that look like names)
+        people = [e for e in meaningful_entities if len(e.split()) >= 2 and all(w[0].isupper() for w in e.split())]
+        # Also check claim_sources for people names
+        for claim in claim_sources.keys():
+            claim_people = re.findall(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', claim)
+            for p in claim_people:
+                if p not in people and p in narration:
+                    people.append(p)
+        
+        if not people:
+            return None  # No specific historical figures found
+        
+        person = people[0]
         return {
             "category": category,
             "angle_id": f"{dest.slug}:people:{person.lower().replace(' ', '_')[:40]}",
             "title": f"The {person} Who Changed {dest.name}",
             "hook": f"{person} made a decision that reshaped {dest.name} forever — and the effects are still visible today.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": [person] + place_names[:2],
+            "entities": [person] + [e for e in meaningful_entities if e != person][:2],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
 
     elif category == "unexpected_stories":
+        # Need a specific connection or surprising fact
+        if len(meaningful_entities) < 2:
+            return None
+        
+        # Look for cross-cultural or unexpected connections in claim_sources
+        connection_subject = meaningful_entities[0]
         return {
             "category": category,
-            "angle_id": f"{dest.slug}:unexpected:connections",
-            "title": f"Unexpected {dest.name}: Connections Across Continents",
-            "hook": f"What connects {dest.name} to distant lands? A {period_start if period_start else 'historical'} story you won't find in guidebooks.",
+            "angle_id": f"{dest.slug}:unexpected:{connection_subject.lower().replace(' ', '_')[:40]}",
+            "title": f"Unexpected {dest.name}: The {connection_subject} Connection",
+            "hook": f"What connects {dest.name} to {connection_subject}? A {period_start if period_start else 'historical'} story you won't find in guidebooks.",
             "description": narration[:300] + "..." if len(narration) > 300 else narration,
-            "entities": place_names[:3],
+            "entities": meaningful_entities[:3],
             "sources": sources[:3],
             "claim_refs": list(claim_sources.keys())[:3],
         }
@@ -437,6 +514,8 @@ def generate_topic_candidates(destinations: List[Destination]) -> List[Topic]:
                 hook=angle["hook"],
                 description=angle["description"],
                 sources=angle["sources"],
+                entities=angle.get("entities", []),
+                claim_refs=angle.get("claim_refs", []),
                 priority=0.0,
             )
             candidates.append(topic)
@@ -471,6 +550,10 @@ def select_next_topic(candidates: List[Topic], state: EditorialState,
         if c.story_angle in state.used_topics:
             continue
 
+        # Validate story coherence - reject generic category-only stories
+        if not _is_coherent_story(c):
+            continue
+
         available.append(c)
 
     if not available:
@@ -493,17 +576,74 @@ def select_next_topic(candidates: List[Topic], state: EditorialState,
         # 3. Source quality bonus (more sources = higher confidence)
         source_bonus = min(len(c.sources) / 3.0, 1.0) * 0.5
 
-        # 4. Distinctiveness: angles with more supporting sources are more distinctive
-        entity_bonus = min(len(c.sources) / 3.0, 1.0) * 0.3
+        # 4. Distinctiveness: angles with more entities and claim_refs are more distinctive
+        entity_bonus = min(len(c.entities) / 3.0, 1.0) * 0.3
+        claim_bonus = min(len(c.claim_refs) / 3.0, 1.0) * 0.2
 
         # 5. Recent-topic duplication penalty (already filtered by avoid_recent_days)
         recency_penalty = 0.0
 
-        c.priority = cont_balance + cat_balance + source_bonus + entity_bonus + recency_penalty
+        c.priority = cont_balance + cat_balance + source_bonus + entity_bonus + claim_bonus + recency_penalty
 
     # Select highest priority
     available.sort(key=lambda x: x.priority, reverse=True)
     return available[0]
+
+
+def _is_coherent_story(topic: Topic) -> bool:
+    """Check if a topic represents a coherent, specific story (not a generic category)."""
+    # Must have at least 2 specific entities (people, places, events, landmarks)
+    if len(topic.entities) < 2:
+        return False
+    
+    # Must have at least 1 claim reference for fact-checking
+    if len(topic.claim_refs) < 1:
+        return False
+    
+    # Must have at least 1 source
+    if len(topic.sources) < 1:
+        return False
+    
+    # Hook must not be a generic template
+    generic_hooks = [
+        "ancient traditions still shape daily life",
+        "most visitors miss",
+        "you won't find in guidebooks",
+        "origins are surprising",
+        "gave the world a cultural phenomenon",
+        "beyond the postcard",
+        "layers beneath",
+        "made a decision that reshaped",
+        "effects are still visible today",
+        "connections across continents",
+    ]
+    hook_lower = topic.hook.lower()
+    for generic in generic_hooks:
+        if generic in hook_lower:
+            # Allow if the hook also contains specific entities
+            has_specific = any(entity.lower() in hook_lower for entity in topic.entities)
+            if not has_specific:
+                return False
+    
+    # Title must not be a generic category name
+    generic_titles = [
+        f"living traditions of {topic.destination_name.lower()}",
+        f"hidden history of {topic.destination_name.lower()}",
+        f"forgotten {topic.destination_name.lower()}",
+        f"the {topic.destination_name.lower()} of {topic.destination_name.lower()}",
+        f"{topic.destination_name}: beyond the postcard",
+        f"unexpected {topic.destination_name}",
+        f"the story of {topic.destination_name}",
+    ]
+    title_lower = topic.title.lower()
+    for generic in generic_titles:
+        if generic in title_lower:
+            # Allow if title also contains specific entity names
+            has_specific = any(entity.lower() in title_lower for entity in topic.entities)
+            if not has_specific:
+                return False
+    
+    return True
 
 
 def update_state(state: EditorialState, topic: Topic):

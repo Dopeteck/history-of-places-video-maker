@@ -102,6 +102,17 @@ map:
   - label: Kyoto
     latitude: 35.0116
     longitude: 135.7681
+# Geographic relevance settings
+geo_max_radius_km: 100
+# Known confusing location names that should be rejected for Tokyo, Japan
+banned_location_keywords:
+- "Little Tokyo"
+- "Los Angeles"
+- "California"
+- "LA"
+- "Sawtelle"
+- "Japantown"
+- "J Town"
 scenes:
 - title: Edo on the Map
   narration_intent: Show where Tokyo and Kyoto sit in Japan, introducing Edo as Tokyo's

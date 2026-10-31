@@ -4,6 +4,7 @@
 Mandatory production gate with ffprobe validation.
 """
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -98,6 +99,275 @@ def check_research_record(script_path: Path) -> QAResult:
         return QAResult("research_record", False, "Zero claims extracted", "error")
 
     return QAResult("research_record", True, "Research record valid", "info")
+
+
+def check_research_story_consistency(script_path: Path) -> QAResult:
+    """Verify research record corresponds to the selected story (same destination, category)."""
+    with open(script_path, encoding="utf-8") as f:
+        script = json.load(f)
+    research_path = script.get("research_record", "")
+    if not research_path or not Path(research_path).exists():
+        return QAResult("research_story_consistency", False, "Research record not available for consistency check", "error")
+
+    with open(research_path, encoding="utf-8") as f:
+        research = json.load(f)
+
+    # Check destination match
+    script_dest = script.get("destination", "").lower()
+    research_dest = research.get("destination", "").lower()
+    if script_dest and research_dest and script_dest != research_dest:
+        return QAResult("research_story_consistency", False, 
+                        f"Destination mismatch: script={script_dest}, research={research_dest}", "error")
+
+    # Check category match
+    script_cat = script.get("category", "").lower()
+    research_cat = research.get("category", "").lower()
+    if script_cat and research_cat and script_cat != research_cat:
+        return QAResult("research_story_consistency", False,
+                        f"Category mismatch: script={script_cat}, research={research_cat}", "error")
+
+    # Check title/topic alignment
+    script_title = script.get("title", "").lower()
+    research_title = research.get("title", "").lower()
+    if script_title and research_title:
+        # At least one significant word should overlap
+        script_words = set(w for w in script_title.split() if len(w) > 3)
+        research_words = set(w for w in research_title.split() if len(w) > 3)
+        overlap = script_words & research_words
+        if not overlap:
+            return QAResult("research_story_consistency", False,
+                            f"Title/topic mismatch: script='{script_title}', research='{research_title}'", "warning")
+
+    return QAResult("research_story_consistency", True, "Research matches story identity", "info")
+
+
+def check_geographic_relevance(credits_path: Path) -> QAResult:
+    """Verify all pinned assets have geographic relevance confirmation."""
+    if not credits_path.exists():
+        return QAResult("geographic_relevance", False, "Credits file not found", "error")
+    
+    with open(credits_path, encoding="utf-8") as f:
+        credits = json.load(f)
+    
+    if not isinstance(credits, list):
+        return QAResult("geographic_relevance", False, "Credits is not a list", "error")
+    
+    total_scenes = len(credits)
+    geo_confirmed = 0
+    geo_unverifiable = 0
+    geo_missing = 0
+    
+    for c in credits:
+        # Skip map scenes and missing assets
+        provider = c.get("provider", "").lower()
+        if provider in ("map", "missing asset", "fallback text card", "procedural illustration"):
+            continue
+        
+        # Check for geographic match confirmation in credit metadata
+        geo_match = c.get("_geo_match") or c.get("geo_match")
+        geo_distance = c.get("_geo_distance_km") or c.get("geo_distance_km")
+        
+        if geo_match and "coordinate_match" in str(geo_match):
+            geo_confirmed += 1
+        elif geo_match and "location_name_match" in str(geo_match):
+            geo_confirmed += 1
+        elif geo_match and "unverifiable" in str(geo_match):
+            geo_unverifiable += 1
+        else:
+            # Check warnings for geographic info
+            warnings = c.get("warnings", [])
+            has_geo_warning = any("geo" in str(w).lower() or "location" in str(w).lower() for w in warnings)
+            if has_geo_warning:
+                geo_unverifiable += 1
+            else:
+                geo_missing += 1
+    
+    if geo_missing > 0:
+        return QAResult("geographic_relevance", False,
+                        f"{geo_missing} scene(s) lack geographic relevance confirmation; {geo_confirmed} confirmed, {geo_unverifiable} unverifiable", "error")
+    
+    if geo_unverifiable > 0 and geo_confirmed == 0:
+        return QAResult("geographic_relevance", False,
+                        f"All {geo_unverifiable} scenes have unverifiable geographic relevance", "warning")
+    
+    return QAResult("geographic_relevance", True,
+                    f"All {geo_confirmed} non-map scenes have geographic relevance confirmed ({geo_unverifiable} unverifiable)", "info")
+
+
+def check_narrative_coherence(script_path: Path) -> QAResult:
+    """Check narration for generic filler, archive-title concatenation, and provider/license text."""
+    with open(script_path, encoding="utf-8") as f:
+        script = json.load(f)
+    
+    narration = script.get("narration", "")
+    if not narration:
+        return QAResult("narrative_coherence", False, "No narration in script", "error")
+    
+    narration_lower = narration.lower()
+    issues = []
+    
+    # Generic filler phrases that indicate template-based narration
+    generic_phrases = [
+        "this is the story of",
+        "the story of",
+        "surviving material shows",
+        "across generations",
+        "rich history waiting to be discovered",
+        "history of " + script.get("destination", "").lower() if script.get("destination") else "",
+        "culture story",
+        "architecture story", 
+        "landmark story",
+        "historical places",
+    ]
+    
+    for phrase in generic_phrases:
+        if phrase and phrase in narration_lower:
+            issues.append(f"generic filler: '{phrase}'")
+    
+    # Archive/provider metadata leakage
+    metadata_phrases = [
+        "public domain",
+        "creative commons",
+        "cc by",
+        "cc0",
+        "license",
+        "rights statement",
+        "source url",
+        "provider",
+        "archive",
+        "catalogue",
+        "accession",
+        "inventory",
+        "repository",
+        "collection",
+        "digital image",
+        "scan",
+        "digitized",
+        "courtesy of",
+        "credit",
+        "attribution",
+    ]
+    
+    for phrase in metadata_phrases:
+        if phrase in narration_lower:
+            issues.append(f"metadata leakage: '{phrase}'")
+    
+    # Archive title patterns (Title Case with dates/formats typical of archive records)
+    import re
+    archive_patterns = [
+        r'^\d{4}\.\s*[A-Z]',  # "1942. A..." at START of text (any capital letter after period)
+        r'[A-Z][a-z]+,\s*[A-Z]{2}\.\s*\d{4}',  # "Los Angeles, Calif. Apr. 1942"
+        # Removed overly broad pattern that matched normal sentences
+    ]
+    
+    for pattern in archive_patterns:
+        if re.search(pattern, narration):
+            issues.append(f"archive title pattern detected")
+            break
+    
+    # Repetitive sentence structures (multiple sentences starting the same way)
+    sentences = [s.strip() for s in re.split(r'[.!?]+', narration) if len(s.strip()) > 10]
+    if len(sentences) >= 3:
+        starts = [s.split()[:3] for s in sentences]
+        start_strings = [" ".join(s) for s in starts if len(s) >= 3]
+        if len(set(start_strings)) < len(start_strings) * 0.7:  # More than 30% duplicate starts
+            issues.append("repetitive sentence structure")
+    
+    if issues:
+        return QAResult("narrative_coherence", False, f"Narrative issues: {'; '.join(issues)}", "error")
+    
+    return QAResult("narrative_coherence", True, "Narration is coherent and free of generic filler", "info")
+
+
+def check_narration_scene_relevance(script_path: Path, output_dir: Path) -> QAResult:
+    """Verify narration content relates to scene imagery (via scene titles in credits)."""
+    with open(script_path, encoding="utf-8") as f:
+        script = json.load(f)
+    
+    narration = script.get("narration", "").lower()
+    if not narration:
+        return QAResult("narration_scene_relevance", False, "No narration to check", "error")
+    
+    credits_path = output_dir / "credits.json"
+    if not credits_path.exists():
+        return QAResult("narration_scene_relevance", False, "Credits file not found", "error")
+    
+    with open(credits_path, encoding="utf-8") as f:
+        credits = json.load(f)
+    
+    if not isinstance(credits, list):
+        return QAResult("narration_scene_relevance", False, "Credits is not a list", "error")
+    
+    # Extract key terms from narration (excluding stop words)
+    stop_words = {"the", "and", "of", "in", "to", "a", "for", "with", "on", "as", "by", "at", "from", "is", "was", "were", "be", "been", "have", "has", "had", "this", "that", "these", "those", "its", "it", "or", "but", "not", "are"}
+    narration_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', narration.lower()) if w not in stop_words)
+    
+    # Check each scene's title/description appears in narration
+    scene_matches = 0
+    for c in credits:
+        scene_title = c.get("scene", "").lower()
+        if not scene_title:
+            continue
+        
+        scene_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', scene_title) if w not in stop_words)
+        if scene_words & narration_words:
+            scene_matches += 1
+    
+    total_scenes = len([c for c in credits if c.get("provider") not in ("map", "missing asset", "fallback text card", "procedural illustration")])
+    if total_scenes == 0:
+        return QAResult("narration_scene_relevance", True, "No non-map scenes to check", "info")
+    
+    match_ratio = scene_matches / total_scenes if total_scenes else 0
+    if match_ratio < 0.5:
+        return QAResult("narration_scene_relevance", False,
+                        f"Only {scene_matches}/{total_scenes} scenes have narration relevance ({match_ratio:.0%})", "error")
+    
+    return QAResult("narration_scene_relevance", True,
+                    f"{scene_matches}/{total_scenes} scenes align with narration ({match_ratio:.0%})", "info")
+
+
+def check_script_research_claim_refs(script_path: Path) -> QAResult:
+    """Verify script claims are traceable to research record."""
+    with open(script_path, encoding="utf-8") as f:
+        script = json.load(f)
+    
+    research_path = script.get("research_record", "")
+    if not research_path or not Path(research_path).exists():
+        return QAResult("script_research_claim_refs", False, "Research record not available", "error")
+    
+    with open(research_path, encoding="utf-8") as f:
+        research = json.load(f)
+    
+    research_claims = research.get("claims", [])
+    verified_texts = [c["text"] for c in research_claims if c.get("status") == "verified"]
+    
+    if not verified_texts:
+        return QAResult("script_research_claim_refs", False, "No verified claims in research", "error")
+    
+    # Check that narration sentences can be traced to verified claims
+    narration = script.get("narration", "")
+    sentences = [s.strip() for s in re.split(r'[.!?]+', narration) if len(s.strip()) > 15]
+    
+    traceable = 0
+    for sentence in sentences:
+        sentence_lower = sentence.lower()
+        # Check if sentence shares significant content with any verified claim
+        for claim_text in verified_texts:
+            claim_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', claim_text.lower()))
+            sentence_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', sentence_lower))
+            overlap = claim_words & sentence_words
+            if len(overlap) >= 2:  # At least 2 significant words in common
+                traceable += 1
+                break
+    
+    if sentences:
+        trace_ratio = traceable / len(sentences)
+        if trace_ratio < 0.6:
+            return QAResult("script_research_claim_refs", False,
+                            f"Only {traceable}/{len(sentences)} narration sentences traceable to verified claims ({trace_ratio:.0%})", "error")
+    
+    return QAResult("script_research_claim_refs", True,
+                    f"{traceable}/{len(sentences)} narration sentences traceable to verified claims", "info")
 
 
 def check_video_output(video_path: Path) -> QAResult:
@@ -414,6 +684,9 @@ def run_production_qa(script_path: Path, output_dir: Path, video_path: Path,
     results.append(check_claims_support(script_path))
     results.append(check_claims_no_disputed(script_path))
     results.append(check_research_record(script_path))
+    results.append(check_research_story_consistency(script_path))
+    results.append(check_narrative_coherence(script_path))
+    results.append(check_script_research_claim_refs(script_path))
 
     # Artifact checks
     board_path = output_dir / "approval-board.html"
@@ -421,6 +694,7 @@ def run_production_qa(script_path: Path, output_dir: Path, video_path: Path,
 
     credits_path = output_dir / "credits.json"
     results.append(check_credits(credits_path))
+    results.append(check_geographic_relevance(credits_path))
 
     # Scene completeness: every planned scene must have an approved image
     if scene_count is not None:
@@ -437,6 +711,9 @@ def run_production_qa(script_path: Path, output_dir: Path, video_path: Path,
         results.append(check_caption_visibility(video_path))
     else:
         results.append(QAResult("captions_exist", False, "No SRT/VTT captions found", "error"))
+
+    # Narration-scene relevance
+    results.append(check_narration_scene_relevance(script_path, output_dir))
 
     return results
 

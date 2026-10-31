@@ -662,38 +662,28 @@ def verify_claim(claim: str, destination: str, language: str = "en") -> Verifica
         if not adapter:
             continue
 
-        # Try each query until we get results, but don't retry if first succeeds
-        provider_sources: List[ResearchSource] = []
-        provider_diag = None
-        for query in queries:
-            try:
-                sources, diag = adapter(query, destination, language)
-            except Exception as e:  # noqa: BLE001 - adapter must never crash verification
-                diag = ProviderDiagnostic(
-                    provider=provider_name,
-                    endpoint="unknown",
-                    query=query,
-                    status="failed",
-                    error=_redact(f"{type(e).__name__}: {str(e)[:200]}"),
-                )
-                sources = []
-            provider_diag = diag
-            if sources or diag.status in ("failed", "skipped"):
-                # Got a definitive result (success with sources, or failure/skip)
-                provider_sources = sources
-                break
-            # Otherwise try next query
+        # Each provider builds its own queries internally; call once.
+        try:
+            sources, diag = adapter(claim, destination, language)
+        except Exception as e:  # noqa: BLE001 - adapter must never crash verification
+            diag = ProviderDiagnostic(
+                provider=provider_name,
+                endpoint="unknown",
+                query=f"{claim} {destination}",
+                status="failed",
+                error=_redact(f"{type(e).__name__}: {str(e)[:200]}"),
+            )
+            sources = []
 
-        result.provider_diagnostics.append(provider_diag)
-
-        if provider_diag.status == "skipped":
+        if diag.status == "skipped":
             continue
-        if provider_diag.status == "failed":
+        if diag.status == "failed":
             result.provider_failures.append(provider_name)
+            result.provider_diagnostics.append(diag)
             continue
 
         any_provider_success = True
-        for src in provider_sources:
+        for src in sources:
             all_sources.append(src)
             supports, conf, matched = _supports_claim(claim, src.excerpt)
             if supports:
@@ -701,6 +691,8 @@ def verify_claim(claim: str, destination: str, language: str = "en") -> Verifica
                 domains.add(urlparse(src.url).netloc if src.url else src.provider)
             elif _contradicts_claim(claim, src.excerpt):
                 contradicting.append(src)
+
+        result.provider_diagnostics.append(diag)
 
     # Determine status
     if contradicting:

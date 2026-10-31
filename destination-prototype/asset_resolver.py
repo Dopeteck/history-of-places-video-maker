@@ -148,6 +148,161 @@ def _has_author(author):
     return str(author or "").strip().lower() not in ("", "not stated", "unknown", "unknown author", "none", "n/a")
 
 
+# ---------------------------------------------------------------------------
+# Geographic relevance checking
+# ---------------------------------------------------------------------------
+
+def _extract_coordinates(text: str) -> List[tuple]:
+    """Extract lat/lon coordinates from text. Returns list of (lat, lon) tuples.
+    
+    Looks for patterns like:
+    - "lat: 35.6762, lon: 139.6503"
+    - "35.6762, 139.6503"
+    - "35°40'34\"N 139°39'01\"E"
+    - Decimal degrees in metadata fields
+    """
+    coords = []
+    # Decimal degrees: lat, lon (lat between -90 and 90, lon between -180 and 180)
+    for match in re.finditer(r'(?<![\d.-])(-?\d{1,2}\.\d+)[,\s]+(-?\d{1,3}\.\d+)(?![\d.-])', text):
+        try:
+            lat = float(match.group(1))
+            lon = float(match.group(2))
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                coords.append((lat, lon))
+        except ValueError:
+            pass
+    # DMS format: 35°40'34"N 139°39'01"E
+    for match in re.finditer(r'(\d{1,2})[°\s]+(\d{1,2})[\'\s]+(\d{1,2}(?:\.\d+)?)[\"\s]*([NS])\s*(\d{1,3})[°\s]+(\d{1,2})[\'\s]+(\d{1,2}(?:\.\d+)?)[\"\s]*([EW])', text):
+        try:
+            lat_deg, lat_min, lat_sec, lat_dir, lon_deg, lon_min, lon_sec, lon_dir = match.groups()
+            lat = float(lat_deg) + float(lat_min)/60 + float(lat_sec)/3600
+            lon = float(lon_deg) + float(lon_min)/60 + float(lon_sec)/3600
+            if lat_dir == 'S': lat = -lat
+            if lon_dir == 'W': lon = -lon
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                coords.append((lat, lon))
+        except ValueError:
+            pass
+    return coords
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance between two points in kilometers."""
+    from math import radians, sin, cos, sqrt, atan2
+    R = 6371.0  # Earth radius in km
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
+
+
+def _check_geographic_relevance(candidate: Dict, scene: Dict, config: Dict) -> tuple:
+    """Check if candidate image's depicted location matches the target geographic area.
+    
+    Returns (is_relevant: bool, reason: str, distance_km: Optional[float]).
+    
+    Uses multiple signals:
+    1. Explicit coordinates in candidate metadata (facets, categories, description)
+    2. Location names in candidate metadata matched against target entities
+    3. Banned location names (e.g., "Little Tokyo" for Tokyo Japan)
+    4. Target coordinates from scene (map_lat/map_lon) or config
+    
+    If location cannot be determined, returns (True, "location_unverifiable", None) to allow
+    but flag for review. This is conservative - we reject only when we have positive
+    evidence of wrong location.
+    """
+    # Get target coordinates from scene or config
+    target_lat = scene.get("map_lat") or config.get("map", {}).get("center_lat")
+    target_lon = scene.get("map_lon") or config.get("map", {}).get("center_lon")
+    
+    # Get target location names (entities, place names)
+    target_entities = set()
+    for e in scene.get("named_entities", []) or scene.get("entities", []):
+        target_entities.add(_norm(e))
+    for e in config.get("place_names", []):
+        if isinstance(e, dict):
+            target_entities.add(_norm(e.get("spelling", "")))
+        else:
+            target_entities.add(_norm(str(e)))
+    config_name = _norm(config.get("name", ""))
+    if config_name:
+        target_entities.add(config_name)
+    
+    # Banned location names - known confusing names that indicate wrong location
+    # These are per-region configurations; for now we use a generic approach
+    # where scenes can specify banned_location_keywords
+    banned_locations = set(scene.get("banned_location_keywords", []))
+    banned_locations.update(config.get("banned_location_keywords", []))
+    
+    # Extract all text from candidate metadata for analysis
+    candidate_text = " ".join([
+        candidate.get("title", ""),
+        candidate.get("description", ""),
+        " ".join(_as_list(candidate.get("categories"))),
+        " ".join(_as_list(candidate.get("facets"))),
+        candidate.get("date_text", ""),
+    ])
+    candidate_norm = _norm(candidate_text)
+    
+    # 1. Check for banned location names (strong negative signal)
+    for banned in banned_locations:
+        if banned and _kw_hit(banned, candidate_norm):
+            return False, f"banned_location:{banned}", None
+    
+    # 2. Try to extract coordinates from candidate metadata
+    candidate_coords = _extract_coordinates(candidate_text)
+    
+    # Also check facets/categories for coordinate-like entries
+    for facet in _as_list(candidate.get("facets")):
+        candidate_coords.extend(_extract_coordinates(facet))
+    for cat in _as_list(candidate.get("categories")):
+        candidate_coords.extend(_extract_coordinates(cat))
+    
+    # 3. If we have both target and candidate coordinates, check distance
+    if target_lat is not None and target_lon is not None and candidate_coords:
+        min_distance = float('inf')
+        for cand_lat, cand_lon in candidate_coords:
+            dist = _haversine_km(target_lat, target_lon, cand_lat, cand_lon)
+            min_distance = min(min_distance, dist)
+        
+        # Allow configurable radius (default 100km for city-level, larger for regions)
+        max_radius_km = scene.get("geo_max_radius_km", config.get("geo_max_radius_km", 100))
+        if min_distance > max_radius_km:
+            return False, f"coordinate_mismatch:{min_distance:.0f}km", min_distance
+        if min_distance <= max_radius_km:
+            return True, f"coordinate_match:{min_distance:.0f}km", min_distance
+    
+    # 4. Check for target location names in candidate metadata (positive signal)
+    # This is weaker than coordinates but helps when coordinates unavailable
+    location_matches = 0
+    for entity in target_entities:
+        if entity and len(entity) > 2 and _kw_hit(entity, candidate_norm):
+            location_matches += 1
+    
+    # If we have strong location name matches, consider it relevant
+    if location_matches >= 2:
+        return True, f"location_name_match:{location_matches}", None
+    
+    # 5. If we have target coordinates but no candidate coordinates, we can't verify
+    # If we have candidate coordinates but no target, we can't verify
+    # If neither has coordinates, fall back to name matching
+    if target_lat is not None and target_lon is not None and not candidate_coords:
+        # We have a target location but candidate has no coordinates
+        # Check if location names match
+        if location_matches >= 1:
+            return True, "location_name_match_weak", None
+        # No positive evidence either way - allow but flag
+        return True, "location_unverifiable_no_coords", None
+    
+    # 6. No target coordinates configured - rely on name matching only
+    if location_matches >= 1:
+        return True, "location_name_match_weak", None
+    
+    # 7. No evidence either way - allow but flag for review
+    return True, "location_unverifiable", None
+
+
 def _get(url, params=None, timeout=None):
     """Request with provider pacing, bounded timeouts, retries with exponential backoff, and Retry-After awareness.
 
@@ -974,6 +1129,18 @@ def resolve_scene_image(scene, idx, config, asset_dir, used, output):
                 "checked_text": hay[:200],
             })
             continue
+        
+        # Geographic relevance check: verify the candidate's depicted location matches the target
+        geo_ok, geo_reason, geo_distance = _check_geographic_relevance(c, scene, config)
+        if not geo_ok:
+            _note_reject("geographic_relevance", c, {"reason": geo_reason, "distance_km": geo_distance})
+            continue
+        elif geo_reason not in ("location_unverifiable", "location_unverifiable_no_coords"):
+            # Track positive geographic matches for diagnostics
+            c.setdefault("_geo_match", geo_reason)
+            if geo_distance is not None:
+                c["_geo_distance_km"] = geo_distance
+        
         hits = sum(1 for k in required if _kw_hit(k, hay))
         c["_hits"] = hits
         if required and hits == 0 and not soft:
