@@ -2,6 +2,10 @@ work/
 output/
 __pycache__/
 
+# Runtime-generated per-region inventory and story caches (not source).
+destination-prototype/data/inventory/
+destination-prototype/data/stories/
+
 .env
 .env.*
 !.env.example

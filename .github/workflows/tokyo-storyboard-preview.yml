@@ -1,0 +1,36 @@
+name: Tokyo storyboard preview
+on:
+  pull_request:
+    paths:
+      - 'destination-prototype/**'
+      - 'destination_render.py'
+      - 'destination_history.py'
+      - 'destination-prototype/render_storyboard_preview.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  render-storyboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Install renderer dependencies
+        run: python -m pip install --upgrade pip pillow numpy
+      - name: Render Tokyo storyboard preview
+        run: python destination-prototype/render_storyboard_preview.py
+      - name: Upload preview video
+        uses: actions/upload-artifact@v4
+        with:
+          name: tokyo-storyboard-preview
+          path: output/tokyo-storyboard-preview.mp4
+          retention-days: 7
+          if-no-files-found: error

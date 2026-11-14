@@ -1,0 +1,618 @@
+{
+  "schema_version": 1,
+  "description": "Curated public-domain fairy tales from named Project Gutenberg editions. Episodes are original abridged retellings; one edition is selected per tale.",
+  "rotation": "Sequential; no repeats until the whole enabled queue has been completed, then a new cycle begins without immediately repeating the last tale.",
+  "stories": [
+    {
+      "id": "goose-girl",
+      "title": "The Goose-Girl",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A princess is sent to marry a distant prince, but her maid forces her to exchange clothes and identities. The princess becomes a goose girl, while the maid claims the royal place. A talking horse's severed head and a young boy's questions eventually expose the deception to the king.",
+      "key_beats": [
+        "A princess travels to marry a prince",
+        "her maid forces an oath of silence and steals her clothes",
+        "the maid impersonates the bride",
+        "the real princess tends geese",
+        "the king's son notices her beauty and strange hair",
+        "the horse's head reveals the betrayal",
+        "the king devises a confession",
+        "the false bride is punished and the true princess marries the prince."
+      ]
+    },
+    {
+      "id": "hansel-gretel",
+      "title": "Hansel and Gretel",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "During a famine, two children are abandoned in the forest. They find a house made of sweets, but the old woman inside is a witch who plans to eat them. Gretel outsmarts the witch, rescues Hansel, and the children return home with treasure.",
+      "key_beats": [
+        "A famine leaves the family desperate",
+        "the children are taken into the forest",
+        "Hansel's breadcrumbs fail to guide them home",
+        "they discover a candy house",
+        "a witch captures Hansel and fattens him",
+        "Gretel tricks the witch into the oven",
+        "the children escape with jewels",
+        "they find their way home and reunite with their father."
+      ]
+    },
+    {
+      "id": "little-red-cap",
+      "title": "Little Red-Cap",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A girl carrying food to her sick grandmother meets a wolf in the forest. The wolf learns where the grandmother lives, reaches the cottage first, and disguises himself in the grandmother's bed. The danger is exposed and the girl and grandmother are rescued.",
+      "key_beats": [
+        "A mother sends her daughter through the forest with food",
+        "the girl meets a wolf and reveals her destination",
+        "the wolf takes a shortcut",
+        "he swallows the grandmother and waits in her bed",
+        "the girl arrives and notices his strange features",
+        "a huntsman discovers the wolf",
+        "the grandmother and child are rescued."
+      ]
+    },
+    {
+      "id": "rapunzel",
+      "title": "Rapunzel",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A couple's longing for a child leads to a bargain with an enchantress. Their daughter Rapunzel is locked in a tower with no door, and the enchantress climbs her long hair. A prince discovers the tower, but the escape brings hardship before the family is reunited.",
+      "key_beats": [
+        "A couple longs for a child",
+        "the husband takes rampion from an enchantress's garden",
+        "the enchantress claims their baby",
+        "Rapunzel grows up in a tower",
+        "a prince hears her singing and learns the hair signal",
+        "the enchantress discovers him and separates them",
+        "after years apart, Rapunzel and the prince reunite."
+      ]
+    },
+    {
+      "id": "mother-holle",
+      "title": "Mother Holle",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A hardworking girl falls into a well and reaches a strange world. She helps bread and an apple tree, then serves Mother Holle faithfully. When she returns home, gold covers her. Her lazy stepsister tries the same journey but refuses to work.",
+      "key_beats": [
+        "A neglected girl spins beside a well",
+        "she drops her spindle and jumps after it",
+        "she enters a world where bread and apples ask for help",
+        "she helps both",
+        "she serves Mother Holle and shakes the bed to make snow",
+        "she returns covered in gold",
+        "her stepsister imitates her but refuses every task and returns covered in pitch."
+      ]
+    },
+    {
+      "id": "frog-prince",
+      "title": "The Frog Prince",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A princess loses her golden ball in a well. A frog retrieves it in exchange for her friendship, but she tries to abandon the promise. The king makes her keep her word, and the frog's true identity is finally revealed.",
+      "key_beats": [
+        "A princess plays with a golden ball",
+        "it falls into a deep well",
+        "a frog offers to retrieve it for companionship",
+        "she agrees but runs away",
+        "the frog arrives at the palace",
+        "the king insists she honour her promise",
+        "the spell is broken and the frog becomes a prince."
+      ]
+    },
+    {
+      "id": "six-swans",
+      "title": "The-six-swans",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A king's new wife is a witch who turns his six sons into swans. Their sister can save them only by making six shirts from starflowers and remaining silent for years. She endures suspicion and danger until the final shirt breaks the spell.",
+      "key_beats": [
+        "A king marries a mysterious woman",
+        "she transforms his six sons into swans",
+        "their sister discovers them and learns the spell's condition",
+        "she gathers starflowers and sews shirts in silence",
+        "she is accused and sentenced",
+        "she completes the shirts just in time",
+        "the brothers regain human form, though one keeps a wing."
+      ]
+    },
+    {
+      "id": "faithful-john",
+      "title": "faithful-john",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A loyal servant warns a young king about a portrait of a princess, then helps him win her. But a warning about three dangers seems to require terrible sacrifices. The servant is turned to stone and later restored through the king's loyalty.",
+      "key_beats": [
+        "A servant sees a portrait and warns his young master",
+        "the king sails to meet the princess",
+        "the servant helps him survive three dangers",
+        "they marry and sail home",
+        "the servant overhears a prophecy that can only be prevented by sacrifice",
+        "he acts without explaining and appears guilty",
+        "the king learns the truth and restores him."
+      ]
+    },
+    {
+      "id": "water-of-life",
+      "title": "water-of-life",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A dying king can be saved only by the Water of Life. His three sons set out to find it. The youngest succeeds after helping a dwarf, but his brothers steal the reward and betray him. The truth eventually returns him to honour.",
+      "key_beats": [
+        "A king falls ill",
+        "his sons seek the Water of Life",
+        "the elder brothers behave selfishly and fail",
+        "the youngest helps a dwarf and learns the way",
+        "he finds the water and wins a princess",
+        "his brothers steal the bottle and leave him trapped",
+        "the youngest returns through another path",
+        "the deception is exposed and the king is healed."
+      ]
+    },
+    {
+      "id": "golden-goose",
+      "title": "golden-goose",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A kind youngest son shares his meal with a little old man and receives a golden goose. Anyone who touches it becomes stuck in a growing chain of people. The strange procession finally makes a gloomy princess laugh, changing the young man's fortune.",
+      "key_beats": [
+        "The youngest son is mocked and sent into the woods",
+        "he shares his food with an old man",
+        "he is told to cut down a tree and finds a golden goose",
+        "greedy villagers become stuck to its feathers",
+        "a long procession follows him",
+        "a princess who never laughs sees the spectacle and laughs",
+        "the king's condition is fulfilled and the young man wins her."
+      ]
+    },
+    {
+      "id": "elves-shoemaker",
+      "title": "The Elves and the Shoemaker",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A poor shoemaker has enough leather for one final pair of shoes. He cuts the leather at night and finds perfect shoes made by unseen helpers in the morning. His fortunes improve, so he and his wife make a gift for the little craftsmen.",
+      "key_beats": [
+        "A shoemaker becomes poor and has leather for one final pair",
+        "he prepares the pieces at night",
+        "perfect shoes appear by morning",
+        "customers pay generously",
+        "the shoemaker prospers as the pattern repeats",
+        "he and his wife stay awake and see the tiny naked craftsmen",
+        "they make clothes and shoes as thanks",
+        "the elves dance away and never return."
+      ]
+    },
+    {
+      "id": "valiant-tailor",
+      "title": "The Valiant Little Tailor",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A tailor kills seven flies with one blow and boasts about it. The boast is misunderstood as a claim of strength, sending him into a world of giants, dangerous tasks and royal tests. His cleverness, not brute force, wins him a kingdom.",
+      "key_beats": [
+        "A tailor kills seven flies and stitches a boast on his belt",
+        "people assume he defeated seven men",
+        "he leaves home seeking adventure",
+        "he outwits two giants",
+        "he completes the king's impossible tasks",
+        "the king tries to trick him with soldiers",
+        "the tailor escapes and wins the princess and kingdom."
+      ]
+    },
+    {
+      "id": "snow-white",
+      "title": "Snow White",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A queen grows jealous when a magic mirror declares Snow White the fairest. The girl escapes into the forest and finds shelter with seven miners, but the queen repeatedly tries to kill her in disguise. The poisoned apple leaves her asleep until the spell is broken.",
+      "key_beats": [
+        "A queen asks her mirror who is fairest",
+        "it names Snow White",
+        "a huntsman spares the girl in the forest",
+        "seven miners shelter her",
+        "the queen discovers she lives and visits in disguises",
+        "a poisoned lace, comb and apple threaten her",
+        "the miners place her in a glass coffin",
+        "a passing prince's servants move it and the apple is dislodged",
+        "Snow White wakes."
+      ]
+    },
+    {
+      "id": "ashputtel",
+      "title": "Cinderella or Ashputtel",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A girl is forced to serve her stepfamily and is mocked for wanting to attend the royal celebration. With help from a tree growing on her mother's grave and birds, she receives beautiful clothes. The prince searches for the woman who left a golden slipper.",
+      "key_beats": [
+        "Ashputtel is mistreated by her stepmother and stepsisters",
+        "she asks to attend the royal feast and is given impossible tasks",
+        "birds help sort the lentils",
+        "a tree at her mother's grave provides fine clothes",
+        "she attends the feast on three evenings",
+        "she escapes and leaves a golden slipper",
+        "the prince searches the kingdom",
+        "the slipper identifies her."
+      ]
+    },
+    {
+      "id": "briar-rose",
+      "title": "Briar Rose",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A princess is cursed to prick her finger on a spindle and sleep for a hundred years. The castle grows over with thorns as generations pass. A prince finally reaches the sleeping court when the appointed time has arrived.",
+      "key_beats": [
+        "A royal couple celebrates a long-awaited child",
+        "a neglected wise woman curses the princess",
+        "the final blessing changes death to a hundred-year sleep",
+        "the princess pricks her finger on a spindle",
+        "the court falls asleep",
+        "a thorn hedge surrounds the castle",
+        "many princes fail to enter",
+        "after a hundred years the thorns part",
+        "a prince reaches the princess and the court awakens."
+      ]
+    },
+    {
+      "id": "twelve-dancing-princesses",
+      "title": "The Twelve Dancing Princesses",
+      "enabled": true,
+      "source": {
+        "title": "Grimms' Fairy Tales",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/2591",
+        "edition_note": "Project Gutenberg eBook 2591, an English collection of Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "Twelve princesses wake each morning with worn-out shoes, though their bedroom doors are locked. The king promises a reward to anyone who discovers where they dance at night. A soldier follows them secretly to an underground palace.",
+      "key_beats": [
+        "The king notices his twelve daughters' shoes are worn each morning",
+        "he offers a reward to the person who discovers their secret",
+        "suitors fail and disappear",
+        "a soldier receives help from an old woman",
+        "he uses an invisibility cloak and follows the princesses through a trapdoor",
+        "they cross a lake and dance in an underground palace",
+        "he presents proof to the king and chooses a bride."
+      ]
+    },
+    {
+      "id": "bluebeard",
+      "title": "Bluebeard",
+      "enabled": true,
+      "source": {
+        "title": "The Fairy Tales of Charles Perrault",
+        "author": "Charles Perrault",
+        "url": "https://www.gutenberg.org/ebooks/29021",
+        "edition_note": "Project Gutenberg eBook 29021, translated collection of Perrault tales. Follow the named tale in this edition."
+      },
+      "synopsis": "A wealthy man with a frightening blue beard marries a young woman and gives her keys to his house. He forbids her to open one room. Curiosity reveals a terrible secret, and she must delay him until her brothers can arrive.",
+      "key_beats": [
+        "A wealthy man courts a young woman despite his strange beard",
+        "he marries her and leaves her a ring of keys",
+        "he forbids her to enter one small room",
+        "she opens it and discovers the bodies of his former wives",
+        "the key is stained and cannot be cleaned",
+        "Bluebeard returns and demands her life",
+        "she delays him while her brothers ride to the rescue."
+      ]
+    },
+    {
+      "id": "puss-in-boots",
+      "title": "Puss in Boots",
+      "enabled": true,
+      "source": {
+        "title": "The Fairy Tales of Charles Perrault",
+        "author": "Charles Perrault",
+        "url": "https://www.gutenberg.org/ebooks/29021",
+        "edition_note": "Project Gutenberg eBook 29021, translated collection of Perrault tales. Follow the named tale in this edition."
+      },
+      "synopsis": "A miller's youngest son inherits only a cat. The cat asks for boots and a bag, then uses clever tricks to convince a king that its master is a wealthy lord. The cat's schemes win its master a title, a castle and a marriage.",
+      "key_beats": [
+        "A miller's youngest son inherits a cat and fears poverty",
+        "the cat asks for boots and a sack",
+        "it catches game and presents it to the king in its master's name",
+        "it invents a noble identity for the young man",
+        "it tricks an ogre into changing shape and swallowing",
+        "the cat claims the castle",
+        "the king is impressed and the young man marries the princess."
+      ]
+    },
+    {
+      "id": "sleeping-beauty",
+      "title": "The Sleeping Beauty in the Wood",
+      "enabled": true,
+      "source": {
+        "title": "The Fairy Tales of Charles Perrault",
+        "author": "Charles Perrault",
+        "url": "https://www.gutenberg.org/ebooks/29021",
+        "edition_note": "Project Gutenberg eBook 29021, translated collection of Perrault tales. Follow the named tale in this edition."
+      },
+      "synopsis": "A princess is cursed to prick her hand on a spindle and fall asleep. The whole palace sleeps with her. Many years later a prince reaches the castle, and the sleeping princess awakens. Perrault's version continues with danger from the prince's ogress mother.",
+      "key_beats": [
+        "A king and queen welcome a daughter",
+        "a forgotten fairy curses her to die from a spindle",
+        "another fairy changes the curse to a long sleep",
+        "the princess pricks her finger",
+        "the court sleeps",
+        "a forest grows around the palace",
+        "a prince arrives after many years",
+        "the princess and court awaken",
+        "the prince's mother later threatens the young family."
+      ]
+    },
+    {
+      "id": "little-thumb",
+      "title": "Little Thumb",
+      "enabled": true,
+      "source": {
+        "title": "The Fairy Tales of Charles Perrault",
+        "author": "Charles Perrault",
+        "url": "https://www.gutenberg.org/ebooks/29021",
+        "edition_note": "Project Gutenberg eBook 29021, translated collection of Perrault tales. Follow the named tale in this edition."
+      },
+      "synopsis": "A poor woodcutter and his wife cannot feed their seven children and leave them in the forest. The smallest boy, Little Thumb, uses pebbles and breadcrumbs to guide them, but the children end up at an ogre's house. His quick thinking saves them.",
+      "key_beats": [
+        "A woodcutter's family faces famine",
+        "the parents leave seven children in the forest",
+        "Little Thumb marks the path with pebbles",
+        "on a second abandonment, birds eat the breadcrumbs",
+        "the children find an ogre's house",
+        "the ogre plans to eat them",
+        "Little Thumb swaps the sleeping children's caps",
+        "the ogre attacks his own daughters",
+        "the children escape",
+        "Little Thumb later uses the ogre's boots to secure a fortune."
+      ]
+    },
+    {
+      "id": "emperors-new-clothes",
+      "title": "The Emperor's New Clothes",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "An emperor spends his wealth on clothing. Two swindlers promise a fabric invisible to anyone unfit for their office or foolish. Everyone pretends to see it until a child speaks plainly during the procession.",
+      "key_beats": [
+        "An emperor spends all his time on clothes",
+        "two swindlers claim to weave magical fabric",
+        "officials pretend to see it because they fear looking foolish",
+        "the emperor visits the empty looms",
+        "he pretends to admire the nonexistent suit",
+        "the swindlers dress him in nothing",
+        "he parades through the city",
+        "a child says he has no clothes",
+        "the crowd finally admits the truth."
+      ]
+    },
+    {
+      "id": "snow-queen",
+      "title": "The Snow Queen",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "A magic mirror breaks and sends splinters into a boy's eye and heart, making him cold and cruel. The Snow Queen takes him to her icy palace. His friend Gerda travels through dangers to find him and warm his heart.",
+      "key_beats": [
+        "A troll's mirror shatters and its splinters spread",
+        "Kay receives a shard in his eye and heart",
+        "he becomes cold and is taken by the Snow Queen",
+        "Gerda searches for him",
+        "she meets helpers and dangers along the way",
+        "she reaches the ice palace",
+        "her tears melt the shard in Kay's heart",
+        "the children return home changed."
+      ]
+    },
+    {
+      "id": "ugly-duckling",
+      "title": "The Ugly Duckling",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "A strange-looking young bird is rejected and mocked by the farmyard. It wanders through seasons of loneliness and danger, growing up without knowing what it is. In spring it discovers it has become a beautiful swan.",
+      "key_beats": [
+        "A mother duck hatches an unusual large egg",
+        "the strange duckling is mocked by the farmyard",
+        "it runs away and faces hunters and winter",
+        "it finds shelter but remains lonely",
+        "spring returns and it sees swans",
+        "it approaches them expecting rejection",
+        "it sees its reflection and discovers it is a swan",
+        "the other swans welcome it."
+      ]
+    },
+    {
+      "id": "wild-swans",
+      "title": "The Wild Swans",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "A princess's eleven brothers are transformed into swans by their stepmother. To rescue them, she must weave eleven shirts from stinging nettles and remain silent until the work is complete. She endures accusation and danger just as she nears the final stitch.",
+      "key_beats": [
+        "A king remarries",
+        "the new queen uses magic to transform eleven princes into swans",
+        "their sister is driven away",
+        "she learns that nettle shirts can break the spell",
+        "she must remain silent while weaving",
+        "she gathers nettles and works through pain",
+        "she is accused and sentenced",
+        "she finishes the shirts just in time and restores her brothers."
+      ]
+    },
+    {
+      "id": "little-mermaid",
+      "title": "The Little Mermaid",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "A young mermaid longs to see the human world and falls in love with a prince she rescues from drowning. She trades her voice for legs, but the bargain brings pain and a condition: the prince must marry her or she will dissolve into sea foam.",
+      "key_beats": [
+        "A mermaid watches the human world from the sea",
+        "she saves a prince from drowning during a storm",
+        "she falls in love and visits the sea witch",
+        "she trades her voice for legs, knowing each step will hurt",
+        "the prince likes her but marries another",
+        "her sisters offer a knife that could save her",
+        "she refuses to harm him",
+        "she becomes sea foam and joins the daughters of the air."
+      ]
+    },
+    {
+      "id": "little-match-girl",
+      "title": "The Little Match Girl",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "On a freezing New Year's Eve, a poor child walks through the streets trying to sell matches. Afraid to return home without money, she lights them one by one and sees warm visions before she dies in the cold. The story is tragic and should be handled gently.",
+      "key_beats": [
+        "A poor girl is sent out on a freezing New Year's Eve to sell matches",
+        "she has no shoes and fears going home",
+        "she shelters between houses",
+        "she lights matches for warmth",
+        "each flame shows a comforting vision",
+        "she sees her grandmother in the final flame",
+        "she dies in the cold",
+        "neighbours find her the next morning."
+      ]
+    },
+    {
+      "id": "nightingale",
+      "title": "The Nightingale",
+      "enabled": true,
+      "source": {
+        "title": "Andersen's Fairy Tales",
+        "author": "Hans Christian Andersen",
+        "url": "https://www.gutenberg.org/ebooks/1597",
+        "edition_note": "Project Gutenberg eBook 1597, English collection of Andersen tales. Follow this collection's plot, not later adaptations."
+      },
+      "synopsis": "A Chinese emperor hears of a nightingale whose song moves everyone who hears it. He brings the bird to court, then prefers a jeweled mechanical bird. When illness brings him close to death, the real nightingale returns to sing.",
+      "key_beats": [
+        "A traveller praises a nightingale's song to the emperor",
+        "the emperor sends courtiers to find the bird",
+        "the nightingale sings at court",
+        "a jeweled mechanical bird arrives and captivates the court",
+        "the real nightingale flies away",
+        "the emperor becomes ill and faces death",
+        "the mechanical bird cannot comfort him",
+        "the nightingale returns and sings",
+        "the emperor recovers."
+      ]
+    },
+    {
+      "id": "tom-thumb",
+      "title": "Tom Thumb",
+      "enabled": true,
+      "source": {
+        "title": "Grimm's Fairy Stories",
+        "author": "Jacob Grimm and Wilhelm Grimm",
+        "url": "https://www.gutenberg.org/ebooks/11027",
+        "edition_note": "Project Gutenberg eBook 11027, an English edition of selected Grimm tales. Follow this collection's plot, not later film adaptations."
+      },
+      "synopsis": "A tiny boy is born to a poor couple and uses his size and cleverness to survive. He becomes caught up in risky adventures involving thieves, animals and an ogre, repeatedly finding ways out through quick thinking.",
+      "key_beats": [
+        "A poor couple wishes for a child of any size",
+        "Tom Thumb is born tiny",
+        "he helps his father in the fields",
+        "he is carried away by strangers",
+        "he escapes danger using his small size",
+        "he is swallowed by an animal",
+        "he is rescued and returns home with a story of his adventures."
+      ]
+    }
+  ]
+}

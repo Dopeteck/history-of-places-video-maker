@@ -1,0 +1,129 @@
+{
+  "topic_slug": "tokyo",
+  "destination": "",
+  "category": "hidden_history",
+  "title": "Tokyo was once a different city with a different name: Edo.",
+  "claims": [
+    {
+      "text": "Before it was Tokyo, this city was called Edo",
+      "evidence": [
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Edo",
+          "source_title": "Edo",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "dó̞]), also romanized as Jedo, Yedo or Yeddo, is the former name of Tokyo",
+          "confidence": 0.75
+        },
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Edo_Castle",
+          "source_title": "Edo Castle",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "In modern times it is part of the Tokyo Imperial Palace  in Chiyoda, Tokyo, and is therefore also known as Chiyoda Castle (千代田城, Chiyoda-jō)",
+          "confidence": 0.6
+        },
+        {
+          "source_url": "https://en.wikipedia.org/wiki/History_of_Tokyo",
+          "source_title": "History of Tokyo",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "Tokyo is Japan's capital city and prefecture",
+          "confidence": 0.6
+        },
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Tokyo_Skytree",
+          "source_title": "Tokyo Skytree",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "Tokyo Skytree (東京スカイツリー, Tōkyō Sukaitsurī; [tò̞ó̞",
+          "confidence": 0.6
+        }
+      ],
+      "confidence": 0.64,
+      "status": "verified",
+      "independent_sources": 1,
+      "language": "en"
+    },
+    {
+      "text": "A map places it on Japan’s eastern coast, far from the old imperial capital",
+      "evidence": [
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Empire_of_Japan",
+          "source_title": "Empire of Japan",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "The Empire of Japan (Japanese: 大日本帝國/大日本帝国, Hepburn: Dai-Nippon Teikoku/Dai-Nihon Teikoku), also known as the Japanese Empire or Imperial Japan, was the period of Japanese history spanning 79 years, starting with the Meiji Restoration on 3 January 1868, and ending with ratification of the Constitution of Japan on 3 May 1947",
+          "confidence": 0.75
+        },
+        {
+          "source_url": "https://en.wikipedia.org/wiki/Byzantine_Empire",
+          "source_title": "Byzantine Empire",
+          "source_domain": "en.wikipedia.org",
+          "excerpt": "324–337) legalised Christianity and founded the new Eastern capital of Constantinople",
+          "confidence": 0.6
+        }
+      ],
+      "confidence": 0.68,
+      "status": "verified",
+      "independent_sources": 1,
+      "language": "en"
+    },
+    {
+      "text": "In 1603, Tokugawa Ieyasu established his shogunate here, turning Edo into the seat of military government",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "The city grew through its waterways: boats carried goods, while bridges connected busy neighborhoods",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Artists recorded these streets and canals in woodblock prints, making everyday Edo part of Japan’s visual memory",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Panoramic views suggest how large the city became, though no single image can capture its whole past",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Some traces remain in gardens such as Koishikawa Korakuen, where carefully shaped landscapes offer a quieter link to earlier eras",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    },
+    {
+      "text": "Nihonbashi was more than a crossing; it became a key starting point for roads across the country",
+      "evidence": [],
+      "confidence": 0.1,
+      "status": "disputed",
+      "independent_sources": 0,
+      "language": "en"
+    }
+  ],
+  "sources_used": [
+    "https://en.wikipedia.org/wiki/Edo",
+    "https://en.wikipedia.org/wiki/Edo_Castle",
+    "https://en.wikipedia.org/wiki/History_of_Tokyo",
+    "https://en.wikipedia.org/wiki/Tokyo_Skytree",
+    "https://en.wikipedia.org/wiki/Empire_of_Japan",
+    "https://en.wikipedia.org/wiki/Byzantine_Empire"
+  ],
+  "research_date": "2026-10-26",
+  "notes": "Researched 8 claims in english (en)",
+  "extraction_failed": false,
+  "verification_failed": false,
+  "zero_claims": false
+}

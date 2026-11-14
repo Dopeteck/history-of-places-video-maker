@@ -1,0 +1,64 @@
+name: Rumpelstiltskin visual asset review
+
+on:
+  push:
+    branches:
+      - feature/dark-folklore-shorts
+    paths:
+      - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/rumpelstiltskin_asset_review.py'
+      - 'destination-prototype/rumpelstiltskin_visual_policy.py'
+      - 'tests/test_rumpelstiltskin_visual_policy.py'
+      - 'research/rumpelstiltskin-pilot.json'
+      - '.github/workflows/rumpelstiltskin-asset-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rumpelstiltskin-asset-review-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  source-and-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install image decoding and OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
+          python -m pip install --upgrade pip
+          python -m pip install 'numpy>=1.26,<2' 'Pillow>=10' 'requests>=2.31' 'pytesseract>=0.3.10' 'PyYAML>=6' 'soundfile>=0.13' 'transformers==4.48.3' 'huggingface-hub==0.28.1'
+          python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements.txt
+      - name: Run the repository's full offline test suite
+        run: python -m unittest discover -s tests -v
+      - name: Compile folklore review and resolver modules
+        run: |
+          python -m py_compile \
+            destination-prototype/asset_resolver.py \
+            destination-prototype/rumpelstiltskin_visual_policy.py \
+            destination-prototype/rumpelstiltskin_asset_review.py
+      - name: Search, download, validate, and build review board
+        env:
+          HF_HOME: ${{ runner.temp }}/huggingface
+          TOKENIZERS_PARALLELISM: 'false'
+        run: >-
+          python destination-prototype/rumpelstiltskin_asset_review.py
+          --plan research/rumpelstiltskin-pilot.json
+          --output output/rumpelstiltskin-asset-review
+      - name: Upload unapproved review artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumpelstiltskin-visual-asset-review
+          path: output/rumpelstiltskin-asset-review/
+          if-no-files-found: warn
+          retention-days: 14

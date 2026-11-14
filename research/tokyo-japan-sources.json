@@ -1,0 +1,23 @@
+[
+  {
+    "id": "tokyo-museum",
+    "title": "Tokyo National Museum — History",
+    "url": "https://www.tnm.jp/modules/r_free_page/index.php?id=144",
+    "publisher": "Tokyo National Museum",
+    "claim_scope": "Museum history and collections; verify exact details against page before approval."
+  },
+  {
+    "id": "edo-tokyo",
+    "title": "Edo-Tokyo Museum",
+    "url": "https://www.edo-tokyo-museum.or.jp/",
+    "publisher": "Edo-Tokyo Museum",
+    "claim_scope": "Tokyo's history and Edo-period context; confirm current museum status and access details before any visit advice."
+  },
+  {
+    "id": "gotokyo",
+    "title": "Official Tokyo travel guide",
+    "url": "https://www.gotokyo.org/en/",
+    "publisher": "Tokyo Convention & Visitors Bureau",
+    "claim_scope": "Current visitor information and practical planning; check dates on any specific access or opening claims."
+  }
+]

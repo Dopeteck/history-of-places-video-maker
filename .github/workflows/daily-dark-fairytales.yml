@@ -1,0 +1,149 @@
+name: Daily Dark Fairytales
+
+on:
+  schedule:
+    # 09:00 Africa/Lagos (UTC+1)
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+    inputs:
+      voice:
+        description: "Kokoro storyteller voice"
+        type: choice
+        options: ["bm_fable", "bm_george"]
+        default: "bm_fable"
+        required: true
+      speed:
+        description: "Narration speed"
+        type: choice
+        options: ["0.88", "0.92", "0.96", "1.0"]
+        default: "0.92"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-dark-fairytales-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      HF_HUB_DOWNLOAD_TIMEOUT: "90"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - name: Check out the triggering branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-render.txt
+            requirements-voice.txt
+
+      - name: Restore non-repeating story rotation
+        uses: actions/cache/restore@v4
+        with:
+          path: state/fairytale_rotation.json
+          key: fairytale-rotation-v1-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            fairytale-rotation-v1-${{ github.ref_name }}-
+
+      - name: Install FFmpeg and fonts
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Install script, image and video dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Restore Kokoro model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: fairytale-kokoro-cpu-${{ runner.os }}-${{ hashFiles('requirements-voice.txt') }}
+
+      - name: Install CPU narration dependencies
+        run: |
+          python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-voice.txt
+          python -m pip check
+
+      - name: Validate the story queue and run all tests
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile fairytale_planner.py fairytale_daily.py destination-prototype/generate_fairytale_scenes.py destination-prototype/render_fairytale_video.py
+          python - <<'PY'
+          from pathlib import Path
+          from fairytale_planner import load_queue
+          queue = load_queue(Path("fairytale_queue.json"))
+          print(f"Validated {len(queue)} source-linked fairy tales")
+          PY
+
+      - name: Check required provider secrets
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1)
+          test -n "$CLOUDFLARE_API_TOKEN" || (echo "::error::Missing CLOUDFLARE_API_TOKEN"; exit 1)
+          if [ -z "$GROQ_API_KEY" ] && [ -z "$GEMINI_API_KEY" ] && [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::error::Set at least one of GROQ_API_KEY, GEMINI_API_KEY or OPENROUTER_API_KEY"
+            exit 1
+          fi
+
+      - name: Set Lagos episode date
+        id: episode-date
+        run: echo "value=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate and render one private fairytale episode
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EPISODE_DATE: ${{ steps.episode-date.outputs.value }}
+        run: |
+          VOICE="${{ inputs.voice || 'bm_fable' }}"
+          SPEED="${{ inputs.speed || '0.92' }}"
+          python fairytale_daily.py \
+            --queue fairytale_queue.json \
+            --state state/fairytale_rotation.json \
+            --output output/daily-fairytales \
+            --voice "$VOICE" \
+            --speed "$SPEED"
+
+      - name: Save rotation state only after a successful complete render
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: state/fairytale_rotation.json
+          key: fairytale-rotation-v1-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload private video and review package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-fairytale-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            output/daily-fairytales/**
+            state/fairytale_rotation.json
+          if-no-files-found: warn
+          retention-days: 14
+

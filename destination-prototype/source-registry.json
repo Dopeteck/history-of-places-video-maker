@@ -1,0 +1,53 @@
+[
+  {
+    "id": "tokyo-metropolitan-government-history",
+    "title": "Tokyo's History, Geography, and Population",
+    "publisher": "Tokyo Metropolitan Government",
+    "url": "https://www.english.metro.tokyo.lg.jp/w/000-101-007591",
+    "supports": [
+      "Edo flourished after Tokugawa Ieyasu established the shogunate in 1603",
+      "Edo grew to over one million people by the mid-eighteenth century",
+      "1868 Meiji Restoration, end of shogunate, emperor moved to Edo and it was renamed Tokyo"
+    ],
+    "source_type": "official historical reference",
+    "media_rights": "Does not grant rights to reuse images or video; evaluate each media item separately"
+  },
+  {
+    "id": "edo-tokyo-museum",
+    "title": "About Us / What is Edo? / From Edo to Tokyo",
+    "publisher": "Tokyo Metropolitan Edo-Tokyo Museum",
+    "url": "https://www.edo-tokyo-museum.or.jp/en/about/",
+    "supports": [
+      "Edo's growth under Tokugawa government",
+      "Edo became a major metropolis by the early eighteenth century",
+      "In 1868 Edo was renamed Tokyo and Edo Castle became the imperial palace"
+    ],
+    "source_type": "official museum historical reference",
+    "media_rights": "Does not grant rights to reuse images or video; evaluate each media item separately"
+  },
+  {
+    "id": "gotokyo-edo-history",
+    "title": "Edo History & Culture",
+    "publisher": "GO TOKYO / Tokyo Convention & Visitors Bureau",
+    "url": "https://www.gotokyo.org/en/see-and-do/history/index.html",
+    "supports": [
+      "Edo is the former name of Tokyo",
+      "Tokugawa shogunate established in 1603",
+      "Edo period, cultural growth, and surviving historic districts"
+    ],
+    "source_type": "official destination guide",
+    "media_rights": "Editorial facts only; page imagery is not automatically reusable"
+  },
+  {
+    "id": "gotokyo-nihonbashi",
+    "title": "Take a stroll through Nihonbashi and discover the local culture of the regular residents of Edo",
+    "publisher": "GO TOKYO / Tokyo Convention & Visitors Bureau",
+    "url": "https://www.gotokyo.org/en/story/walks-and-tours/edo_nihonbashi/index.html",
+    "supports": [
+      "Nihonbashi's role as a hub of the Five Highways",
+      "Edo merchant culture and local life"
+    ],
+    "source_type": "official destination guide",
+    "media_rights": "Editorial facts only; page imagery is not automatically reusable"
+  }
+]

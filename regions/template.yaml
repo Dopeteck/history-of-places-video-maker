@@ -1,0 +1,37 @@
+name: Example Region
+slug: example-region
+country: Country
+languages: [Local language, English]
+place_names:
+  - spelling: Local name
+    pronunciation_hint: "phonetic guide"
+period_focus: "Historic period to present"
+story:
+  hook: "A vivid sourced hook."
+  closing_tip: "A practical visitor tip."
+  narration: "[REVIEW] Replace with a verified original story of about 130 words."
+sources:
+  - https://en.wikipedia.org/wiki/Example
+visual_style:
+  palette: [local-color, warm-neutral, dark-contrast]
+  accent_color: "#CC5533"
+  music_mood: "Region-appropriate ambient mood"
+  notes: "Contrast historical and present-day visuals."
+image_banned_terms: [cover, catalogue, catalog, report, document, page, manuscript, statement, plate list]
+map:
+  latitude: 0.0
+  longitude: 0.0
+  label: REGION
+scenes:
+  - title: Origins
+    narration_intent: "Introduce the best-supported origin story."
+    image_search_terms: ["place historic origins", "place old settlement photo", "place heritage site"]
+    required_keywords: [place, history]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic
+  - title: Landscape
+    narration_intent: "Explain how geography shaped the place."
+    image_search_terms: ["place landscape historic", "place waterfront old photo", "place historic map"]
+    required_keywords: [place, landscape]
+    banned_keywords: [cover, catalogue, report, document]
+    image_type: historic

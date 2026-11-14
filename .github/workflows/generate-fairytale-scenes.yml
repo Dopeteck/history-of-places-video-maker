@@ -1,0 +1,188 @@
+name: Generate and render Rumpelstiltskin review video
+
+on:
+  push:
+    branches:
+      - feature/dark-folklore-shorts
+    paths:
+      - "dispatch/generate-fairytale-scenes.txt"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Generate a single pilot or the complete nine-scene episode"
+        type: choice
+        options: ["pilot", "full-episode"]
+        default: "full-episode"
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rumpelstiltskin-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-and-render:
+    if: github.ref == 'refs/heads/feature/dark-folklore-shorts' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/dark-folklore-shorts
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements-render.txt
+            requirements-voice.txt
+
+      - name: Install image-generation and test dependencies
+        run: python -m pip install "requests>=2.31" "Pillow>=10" numpy
+
+      - name: Restore reviewed-character pilot and reference guides
+        uses: actions/download-artifact@v4
+        with:
+          name: rumpelstiltskin-reference-pilot-43242054796
+          path: output/reference-source
+          run-id: 43242054796
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore identity and height references
+        run: |
+          set -euo pipefail
+          mkdir -p output/character-reference
+          test -s output/reference-source/character-reference/rumpelstiltskin.png
+          test -s output/reference-source/character-reference/height-scale.png
+          cp output/reference-source/character-reference/rumpelstiltskin.png output/character-reference/
+          cp output/reference-source/character-reference/height-scale.png output/character-reference/
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          for name in ("rumpelstiltskin.png", "height-scale.png"):
+              path = Path("output/character-reference") / name
+              with Image.open(path) as image:
+                  image.verify()
+              with Image.open(path) as image:
+                  if image.width >= 512 or image.height >= 512:
+                      raise SystemExit(f"Reference image exceeds FLUX Klein's size limit: {name} {image.size}")
+                  print(name, image.size)
+          PY
+
+      - name: Restore partial images from the previous Cloudflare interruption
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: rumpelstiltskin-full-video-review-43257656152
+          path: output/partial-source
+          run-id: 43257656152
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reuse generated scenes and original generation manifest
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          source = Path("output/partial-source/rumpelstiltskin-generated-scenes")
+          destination = Path("output/rumpelstiltskin-generated-scenes")
+          destination.mkdir(parents=True, exist_ok=True)
+          if not source.is_dir():
+              raise SystemExit(f"Missing saved scene directory: {source}")
+          for path in sorted(source.iterdir()):
+              if not path.is_file():
+                  continue
+              if path.name == "generation-manifest.json" or path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+                  shutil.copy2(path, destination / path.name)
+                  print(f"Restored: {path.name}")
+          print("Restored files:", len(list(destination.iterdir())))
+          PY
+
+      - name: Run image-generation tests and compile both pipelines
+        run: |
+          python -m unittest discover -s tests -p "test_generate_fairytale_scenes.py" -v
+          python -m py_compile destination-prototype/generate_fairytale_scenes.py destination-prototype/render_fairytale_video.py
+
+      - name: Check Cloudflare credentials (manual pilot only)
+        if: github.event_name == 'workflow_dispatch' && inputs.scope == 'pilot'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "::error::Missing repository secret CLOUDFLARE_ACCOUNT_ID"; exit 1)
+          test -n "$CLOUDFLARE_API_TOKEN" || (echo "::error::Missing repository secret CLOUDFLARE_API_TOKEN"; exit 1)
+
+      - name: Generate only the child-pact pilot
+        if: github.event_name == 'workflow_dispatch' && inputs.scope == 'pilot'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python destination-prototype/generate_fairytale_scenes.py \
+            --plan research/rumpelstiltskin-pilot.json \
+            --reference-image output/character-reference/rumpelstiltskin.png \
+            --scale-reference-image output/character-reference/height-scale.png \
+            --only-scene beat-05-child-pact \
+            --output output/rumpelstiltskin-generated-scenes
+
+      - name: Assemble the symbolic finale and complete nine-scene review manifest
+        if: github.event_name == 'push' || inputs.scope == 'full-episode'
+        run: |
+          python -m unittest discover -s tests -p "test_assemble_symbolic_fairytale_review.py" -v
+          python destination-prototype/assemble_symbolic_fairytale_review.py \
+            --plan research/rumpelstiltskin-pilot.json \
+            --images output/rumpelstiltskin-generated-scenes \
+            --identity-reference output/character-reference/rumpelstiltskin.png \
+            --scale-reference output/character-reference/height-scale.png
+
+      - name: Install renderer system dependencies
+        if: github.event_name == 'push' || inputs.scope == 'full-episode'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng
+
+      - name: Install CPU video and Kokoro narration dependencies
+        if: github.event_name == 'push' || inputs.scope == 'full-episode'
+        run: |
+          python -m pip install -r requirements-render.txt
+          python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-voice.txt
+          python -m pip check
+
+      - name: Test fairytale renderer image validation and contact sheet
+        if: github.event_name == 'push' || inputs.scope == 'full-episode'
+        run: python -m unittest discover -s tests -p "test_render_fairytale_video.py" -v
+
+      - name: Build private review MP4 from all nine generated images
+        if: github.event_name == 'push' || inputs.scope == 'full-episode'
+        run: |
+          python destination-prototype/render_fairytale_video.py \
+            --plan research/rumpelstiltskin-pilot.json \
+            --images output/rumpelstiltskin-generated-scenes \
+            --out output/rumpelstiltskin-video-review \
+            --voice bm_fable \
+            --speed 0.92
+
+      - name: Upload images, contact sheet, and review-only MP4
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rumpelstiltskin-full-video-review-${{ github.run_id }}
+          path: |
+            output/rumpelstiltskin-generated-scenes/*.jpg
+            output/rumpelstiltskin-generated-scenes/*.png
+            output/rumpelstiltskin-generated-scenes/generation-manifest.json
+            output/rumpelstiltskin-video-review/video.mp4
+            output/rumpelstiltskin-video-review/contact-sheet.jpg
+            output/rumpelstiltskin-video-review/captions.srt
+            output/rumpelstiltskin-video-review/render-metadata.json
+            output/rumpelstiltskin-video-review/PREVIEW-ONLY.txt
+            output/rumpelstiltskin-video-review/description.txt
+          if-no-files-found: warn
+          retention-days: 14

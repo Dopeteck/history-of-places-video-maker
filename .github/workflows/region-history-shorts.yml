@@ -1,12 +1,20 @@
 name: Region-driven history shorts
+
 on:
+  schedule:
+    - cron: '0 9 * * *'   # daily 09:00 UTC - automated region selection and visual review
   workflow_dispatch:
     inputs:
       region:
-        description: "Region slug under regions/"
-        type: choice
-        options: [tokyo, lagos]
+        description: "Destination config slug under regions/ (e.g. hong-kong); add a reviewed config for new destinations"
+        type: string
         default: tokyo
+        required: true
+      hook_variant:
+        description: "Opening hook to render (must be human-approved for production)"
+        type: choice
+        options: [A, B]
+        default: A
         required: true
       approved_review:
         description: "Path to reviewed JSON with approved=true and claim_sources for every factual claim"
@@ -17,26 +25,70 @@ on:
         type: boolean
         default: false
         required: true
+      only_scenes:
+        description: "Optional comma-separated exact scene titles for a low-cost visual review"
+        type: string
+        required: false
+        default: ""
       render_approved:
         description: "Render only after the named review file passes the approval gate"
         type: boolean
         default: false
         required: true
+      draft_preview:
+        description: "Render a non-publishable draft MP4; strict image, rights, relevance, and QA gates still apply"
+        type: boolean
+        default: false
+        required: true
+  push:
+    branches:
+      - feature/destination-history-shorts
+    paths:
+      - 'destination-prototype/daily_orchestrate.py'
+      - 'destination-prototype/generate_script.py'
+      - 'destination-prototype/image_inventory.py'
+      - 'destination-prototype/story_from_inventory.py'
+      - 'destination-prototype/test_image_first.py'
+      - 'destination-prototype/render_region_short.py'
+      - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'destination-prototype/test_resolver_logic.py'
+      - 'destination-prototype/make_region_config.py'
+      - 'destination-prototype/test_region_configs.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'requirements-regions.txt'
+      - '.github/workflows/region-history-shorts.yml'
   pull_request:
     paths:
       - 'regions/**'
+      - 'destination-prototype/daily_orchestrate.py'
+      - 'destination-prototype/generate_script.py'
+      - 'destination-prototype/image_inventory.py'
+      - 'destination-prototype/story_from_inventory.py'
+      - 'destination-prototype/test_image_first.py'
       - 'destination-prototype/render_region_short.py'
       - 'destination-prototype/asset_resolver.py'
+      - 'destination-prototype/vector_map.py'
+      - 'destination-prototype/timing.py'
+      - 'destination-prototype/data/**'
+      - 'destination-prototype/test_resolver_logic.py'
       - 'destination-prototype/make_region_config.py'
       - 'destination-prototype/test_region_configs.py'
       - 'requirements-regions.txt'
       - 'README-regions.md'
       - '.github/workflows/region-history-shorts.yml'
+
 permissions:
-  contents: read
+  contents: write
+
 concurrency:
   group: region-history-${{ github.event.inputs.region || 'config-tests' }}
   cancel-in-progress: false
+
 jobs:
   config-check:
     runs-on: ubuntu-latest
@@ -50,18 +102,39 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
+      - name: Normalize destination input
+        id: normalize
+        env:
+          REGION_RAW: ${{ matrix.region }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, sys
+          sys.path.insert(0, "destination-prototype")
+          from region_slug import normalize_region_slug
+          try:
+              slug = normalize_region_slug(os.environ["REGION_RAW"])
+          except ValueError as exc:
+              raise SystemExit(str(exc))
+          print(f"slug={slug}")
+          PY
       - name: Install config and renderer dependencies
         run: |
-          python -m pip install PyYAML requests Pillow
+          python -m pip install PyYAML requests Pillow numpy pytest
       - name: Compile Python and validate config shape
+        env:
+          REGION: ${{ steps.normalize.outputs.slug }}
         run: |
-          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py
+          python -m py_compile destination-prototype/render_region_short.py destination-prototype/asset_resolver.py destination-prototype/vector_map.py destination-prototype/timing.py destination-prototype/make_region_config.py destination-prototype/test_region_configs.py destination-prototype/region_slug.py
           python destination-prototype/test_region_configs.py
+          python -m pytest destination-prototype/test_resolver_logic.py -q
           python - <<'PY'
           import pathlib, yaml, os
-          p=pathlib.Path("regions") / (os.environ['REGION']+".yaml")
-          d=yaml.safe_load(p.read_text())
+          region = os.environ["REGION"]
+          p=pathlib.Path("regions") / (region+".yaml")
+          if not p.is_file():
+              raise SystemExit(f"Destination config not found: {p}. Create and review this config first; destination names normalize to lowercase hyphenated slugs.")
+          d=yaml.safe_load(p.read_text(encoding="utf-8"))
           assert d.get("name") and d.get("country") and d.get("sources"), "missing region identity/sources"
           assert len(d.get("claim_sources",{})) >= 5, "each region needs a claim_sources map for historical assertions"
           assert 8 <= len(d.get("scenes",[])) <= 12, "expected 8–12 scenes"
@@ -73,13 +146,12 @@ jobs:
             assert s.get("image_type") in ("historic","modern","map"), s["title"]+" has invalid image_type"
           print("Config structure OK:", d["name"], "scenes=",len(d["scenes"]))
           PY
-        env:
-          REGION: ${{ matrix.region }}
       - name: Require explicit story approval before rendering
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved
         env:
           REVIEW_PATH: ${{ inputs.approved_review }}
-          REGION: ${{ inputs.region }}
+          REGION: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
         run: |
           python - <<'PY'
           import json, os, pathlib, yaml
@@ -87,9 +159,14 @@ jobs:
           region=os.environ["REGION"]
           if not p or not pathlib.Path(p).is_file(): raise SystemExit("APPROVAL GATE FAILED: provide a reviewed JSON file committed in this branch")
           review=json.loads(pathlib.Path(p).read_text())
-          cfg=yaml.safe_load(pathlib.Path("regions",region+".yaml").read_text())
+          cfg_path=pathlib.Path("regions",region+".yaml")
+          if not cfg_path.is_file(): raise SystemExit(f"Destination config not found: {cfg_path}")
+          cfg=yaml.safe_load(cfg_path.read_text())
           if review.get("region") != region or review.get("approved") is not True:
-            raise SystemExit("APPROVAL GATE FAILED: review JSON must match region and set approved=true")
+            raise SystemExit("APPROVAL GATE FAILED: review JSON must match normalized region slug and set approved=true")
+          selected=os.environ.get("HOOK_VARIANT","A")
+          if selected not in review.get("approved_hook_variants",[]):
+            raise SystemExit("APPROVAL GATE FAILED: selected hook variant must be explicitly human-approved in the review JSON")
           mapping=review.get("claim_sources")
           expected=cfg.get("claim_sources",{})
           if not isinstance(mapping,dict) or not set(expected).issubset(mapping):
@@ -103,30 +180,246 @@ jobs:
           print("Review gate passed: all config claims have explicit source mappings and reviewer metadata.")
           PY
       - name: Install rendering dependencies
-        if: github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)
+        if: (github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push'
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
           python -m pip install -r requirements-regions.txt
-      - name: Render visual approval board (no audio / not publishable)
-        if: github.event_name == 'workflow_dispatch' && inputs.visual_review_only
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml --visual-review-only
-      - name: Render approved region short
+          # Install matching spaCy 3.7 English model for Kokoro/Misaki tokenizer; mismatched versions cause OverflowError in CI.
+          python -m pip install --no-deps https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+      - name: Verify Kokoro voice pipeline initializes (supports configured language)
+        if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
+        env:
+          REGION: ${{ steps.normalize.outputs.slug }}
+        run: |
+          python - <<'PY'
+          import yaml, os, sys
+          sys.path.insert(0, "destination-prototype")
+          from region_slug import normalize_region_slug
+          region_raw = os.environ.get("REGION")
+          if not region_raw:
+              raise SystemExit("REGION environment variable not set; this step requires the normalized region slug")
+          try:
+              slug = normalize_region_slug(region_raw)
+          except ValueError as exc:
+              raise SystemExit(str(exc))
+          cfg_path = f"regions/{slug}.yaml"
+          if not os.path.exists(cfg_path):
+              raise SystemExit(f"Config not found: {cfg_path}")
+          cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
+          narration_lang = str(cfg.get("story", {}).get("narration_language", "English")).strip().lower()
+          lang_map = {"english": "a", "british": "b", "spanish": "e", "french": "f", "hindi": "h", "portuguese": "p", "mandarin": "z"}
+          lang_code = lang_map.get(narration_lang)
+          if lang_code is None:
+              if narration_lang.startswith("english"): lang_code = "a"
+              elif narration_lang.startswith("british"): lang_code = "b"
+              elif narration_lang.startswith("spanish"): lang_code = "e"
+              elif narration_lang.startswith("french"): lang_code = "f"
+              elif narration_lang.startswith("hindi"): lang_code = "h"
+              elif narration_lang.startswith("portuguese"): lang_code = "p"
+              elif narration_lang.startswith("mandarin") or narration_lang.startswith("chinese"): lang_code = "z"
+          if lang_code is None:
+              raise SystemExit(f"Unsupported narration_language {narration_lang!r}; configure a supported language (English, British, Spanish, French, Hindi, Portuguese, Mandarin)")
+          default_voices = {"a": "af_heart", "b": "bf_emma", "e": "ef_dora", "f": "ff_siwis", "h": "hf_alpha", "p": "pf_dora", "z": "zf_xiaobei"}
+          voice = cfg.get("story", {}).get("kokoro_voice", default_voices.get(lang_code, "af_heart"))
+          expected_prefix = {"a": "a", "b": "b", "e": "e", "f": "f", "h": "h", "p": "p", "z": "z"}[lang_code]
+          if not voice.startswith(expected_prefix):
+              raise SystemExit(f"Voice {voice!r} does not match language {lang_code} (expected prefix {expected_prefix!r})")
+          test_text = cfg.get("story", {}).get("smoke_test_text", "History begins here.")
+          from kokoro import KPipeline
+          pipeline = KPipeline(lang_code=lang_code)
+          graphemes, phonemes, audio = next(pipeline(test_text, voice=voice))
+          assert audio is not None and audio.shape[0] > 0
+          print(f"Kokoro {narration_lang} TTS smoke test passed: {audio.shape[0]} samples at 24000 Hz (voice={voice}, lang_code={lang_code})")
+          PY
+      - name: Verify CLIP model can score a known image
+        if: (github.event_name == 'workflow_dispatch' && (inputs.visual_review_only || inputs.render_approved || inputs.draft_preview)) || github.event_name == 'push'
+        run: |
+          cd destination-prototype
+          python - <<'PY'
+          import io
+          from PIL import Image
+          from asset_resolver import _clip_analyze
+          image = Image.new("RGB", (224, 224), (40, 90, 180))
+          buf = io.BytesIO()
+          image.save(buf, format="PNG")
+          r = _clip_analyze("a blue image", [buf.getvalue()])[0]
+          assert set(r) == {"score", "p_document", "p_modern"} and all(0.0 <= r[k] <= 1.0 for k in ("score", "p_document", "p_modern")) and -1.0 <= r["score"] <= 1.0, r
+          print("CLIP smoke test passed:", r)
+          PY
+      - name: Render visual approval board (story-driven, no audio / not publishable)
+        if: (github.event_name == 'workflow_dispatch' && inputs.visual_review_only) || github.event_name == 'push'
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant || 'A' }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: |
+          python destination-prototype/daily_orchestrate.py \
+            --mode review \
+            --region "${REGION_SLUG}" \
+            --hook-variant "${HOOK_VARIANT}"
+      - name: Render non-publishable draft preview
+        if: github.event_name == 'workflow_dispatch' && inputs.draft_preview && !inputs.visual_review_only
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: |
+          python destination-prototype/daily_orchestrate.py \
+            --mode review \
+            --draft-preview \
+            --region "${REGION_SLUG}" \
+            --hook-variant "${HOOK_VARIANT}"
+      - name: Render approved region short (story-driven production render)
         if: github.event_name == 'workflow_dispatch' && inputs.render_approved && !inputs.visual_review_only
-        run: python destination-prototype/render_region_short.py --config regions/${{ inputs.region }}.yaml
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+          HOOK_VARIANT: ${{ inputs.hook_variant }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: |
+          python destination-prototype/daily_orchestrate.py \
+            --mode production \
+            --region "${REGION_SLUG}" \
+            --hook-variant "${HOOK_VARIANT}" \
+            --approve
+      - name: Run production QA on draft/approved renders
+        if: github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.draft_preview)
+        env:
+          REGION_SLUG: ${{ steps.normalize.outputs.slug }}
+        run: |
+          SCENE_COUNT=$(python -c "import yaml; print(len(yaml.safe_load(open('regions/${REGION_SLUG}.yaml', encoding='utf-8')).get('scenes',[])))")
+          python destination-prototype/qa_checks.py \
+            --script output/${REGION_SLUG}-region-short/script.json \
+            --output-dir output/${REGION_SLUG}-region-short \
+            --video output/${REGION_SLUG}-region-short/*.mp4 \
+            --mode production \
+            --fail-on-error \
+            --scene-count "$SCENE_COUNT"
       - name: Upload reviewable region outputs
-        if: always() && github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only)
+        if: always() && ((github.event_name == 'workflow_dispatch' && (inputs.render_approved || inputs.visual_review_only || inputs.draft_preview)) || github.event_name == 'push')
         uses: actions/upload-artifact@v4
         with:
-          name: region-review-${{ inputs.region }}-${{ github.run_id }}
+          name: region-review-${{ steps.normalize.outputs.slug }}-${{ github.run_id }}
           retention-days: 7
           if-no-files-found: warn
           path: |
-            output/${{ inputs.region }}-region-short/*.mp4
-            output/${{ inputs.region }}-region-short/contact-sheet.jpg
-            output/${{ inputs.region }}-region-short/approval-board.html
-            output/${{ inputs.region }}-region-short/images/*
-            output/${{ inputs.region }}-region-short/credits.json
-            output/${{ inputs.region }}-region-short/credits-description.txt
-            output/${{ inputs.region }}-region-short/qa-report.json
-            output/${{ inputs.region }}-region-short/narration.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/*.mp4
+            output/${{ steps.normalize.outputs.slug }}-region-short/*-captions.srt
+            output/${{ steps.normalize.outputs.slug }}-region-short/contact-sheet.jpg
+            output/${{ steps.normalize.outputs.slug }}-region-short/approval-board.html
+            output/${{ steps.normalize.outputs.slug }}-region-short/images/*
+            output/${{ steps.normalize.outputs.slug }}-region-short/credits.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/credits-description.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/qa-report.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/narration.txt
+            output/${{ steps.normalize.outputs.slug }}-region-short/script.json
+            output/${{ steps.normalize.outputs.slug }}-region-short/research.json
+
+  daily-selection:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: region-history-daily
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install PyYAML requests
+      - name: Pick next region in rotation
+        id: pick-region
+        env:
+          ROTATION_ORDER: tokyo,hong-kong,lagos,paris,mexico-city
+          STATE_FILE: state/region_rotation.json
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          from datetime import datetime, timezone
+          
+          order = os.environ["ROTATION_ORDER"].split(",")
+          state_path = pathlib.Path(os.environ["STATE_FILE"])
+          
+          last_region = None
+          if state_path.is_file():
+              try:
+                  state = json.loads(state_path.read_text())
+                  last_region = state.get("last_region")
+              except Exception:
+                  pass
+          
+          if last_region and last_region in order:
+              idx = order.index(last_region)
+              next_region = order[(idx + 1) % len(order)]
+          else:
+              next_region = order[0]
+          
+          state_path.parent.mkdir(parents=True, exist_ok=True)
+          state_path.write_text(json.dumps({
+              "last_region": next_region,
+              "last_run_date": datetime.now(timezone.utc).isoformat(),
+              "rotation_order": order,
+          }, indent=2) + "\n")
+          
+          print(f"Selected region: {next_region} (last was: {last_region})")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"region={next_region}\n")
+          PY
+      - name: Validate selected region config
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+        run: |
+          python - <<'PY'
+          import pathlib, yaml, os, sys
+          region = os.environ["REGION"]
+          p = pathlib.Path("regions") / f"{region}.yaml"
+          if not p.is_file():
+              raise SystemExit(f"Destination config not found: {p}")
+          d = yaml.safe_load(p.read_text(encoding="utf-8"))
+          assert d.get("name") and d.get("country"), f"Region {region} missing identity"
+          assert 8 <= len(d.get("scenes",[])) <= 12, f"{region}: expected 8-12 scenes, got {len(d.get('scenes',[]))}"
+          print(f"Config validated: {d['name']} ({region}) - {len(d['scenes'])} scenes")
+          PY
+      - name: Install rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core tesseract-ocr
+          python -m pip install -r requirements-regions.txt
+          python -m pip install --no-deps https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+      - name: Render daily review board (story-driven, no audio / not publishable)
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
+          EUROPEANA_API_KEY: ${{ secrets.EUROPEANA_API_KEY }}
+        run: |
+          python destination-prototype/daily_orchestrate.py \
+            --mode review \
+            --region "${REGION}" \
+            --hook-variant A
+      - name: Upload daily review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-review-${{ steps.pick-region.outputs.region }}-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            output/${{ steps.pick-region.outputs.region }}-region-short/approval-board.html
+            output/${{ steps.pick-region.outputs.region }}-region-short/images/*
+            output/${{ steps.pick-region.outputs.region }}-region-short/qa-report.json
+      - name: Commit rotation state
+        if: success()
+        env:
+          REGION: ${{ steps.pick-region.outputs.region }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/region_rotation.json
+          git commit -m "chore: advance region rotation to ${{ steps.pick-region.outputs.region }}" || true
+          git push origin feature/destination-history-shorts || true

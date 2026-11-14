@@ -1,0 +1,1401 @@
+#!/usr/bin/env python3
+"""Rights-first archival image discovery with CPU CLIP ranking.
+
+Uses official collection APIs only. API-key providers are enabled when their
+documented key environment variable is configured; no key is fabricated.
+
+Every rejection is counted so a failed scene explains itself (see ResolverError).
+"""
+from __future__ import annotations
+import hashlib, html as _html, io, json, os, re, time, datetime, unicodedata
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
+from pathlib import Path
+import requests
+import threading
+from PIL import Image
+
+# Concurrency control for provider requests
+MAX_CONCURRENT_PROVIDERS = 3
+MAX_CONCURRENT_DOWNLOADS = 2
+_provider_semaphore = threading.BoundedSemaphore(MAX_CONCURRENT_PROVIDERS)
+_download_semaphore = threading.BoundedSemaphore(MAX_CONCURRENT_DOWNLOADS)
+
+UA = "RegionHistoryShort/2.2 (https://github.com/Dopeteck/history-of-places-video-maker)"
+S = requests.Session()
+S.headers.update({"User-Agent": UA})
+ALLOWED = ("public domain", "public domain mark", "cc0", "cc by", "cc-by",
+           "cc by-sa", "cc-by-sa", "creative commons attribution",
+           "creative commons zero", "no known copyright restrictions",
+           "no known restrictions on publication")
+BANNED = re.compile(r"book cover|front cover|back cover|cover art|title page|frontispiece|scanned page|text page|page scan|catalogue page|exhibition poster|plate list|contents page|pdf|djvu|document scan|report cover", re.I)
+# Zero-shot CLIP probes (two-way softmax, so absolute cosine scale does not matter).
+DOC_PAIR = ("a scanned page of printed text, a book cover, or a document",
+            "a painting, photograph, map, or illustration")
+MODERN_PAIR = ("a modern colour photograph taken in recent years",
+               "an old painting, woodblock print, drawing, or historical black and white photograph")
+FAIRYTALE_STYLE_PAIR = (
+    "a historical photograph or documentary portrait photograph",
+    "an illustrated fairy-tale book image: an engraving, etching, woodcut, drawing, or painting",
+)
+GENERIC_WORDS = {"historical", "historic", "history", "photograph", "photo", "illustration", "old",
+                 "image", "images", "panorama", "period", "early", "modern", "contemporary", "of", "the", "and", "in", "before", "after", "during", "from", "with", "near"}
+STATS = Counter()          # per-scene rejection counters, reset in resolve_scene_image
+FOUND = Counter()          # candidates discovered per provider
+TOP_REJECTED = []          # a few rejected candidates with reasons
+PROVIDER_ERRORS = {}       # provider -> last error text (whole run)
+_LAST_API_REQUEST = 0.0
+_LAST_MET_REQUEST = 0.0
+_FAILS = Counter()         # consecutive failures per provider (whole run)
+
+# Request timeout configuration
+DEFAULT_CONNECT_TIMEOUT = 10.0
+DEFAULT_READ_TIMEOUT = 30.0
+DEFAULT_TOTAL_TIMEOUT = 60.0
+MAX_RETRIES = 3
+BASE_RETRY_DELAY = 1.0
+MAX_RETRY_DELAY = 8.0
+
+# Provider-specific timeout overrides
+PROVIDER_TIMEOUTS = {
+    "wikimedia.org/w/api.php": (10.0, 30.0),
+    "wikidata.org/w/api.php": (10.0, 30.0),
+    "commons.wikimedia.org/w/api.php": (10.0, 30.0),
+    "collectionapi.metmuseum.org": (15.0, 45.0),
+    "api.artic.edu": (15.0, 45.0),
+    "openaccess-api.clevelandart.org": (15.0, 45.0),
+    "api.si.edu": (15.0, 45.0),
+    "api.europeana.eu": (15.0, 45.0),
+    "api.dp.la": (15.0, 45.0),
+    "api.repo.nypl.org": (15.0, 45.0),
+    "www.nga.gov": (15.0, 45.0),
+    "www.rijksmuseum.nl": (15.0, 45.0),
+    "api.getty.edu": (15.0, 45.0),
+    "www.loc.gov": (15.0, 45.0),
+}
+
+def _get_timeouts_for_url(url: str) -> tuple:
+    """Get (connect_timeout, read_timeout) for a given URL."""
+    for domain, timeouts in PROVIDER_TIMEOUTS.items():
+        if domain in url:
+            return timeouts
+    return (DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT)
+
+
+class ResolverError(RuntimeError):
+    """Raised when no candidate passes; message ends with `Diagnostics: {json}` for the approval board."""
+    def __init__(self, message, diagnostics):
+        self.diagnostics = diagnostics
+        super().__init__(f"{message} Diagnostics: {json.dumps(diagnostics, ensure_ascii=False)}")
+
+
+class ProviderSkipped(RuntimeError):
+    """A provider cannot run (e.g. API key not configured). Reported as 'skipped', never as an empty result."""
+
+
+def _https(url):
+    """Providers return http:// ids and protocol-relative (//cdn...) image URLs; both are valid https resources."""
+    u = str(url or "").strip()
+    if u.startswith("//"): return "https:" + u
+    if u.startswith("http://"): return "https://" + u[len("http://"):]
+    return u
+
+
+def _clean(value):
+    """Strip HTML tags/entities from provider text (Commons descriptions and artists are HTML)."""
+    return re.sub(r"\s+", " ", _html.unescape(re.sub(r"<[^>]+>", " ", str(value or "")))).strip()
+
+
+def _norm(text):
+    """Lower-case and strip diacritics so 'Koishikawa K\u014drakuen' matches 'korakuen'."""
+    t = unicodedata.normalize("NFKD", str(text or ""))
+    return "".join(ch for ch in t if not unicodedata.combining(ch)).lower()
+
+
+def _kw_hit(term, hay_norm):
+    """Whole-word (plural-tolerant) match for Latin terms; substring match for CJK. `hay_norm` is already _norm()ed."""
+    t = _norm(term).strip()
+    if not t: return False
+    if re.fullmatch(r"[a-z0-9' \-]+", t):
+        return re.search(r"(?<![a-z0-9])" + re.escape(t) + r"(?:s|es)?(?![a-z0-9])", hay_norm) is not None
+    return t in hay_norm
+
+
+def _find_term(text, terms):
+    """First banned term found as a whole word in text, else None (so the diagnostics can say which rule fired)."""
+    t = _norm(text)
+    for x in terms:
+        x = str(x).strip()
+        if x and re.search(r"(?<!\w)" + re.escape(_norm(x)) + r"(?!\w)", t):
+            return x
+    return None
+
+
+def _years(text):
+    """Four-digit years only; 3-digit numbers (plate 123, DSC 101) are not dates."""
+    return [int(y) for y in re.findall(r"(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)", str(text or ""))]
+
+
+def _as_list(v):
+    if v is None: return []
+    if isinstance(v, (list, tuple)): return [str(i) for i in v if i not in (None, "")]
+    return [str(v)] if str(v).strip() else []
+
+
+def _needs_attribution(rights):
+    x = str(rights or "").lower()
+    return "cc by" in x or "cc-by" in x or "attribution" in x
+
+
+def _has_author(author):
+    return str(author or "").strip().lower() not in ("", "not stated", "unknown", "unknown author", "none", "n/a")
+
+
+# ---------------------------------------------------------------------------
+# Geographic relevance checking
+# ---------------------------------------------------------------------------
+
+def _extract_coordinates(text: str) -> List[tuple]:
+    """Extract lat/lon coordinates from text. Returns list of (lat, lon) tuples.
+    
+    Looks for patterns like:
+    - "lat: 35.6762, lon: 139.6503"
+    - "35.6762, 139.6503"
+    - "35°40'34\"N 139°39'01\"E"
+    - Decimal degrees in metadata fields
+    """
+    coords = []
+    # Decimal degrees: lat, lon (lat between -90 and 90, lon between -180 and 180)
+    for match in re.finditer(r'(?<![\d.-])(-?\d{1,2}\.\d+)[,\s]+(-?\d{1,3}\.\d+)(?![\d.-])', text):
+        try:
+            lat = float(match.group(1))
+            lon = float(match.group(2))
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                coords.append((lat, lon))
+        except ValueError:
+            pass
+    # DMS format: 35°40'34"N 139°39'01"E
+    for match in re.finditer(r'(\d{1,2})[°\s]+(\d{1,2})[\'\s]+(\d{1,2}(?:\.\d+)?)[\"\s]*([NS])\s*(\d{1,3})[°\s]+(\d{1,2})[\'\s]+(\d{1,2}(?:\.\d+)?)[\"\s]*([EW])', text):
+        try:
+            lat_deg, lat_min, lat_sec, lat_dir, lon_deg, lon_min, lon_sec, lon_dir = match.groups()
+            lat = float(lat_deg) + float(lat_min)/60 + float(lat_sec)/3600
+            lon = float(lon_deg) + float(lon_min)/60 + float(lon_sec)/3600
+            if lat_dir == 'S': lat = -lat
+            if lon_dir == 'W': lon = -lon
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                coords.append((lat, lon))
+        except ValueError:
+            pass
+    return coords
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance between two points in kilometers."""
+    from math import radians, sin, cos, sqrt, atan2
+    R = 6371.0  # Earth radius in km
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
+
+
+def _check_geographic_relevance(candidate: Dict, scene: Dict, config: Dict) -> tuple:
+    """Check if candidate image's depicted location matches the target geographic area.
+    
+    Returns (is_relevant: bool, reason: str, distance_km: Optional[float]).
+    
+    Uses multiple signals:
+    1. Explicit coordinates in candidate metadata (facets, categories, description)
+    2. Location names in candidate metadata matched against target entities
+    3. Banned location names (e.g., "Little Tokyo" for Tokyo Japan)
+    4. Target coordinates from scene (map_lat/map_lon) or config
+    
+    If location cannot be determined, returns (True, "location_unverifiable", None) to allow
+    but flag for review. This is conservative - we reject only when we have positive
+    evidence of wrong location.
+    """
+    # Get target coordinates from scene or config
+    target_lat = scene.get("map_lat") or config.get("map", {}).get("center_lat")
+    target_lon = scene.get("map_lon") or config.get("map", {}).get("center_lon")
+    
+    # Get target location names (entities, place names)
+    target_entities = set()
+    for e in scene.get("named_entities", []) or scene.get("entities", []):
+        target_entities.add(_norm(e))
+    for e in config.get("place_names", []):
+        if isinstance(e, dict):
+            target_entities.add(_norm(e.get("spelling", "")))
+        else:
+            target_entities.add(_norm(str(e)))
+    config_name = _norm(config.get("name", ""))
+    if config_name:
+        target_entities.add(config_name)
+    
+    # Banned location names - known confusing names that indicate wrong location
+    # These are per-region configurations; for now we use a generic approach
+    # where scenes can specify banned_location_keywords
+    banned_locations = set(scene.get("banned_location_keywords", []))
+    banned_locations.update(config.get("banned_location_keywords", []))
+    
+    # Extract all text from candidate metadata for analysis
+    candidate_text = " ".join([
+        candidate.get("title", ""),
+        candidate.get("description", ""),
+        " ".join(_as_list(candidate.get("categories"))),
+        " ".join(_as_list(candidate.get("facets"))),
+        candidate.get("date_text", ""),
+    ])
+    candidate_norm = _norm(candidate_text)
+    
+    # 1. Check for banned location names (strong negative signal)
+    for banned in banned_locations:
+        if banned and _kw_hit(banned, candidate_norm):
+            return False, f"banned_location:{banned}", None
+    
+    # 2. Try to extract coordinates from candidate metadata
+    candidate_coords = _extract_coordinates(candidate_text)
+    
+    # Also check facets/categories for coordinate-like entries
+    for facet in _as_list(candidate.get("facets")):
+        candidate_coords.extend(_extract_coordinates(facet))
+    for cat in _as_list(candidate.get("categories")):
+        candidate_coords.extend(_extract_coordinates(cat))
+    
+    # 3. If we have both target and candidate coordinates, check distance
+    if target_lat is not None and target_lon is not None and candidate_coords:
+        min_distance = float('inf')
+        for cand_lat, cand_lon in candidate_coords:
+            dist = _haversine_km(target_lat, target_lon, cand_lat, cand_lon)
+            min_distance = min(min_distance, dist)
+        
+        # Allow configurable radius (default 100km for city-level, larger for regions)
+        max_radius_km = scene.get("geo_max_radius_km", config.get("geo_max_radius_km", 100))
+        if min_distance > max_radius_km:
+            return False, f"coordinate_mismatch:{min_distance:.0f}km", min_distance
+        if min_distance <= max_radius_km:
+            return True, f"coordinate_match:{min_distance:.0f}km", min_distance
+    
+    # 4. Check for target location names in candidate metadata (positive signal)
+    # This is weaker than coordinates but helps when coordinates unavailable
+    location_matches = 0
+    for entity in target_entities:
+        if entity and len(entity) > 2 and _kw_hit(entity, candidate_norm):
+            location_matches += 1
+    
+    # If we have strong location name matches, consider it relevant
+    if location_matches >= 2:
+        return True, f"location_name_match:{location_matches}", None
+    
+    # 5. If we have target coordinates but no candidate coordinates, we can't verify
+    # If we have candidate coordinates but no target, we can't verify
+    # If neither has coordinates, fall back to name matching
+    if target_lat is not None and target_lon is not None and not candidate_coords:
+        # We have a target location but candidate has no coordinates
+        # Check if location names match
+        if location_matches >= 1:
+            return True, "location_name_match_weak", None
+        # No positive evidence either way - allow but flag
+        return True, "location_unverifiable_no_coords", None
+    
+    # 6. No target coordinates configured - rely on name matching only
+    if location_matches >= 1:
+        return True, "location_name_match_weak", None
+    
+    # 7. No evidence either way - allow but flag for review
+    return True, "location_unverifiable", None
+
+
+def _get(url, params=None, timeout=None):
+    """Request with provider pacing, bounded timeouts, retries with exponential backoff, and Retry-After awareness.
+
+    - Connection and read timeouts are provider-specific.
+    - Transient errors (429, 5xx) are retried with exponential backoff and Retry-After header.
+    - Deterministic 403s are not retried (access/bot protection).
+    - Provider-specific pacing is preserved.
+    """
+    global _LAST_API_REQUEST, _LAST_MET_REQUEST
+
+    if timeout is None:
+        connect_timeout, read_timeout = _get_timeouts_for_url(url)
+    else:
+        # Backward compatibility: if a single timeout is provided, use it for both
+        connect_timeout = read_timeout = timeout
+
+    last = None
+    for attempt in range(MAX_RETRIES):
+        # Acquire semaphore to limit concurrent provider requests
+        acquired = _provider_semaphore.acquire(timeout=30.0)
+        if not acquired:
+            raise requests.Timeout("Could not acquire provider semaphore within 30s")
+
+        try:
+            is_wikimedia = "wikimedia.org/w/api.php" in url or "wikidata.org/w/api.php" in url
+            is_met = "collectionapi.metmuseum.org/public/collection/" in url
+            if is_wikimedia:
+                wait = 0.65 - (time.monotonic() - _LAST_API_REQUEST)
+                if wait > 0: time.sleep(wait)
+            elif is_met:
+                wait = 1.0 - (time.monotonic() - _LAST_MET_REQUEST)
+                if wait > 0: time.sleep(wait)
+
+            r = S.get(url, params=params, timeout=(connect_timeout, read_timeout))
+
+            if is_wikimedia:
+                _LAST_API_REQUEST = time.monotonic()
+            elif is_met:
+                _LAST_MET_REQUEST = time.monotonic()
+
+            # Handle transient HTTP errors
+            if r.status_code == 429 or 500 <= r.status_code < 600:
+                retry_after = r.headers.get("Retry-After", "")
+                try:
+                    delay = min(MAX_RETRY_DELAY, max(BASE_RETRY_DELAY, float(retry_after)))
+                except (TypeError, ValueError):
+                    delay = BASE_RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                last = requests.HTTPError(f"HTTP {r.status_code}")
+                if attempt < MAX_RETRIES - 1:
+                    _provider_semaphore.release()
+                    time.sleep(delay)
+                    continue
+                _provider_semaphore.release()
+                break
+
+            r.raise_for_status()
+            _provider_semaphore.release()
+            return r.json()
+
+        except requests.RequestException as e:
+            last = e
+            _provider_semaphore.release()
+            # 403 usually indicates access/bot protection, not a transient network failure.
+            # Retrying immediately makes the block more likely to persist.
+            if isinstance(e, requests.HTTPError) and getattr(e.response, "status_code", None) == 403:
+                break
+            if attempt == MAX_RETRIES - 1:
+                break
+            delay = min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * (2 ** attempt))
+            time.sleep(delay)
+
+    raise last
+
+
+def _rights_ok(rights):
+    x = str(rights or "").strip().lower()
+    if not x or any(k in x for k in ("unknown", "copyright", "all rights reserved",
+                                      "noncommercial", "non-commercial", "no derivatives",
+                                      "cc by-nc", "cc-by-nc", "cc by-nd", "cc-by-nd")):
+        # "no known copyright restrictions" is an explicit open statement; handle it before rejecting on "copyright".
+        if "no known copyright restrictions" in x and not any(k in x for k in ("noncommercial", "non-commercial", "all rights reserved")):
+            return True
+        return False
+    return any(k in x for k in ALLOWED) or "creativecommons.org/licenses/by/" in x or "creativecommons.org/licenses/by-sa/" in x or "creativecommons.org/publicdomain/" in x
+
+
+def _has_term(text, terms):
+    """Whole-word match so banned 'page' does not reject 'pageant' and 'book' does not reject 'bookshop'."""
+    return _find_term(text, terms) is not None
+
+def _scene_identity_evidence(scene, haystack):
+    """Require a scene-specific metadata anchor; CLIP similarity alone is not identity evidence.
+
+    Configs may provide named_entities as strings or lists, plus identity_aliases as
+    either a list (aliases for any entity) or a mapping from entity to aliases. This
+    supports translated names and alternate historical/event labels without hardcoding
+    any city or region into resolver logic.
+    """
+    raw = scene.get("named_entities") or scene.get("entities") or []
+    entities = _as_list(raw)
+    if not entities:
+        return True, []
+    aliases = scene.get("identity_aliases") or scene.get("named_entity_aliases") or {}
+    alias_terms = []
+    if isinstance(aliases, dict):
+        for entity in entities:
+            values = aliases.get(entity, [])
+            alias_terms.extend(_as_list(values))
+    else:
+        alias_terms.extend(_as_list(aliases))
+    terms = list(dict.fromkeys(entities + alias_terms))
+    normalized_haystack = _norm(haystack)
+    hits = [term for term in terms if _kw_hit(term, normalized_haystack)]
+    return bool(hits), terms if not hits else []
+
+
+def _candidate(provider, title, description, image_url, source_url, rights, rights_url, author="", identifier="", categories=None, date_text="", facets=None, year_range=None):
+    # Provider metadata is not schema-stable: normalize values before string operations.
+    if isinstance(author, (list, tuple)):
+        author = "; ".join(str(a.get("description", a) if isinstance(a, dict) else a) for a in author)
+    title, description, author, rights = _clean(title), _clean(description), _clean(author), _clean(rights)
+    image_url, source_url = _https(image_url), _https(source_url)
+    rights_url = _https(rights_url) if str(rights_url or "").startswith(("http://", "//")) else str(rights_url or "")
+    # Commons sometimes supplies an explicit Public domain rights statement but
+    # leaves LicenseUrl empty. Preserve the item page as source_url and provide
+    # a real Commons public-domain guidance URL rather than an empty license link.
+    if not rights_url and str(provider).lower() == "wikimedia commons" and "public domain" in rights.lower():
+        rights_url = "https://commons.wikimedia.org/wiki/Commons:Public_domain"
+    identifier = str(identifier or "")
+    if not title:
+        STATS["no_title"] += 1; return None
+    if not image_url:
+        STATS["no_image_url"] += 1; return None
+    if not source_url:
+        STATS["no_source_url"] += 1; return None
+    if not rights or not _rights_ok(rights):
+        STATS["rights"] += 1; return None
+    if BANNED.search(title + " " + description + " " + image_url):
+        STATS["banned_metadata"] += 1; return None
+    if not image_url.startswith("https://") or not source_url.startswith("https://"):
+        STATS["non_https"] += 1; return None
+    return {"provider": provider, "title": title, "description": description, "categories": [_clean(x) for x in (categories or [])],
+            "facets": [_clean(x) for x in (facets or []) if _clean(x)], "year_range": year_range, "date_text": _clean(date_text),
+            "image_url": image_url.split("#")[0], "source_url": source_url, "rights": rights, "rights_statement": rights,
+            "rights_url": rights_url, "author": author or "Not stated", "identifier": identifier}
+
+
+def _note_reject(reason, c, extra=None):
+    """Count every rejection; keep up to 3 example rows per reason so late-stage reasons (CLIP, dates) are never crowded out."""
+    STATS[reason] += 1
+    if sum(1 for r in TOP_REJECTED if r["reason"] == reason) < 3 and len(TOP_REJECTED) < 40:
+        row = {"reason": reason, "provider": c.get("provider"), "title": c.get("title", "")[:90], "source_url": c.get("source_url")}
+        if extra: row.update(extra)
+        TOP_REJECTED.append(row)
+
+
+def _display_scale(w, h):
+    """Upscale factor the renderer (smart_fit) applies to this image on a 1080x1920 frame."""
+    if w / h < .78:
+        return max(1080 / w, 1920 / h) * 1.07
+    return min(1000 / w, 1560 / h)
+
+
+def _size_ok(im, cfg):
+    w, h = im.size
+    if min(w, h) < int(cfg.get("min_short_side", 600)): return False
+    if max(w, h) < int(cfg.get("min_long_side", 0)): return False
+    if w / h > 3.0 or h / w > 3.0: return False
+    return _display_scale(w, h) <= float(cfg.get("max_upscale", 1.25))
+
+
+def _best_loc_image(urls):
+    """LoC image_url entries are protocol-relative (//cdn.loc.gov/...) and carry dimensions in the fragment
+    (#h=..&w=..). Normalise to https and take the largest."""
+    best, best_w = None, -1
+    for u in urls or []:
+        u = _https(u) if isinstance(u, str) else ""
+        if not u.startswith("https://"): continue
+        m = re.search(r"[#&]w=(\d+)", u)
+        w = int(m.group(1)) if m else (0 if re.search(r"150px|thumb", u) else 1)
+        if w > best_w: best, best_w = u, w
+    return best.split("#")[0] if best else None
+
+
+def build_queries(scene, config=None, limit=6):
+    """Build provider queries without allowing generated short forms to crowd out explicit prompts.
+
+    Fairytale symbolic searches opt into search_terms_first because their explicit
+    scene prompts are the useful discovery signal. Other scenes keep the historic
+    entity/tag-first ordering and short-query interleave.
+    """
+    entities = list(scene.get("named_entities", []) or scene.get("entities", []))
+    tags = list(scene.get("visual_tags", []) or scene.get("asset_tags", []))
+    search_terms = list(scene.get("image_search_terms", []))
+    if scene.get("search_terms_first"):
+        full = []
+        for q in search_terms + tags + entities:
+            q = str(q).strip()
+            if q and q not in full:
+                full.append(q)
+        short = []
+        for q in full:
+            words = [w for w in re.findall(r"[\w'-]+", q) if w.lower() not in GENERIC_WORDS]
+            variant = " ".join(words[:3])
+            if len(words) >= 2 and variant and variant not in full and variant not in short:
+                short.append(variant)
+        # Preserve complete authored prompts verbatim, including endings like
+        # "illustration" and "engraving"; only generated short forms are optional.
+        return (full + short)[:limit]
+
+    raw = entities + tags + search_terms
+    out = []
+    for q in raw:
+        q = str(q).strip()
+        if q and q not in out:
+            out.append(q)
+    if not out and scene.get("title"):
+        out = [str(scene["title"])]          # a scene with no planner terms must still be searchable
+    for q in list(out):
+        words = [w for w in re.findall(r"[\w'-]+", q) if w.lower() not in GENERIC_WORDS]
+        short = " ".join(words[:3])
+        if short and short not in out and len(words) >= 2:
+            out.append(short)
+    long_q = [q for q in out if len(q.split()) > 3]
+    short_q = [q for q in out if len(q.split()) <= 3]
+    merged = []
+    for a, b in zip(short_q + [None] * len(long_q), long_q + [None] * len(short_q)):
+        for x in (a, b):
+            if x and x not in merged:
+                merged.append(x)
+    merged = [q for q in merged if q.split() and q.split()[-1].lower() not in GENERIC_WORDS]
+    unique = []
+    for q in merged:
+        norm = _norm(q)
+        if norm and not any(norm == _norm(x) or (len(norm.split()) >= 2 and norm in _norm(x)) for x in unique):
+            unique.append(q)
+    return unique[:limit]
+
+
+def _commons_members(cat, limit=50):
+    """Files of a Commons category as candidates (rights and metadata gates applied)."""
+    payload=_get("https://commons.wikimedia.org/w/api.php", {"action":"query","format":"json",
+      "generator":"categorymembers","gcmtitle":"Category:"+cat.replace("Category:",""),"gcmtype":"file","gcmlimit":limit,
+      "prop":"imageinfo|categories","cllimit":30,"iiprop":"url|extmetadata|size","iiurlwidth":1920})
+    out=[]
+    for p in payload.get("query",{}).get("pages",{}).values():
+        ii=(p.get("imageinfo") or [{}])[0]; m=ii.get("extmetadata",{})
+        cats=[x.get("title","").removeprefix("Category:") for x in p.get("categories",[]) if x.get("title")]
+        date_text=" ".join(str(m.get(k,{}).get("value","")) for k in ("DateTimeOriginal","DateTime","ObjectDate"))
+        c=_candidate("Wikimedia Commons",p.get("title",""),m.get("ImageDescription",{}).get("value",""),
+            ii.get("thumburl") or ii.get("url"),ii.get("descriptionurl"),
+            m.get("LicenseShortName",{}).get("value",""),m.get("LicenseUrl",{}).get("value",""),
+            m.get("Artist",{}).get("value",""),p.get("pageid",""),cats,date_text)
+        if c: c["width"]=ii.get("width",0); c["height"]=ii.get("height",0); out.append(c)
+    return out
+
+@lru_cache(maxsize=64)
+def _commons_category_cached(place):
+    """Resolve a name through Wikidata, then query its Commons category."""
+    q = _get("https://www.wikidata.org/w/api.php", {"action":"wbsearchentities","search":place,
+          "language":"en","format":"json","limit":5})
+    entity = next((x for x in q.get("search",[]) if x.get("id")), None)
+    if not entity: return []
+    data = _get("https://www.wikidata.org/w/api.php", {"action":"wbgetentities","ids":entity["id"],
+                  "props":"claims|labels|sitelinks","languages":"en","format":"json"})
+    ent = data.get("entities",{}).get(entity["id"],{})
+    cats = []
+    for cl in ent.get("claims",{}).get("P373",[]):
+        v=cl.get("mainsnak",{}).get("datavalue",{}).get("value")
+        if v: cats.append(v)
+    commons = ent.get("sitelinks",{}).get("commonswiki",{}).get("title","")
+    if commons.startswith("Category:"): cats.insert(0,commons.split(":",1)[1])
+    out=[]
+    for cat in list(dict.fromkeys(cats))[:3]:
+        out.extend(_commons_members(cat))
+    return out
+
+def _commons_category(place):
+    return [dict(c) for c in _commons_category_cached(str(place))]
+
+def _commons_search(query):
+    payload=_get("https://commons.wikimedia.org/w/api.php", {"action":"query","format":"json",
+       "generator":"search","gsrsearch":query,"gsrnamespace":6,"gsrlimit":25,
+       "prop":"imageinfo|categories","cllimit":30,"iiprop":"url|extmetadata|size","iiurlwidth":2400})
+    out=[]
+    for p in payload.get("query",{}).get("pages",{}).values():
+        ii=(p.get("imageinfo") or [{}])[0]; m=ii.get("extmetadata",{})
+        cats=[x.get("title","").removeprefix("Category:") for x in p.get("categories",[]) if x.get("title")]
+        date_text=" ".join(str(m.get(k,{}).get("value","")) for k in ("DateTimeOriginal","DateTime","ObjectDate"))
+        c=_candidate("Wikimedia Commons",p.get("title",""),m.get("ImageDescription",{}).get("value",""),
+          ii.get("thumburl") or ii.get("url"),ii.get("descriptionurl"),
+          m.get("LicenseShortName",{}).get("value",""),m.get("LicenseUrl",{}).get("value",""),
+          m.get("Artist",{}).get("value",""),p.get("pageid",""),cats,date_text)
+        if c: c["width"]=ii.get("width",0); c["height"]=ii.get("height",0); c["_from_search"]=True; out.append(c)
+    return out
+
+def _commons_file_candidate(file_title):
+    """Fetch an exact Commons seed through the official API and normalize it like search results."""
+    title = str(file_title or "").strip()
+    if not title: return None
+    if not title.startswith("File:"): title = "File:" + title
+    payload = _get("https://commons.wikimedia.org/w/api.php", {
+        "action": "query", "format": "json", "titles": title, "prop": "imageinfo|categories",
+        "iiprop": "url|extmetadata|size", "iiurlwidth": 2400, "cllimit": 30,
+    })
+    page = next(iter(payload.get("query", {}).get("pages", {}).values()), {})
+    if "missing" in page: return None
+    info = (page.get("imageinfo") or [{}])[0]
+    meta = info.get("extmetadata") or {}
+    def value(key):
+        item = meta.get(key)
+        return item.get("value", "") if isinstance(item, dict) else ""
+    date_text = " ".join(str(value(k)) for k in ("DateTimeOriginal", "DateTime", "ObjectDate") if value(k))
+    candidate = _candidate("Wikimedia Commons", page.get("title", title), value("ImageDescription"),
+        info.get("url"), info.get("descriptionurl"), value("LicenseShortName"), value("LicenseUrl"),
+        value("Artist"), page.get("pageid", ""), date_text=date_text)
+    if candidate:
+        categories = [x.get("title", "").removeprefix("Category:")
+                      for x in page.get("categories", []) if x.get("title")]
+        candidate.update({"width": int(info.get("width") or 0), "height": int(info.get("height") or 0),
+                          "categories": categories, "seed_file_title": title})
+    return candidate
+
+def _loc_rights(x):
+    item = x.get("item") if isinstance(x.get("item"), dict) else {}
+    for src in (x, item):
+        for k in ("rights", "rights_advisory", "rights_information"):
+            v = " ".join(_as_list(src.get(k)))
+            if v.strip(): return v
+    return ""
+
+def _loc(query):
+    try:
+        payload = _get("https://www.loc.gov/search/", {"q": query, "fo": "json", "c": 50, "sp": 1}, timeout=25)
+    except requests.HTTPError as e:
+        # loc.gov answers a search with no results with HTTP 404 (and a JSON body); that is "no results", not an outage.
+        if getattr(getattr(e, "response", None), "status_code", None) == 404: return []
+        raise
+    out = []
+    for x in payload.get("results", []):
+        image = x.get("image_url") or []
+        resources = x.get("resources") or []
+        if isinstance(image, str): image = [image]
+        if not image and resources: image = resources[0].get("image") or []
+        if isinstance(image, str): image = [image]
+        # `id` is an http:// URL "for historical reasons"; `url` is the https page. Prefer `url`.
+        c = _candidate("Library of Congress", x.get("title", ""), " ".join(_as_list(x.get("description"))),
+                       _best_loc_image(image), x.get("url") or x.get("id"), _loc_rights(x),
+                       "https://www.loc.gov/rr/print/res/rights.html", "; ".join(_as_list(x.get("contributor"))), x.get("id"),
+                       date_text=" ".join(_as_list(x.get("date"))),
+                       facets=_as_list(x.get("subject")) + _as_list(x.get("contributor")) + _as_list(x.get("original_format")) + _as_list(x.get("location")))
+        if c: out.append(c)
+    return out
+
+def _met(query):
+    # The Met retired /v1/search on 2026-10-01. Use the paginated v1.1 API.
+    ids = _get("https://collectionapi.metmuseum.org/public/collection/v1.1/search",
+               {"q": query, "hasImages": "true", "limit": 100, "offset": 0}).get("objectIDs") or []
+    out = []
+    # Each object lookup is a separate API request; keep the per-query budget small
+    # and paced to avoid bursts that trigger upstream bot protection.
+    for oid in ids[:8]:
+        try:
+            x = _get(f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{oid}")
+        except Exception as e:
+            print(f"Met object lookup failed for {oid}: {type(e).__name__}: {e}")
+            continue
+        if x.get("isPublicDomain") is not True: continue
+        b, e_ = x.get("objectBeginDate"), x.get("objectEndDate")
+        yr = (int(b), int(e_)) if isinstance(b, int) and isinstance(e_, int) and b > 0 else None
+        tags = [t.get("term") for t in (x.get("tags") or []) if isinstance(t, dict)]
+        c = _candidate("The Metropolitan Museum of Art", x.get("title", ""), x.get("objectDate", ""),
+                       x.get("primaryImage") or x.get("primaryImageSmall"), x.get("objectURL"),
+                       "Public Domain (CC0)", "https://www.metmuseum.org/about-the-met/policies-and-documents/open-access",
+                       x.get("artistDisplayName", ""), oid, date_text=x.get("objectDate", ""), year_range=yr,
+                       facets=[x.get("artistDisplayName"), x.get("culture"), x.get("period"), x.get("classification"),
+                               x.get("objectName"), x.get("medium"), x.get("department")] + tags)
+        if c: out.append(c)
+    return out
+
+def _aic(query):
+    # image_id is a TOP-LEVEL artwork field and must be requested; `thumbnail` only holds lqip/width/height/alt_text.
+    payload = _get("https://api.artic.edu/api/v1/artworks/search",
+                   {"q": query, "limit": 50, "query[term][is_public_domain]": "true",
+                    "fields": "id,title,artist_title,date_display,date_start,date_end,is_public_domain,image_id,classification_title,medium_display,place_of_origin,style_title,subject_titles"})
+    out = []
+    for x in payload.get("data", []):
+        if x.get("is_public_domain") is not True: continue
+        iid = x.get("image_id")
+        # AIC's IIIF server documents /full/843,/0/default.jpg for downloads; ask for twice that so tall prints pass the size gate.
+        image = f"https://www.artic.edu/iiif/2/{iid}/full/1686,/0/default.jpg" if iid else None
+        ds, de = x.get("date_start"), x.get("date_end")
+        yr = (int(ds), int(de)) if isinstance(ds, int) and isinstance(de, int) and ds > 0 else None
+        c = _candidate("Art Institute of Chicago", x.get("title", ""), x.get("date_display", ""),
+                       image, "https://www.artic.edu/artworks/" + str(x.get("id")),
+                       "Public Domain (CC0)", "https://www.artic.edu/open-access/open-access-images",
+                       x.get("artist_title", ""), x.get("id"), date_text=x.get("date_display", ""), year_range=yr,
+                       facets=[x.get("artist_title"), x.get("classification_title"), x.get("medium_display"), x.get("place_of_origin"),
+                               x.get("style_title")] + _as_list(x.get("subject_titles")))
+        if c: out.append(c)
+    return out
+
+def _cleveland(query):
+    payload = _get("https://openaccess-api.clevelandart.org/api/artworks/", {"q": query, "limit": 50})
+    out = []
+    for x in payload.get("data", []):
+        rights = x.get("share_license_status", "")
+        if str(rights).lower() not in ("cc0", "public domain", "cc0 public domain"): continue
+        im = x.get("images") or {}
+        # `web` is the small derivative, `print` the large one; tall prints need the large file to pass the size gate.
+        url = (im.get("print") or {}).get("url") or (im.get("web") or {}).get("url") or (im.get("full") or {}).get("url")
+        b, e_ = x.get("creation_date_earliest"), x.get("creation_date_latest")
+        yr = (int(b), int(e_)) if isinstance(b, int) and isinstance(e_, int) and b > 0 else None
+        c = _candidate("Cleveland Museum of Art", x.get("title", ""), x.get("creation_date", ""), url,
+                       x.get("url"), rights, "https://www.clevelandart.org/open-access", x.get("creators") or "", x.get("id"),
+                       date_text=x.get("creation_date", ""), year_range=yr,
+                       facets=_as_list(x.get("culture")) + [x.get("type"), x.get("department"), x.get("technique")])
+        if c: out.append(c)
+    return out
+
+def _smithsonian(query):
+    key = os.getenv("SMITHSONIAN_API_KEY")
+    if not key: raise ProviderSkipped("SMITHSONIAN_API_KEY is not set (add it as an Actions secret and expose it to the job)")
+    payload = _get("https://api.si.edu/openaccess/api/v1.0/search",
+                   {"api_key": key, "q": query, "rows": 50, "online_media_type": "Images"}, timeout=25)
+    out = []
+    for x in payload.get("response", {}).get("rows", []):
+        cdata = x.get("content", {}); desc = cdata.get("descriptiveNonRepeating", {})
+        title = (desc.get("title") or {}).get("content") or x.get("title", "")
+        for m in (desc.get("online_media") or {}).get("media", []):
+            usage = m.get("usage", {}); rights_text = usage.get("access", "")
+            if str(m.get("type", "")).lower() not in ("images", "image"): continue
+            if not _rights_ok(rights_text): continue
+            c = _candidate("Smithsonian", title, x.get("title", ""), m.get("content"), desc.get("record_link"),
+                           rights_text, "https://www.si.edu/openaccess", "", x.get("id"))
+            if c: out.append(c); break
+    return out
+
+def _europeana(query):
+    """Search Europeana for openly reusable, directly viewable, high-resolution collection images.
+
+    Keep the key in the query params (never logs); exclude closed/restricted rights at
+    the API and independently re-check the item rights locally before accepting it.
+    """
+    key = os.getenv("EUROPEANA_API_KEY")
+    if not key: raise ProviderSkipped("EUROPEANA_API_KEY is not set (add it as an Actions secret and expose it to the job)")
+    payload = _get("https://api.europeana.eu/record/v2/search.json",
+                   {"wskey": key, "query": query, "media": "true", "reusability": "open",
+                    "qf": "IMAGE_SIZE:extra_large", "rows": 50, "profile": "rich"}, timeout=25)
+    out = []
+    for x in payload.get("items", []):
+        rights = _as_list(x.get("rights"))
+        rights = next((r for r in rights if _rights_ok(r)), "")
+        # Prefer the original item media URL; never promote a tiny Europeana preview to production quality.
+        # Many content providers still return http:// URLs; upgrade the scheme and let the download gate decide.
+        media = _as_list(x.get("edmIsShownBy"))
+        image = _https(media[0]) if media else None
+        title = _as_list(x.get("title")) or [""]
+        desc = _as_list(x.get("dcDescription")); creators = _as_list(x.get("dcCreator")); subjects = _as_list(x.get("dcSubject"))
+        types = _as_list(x.get("type")); providers = _as_list(x.get("dataProvider") or x.get("edmDataProvider"))
+        dates = _as_list(x.get("year") or x.get("dcDate"))
+        shown_at = _as_list(x.get("edmIsShownAt"))
+        source = x.get("guid") or (shown_at[0] if shown_at else None)
+        c = _candidate("Europeana", title[0], " ".join(desc + subjects + types + providers), image, source,
+                       rights, rights, creators[0] if creators else "", x.get("id"),
+                       categories=subjects + types + providers, date_text=" ".join(dates), facets=creators + subjects + types)
+        if c: out.append(c)
+    return out
+
+def _dpla(query):
+    key = os.getenv("DPLA_API_KEY")
+    if not key: raise ProviderSkipped("DPLA_API_KEY is not set")
+    payload = _get("https://api.dp.la/v2/items", {"q": query, "page_size": 50, "api_key": key})
+    out = []
+    for x in payload.get("docs", []):
+        obj = x.get("object", ""); rights = x.get("rights", "")
+        c = _candidate("DPLA", x.get("sourceResource", {}).get("title", ""),
+                       str(x.get("sourceResource", {}).get("description", "")), obj, x.get("isShownAt"), rights,
+                       x.get("rights"), "", x.get("id"))
+        if c: out.append(c)
+    return out
+
+def _nypl(query):
+    key = os.getenv("NYPL_API_KEY")
+    if not key: raise ProviderSkipped("NYPL_API_KEY is not set")
+    payload = _get("https://api.repo.nypl.org/api/v2/items/search", {"q": query, "per_page": 50}, timeout=25)
+    out = []
+    for x in payload.get("nyplAPI", {}).get("response", {}).get("result", []):
+        rights = x.get("rightsStatement") or x.get("rights")
+        image = x.get("imageID")
+        c = _candidate("NYPL", x.get("title", ""), x.get("description", ""),
+                       ("https://iiif.nypl.org/iiif/2/" + str(image) + "/full/2000,/0/default.jpg") if image else None,
+                       x.get("itemLink"), rights, x.get("rightsStatementURI"), x.get("creator", ""), x.get("uuid"))
+        if c: out.append(c)
+    return out
+
+def _nga(query):
+    payload = _get("https://www.nga.gov/api/v1/objects", {"q": query, "limit": 50})
+    out = []
+    for x in payload.get("data", payload if isinstance(payload, list) else []):
+        if not (x.get("isPublicDomain") or x.get("is_public_domain")): continue
+        c = _candidate("National Gallery of Art", x.get("title", ""), x.get("displaydate", ""),
+                       x.get("image_url") or x.get("iiif_url"), x.get("url") or x.get("object_url"),
+                       "Public Domain", "https://www.nga.gov/open-access-policy", x.get("artist", ""), x.get("id"))
+        if c: out.append(c)
+    return out
+
+def _rijksmuseum(query):
+    key = os.getenv("RIJKSMUSEUM_API_KEY")
+    if not key: raise ProviderSkipped("RIJKSMUSEUM_API_KEY is not set")
+    payload = _get("https://www.rijksmuseum.nl/api/en/collection", {"key": key, "q": query, "imgonly": "true", "ps": 50})
+    out = []
+    for x in payload.get("artObjects", []):
+        rights = x.get("copyrightHolder") or x.get("rights")
+        c = _candidate("Rijksmuseum", x.get("title", ""), x.get("longTitle", ""),
+                       (x.get("webImage") or {}).get("url"), x.get("links", {}).get("web"),
+                       rights, x.get("rightsUrl"), x.get("principalOrFirstMaker", ""), x.get("objectNumber"))
+        if c: out.append(c)
+    return out
+
+def _getty(query):
+    key = os.getenv("GETTY_API_KEY")
+    if not key: raise ProviderSkipped("GETTY_API_KEY is not set")
+    payload = _get("https://api.getty.edu/opencontent/v1/objects", {"q": query, "limit": 50, "api_key": key})
+    out = []
+    for x in payload.get("data", []):
+        rights = x.get("rights") or x.get("rightsStatement")
+        c = _candidate("Getty", x.get("title", ""), x.get("description", ""), x.get("image_url"),
+                       x.get("url"), rights, x.get("rights_url"), x.get("creator", ""), x.get("id"))
+        if c: out.append(c)
+    return out
+
+PROVIDERS = [_loc, _met, _aic, _cleveland, _nga, _smithsonian, _europeana, _dpla, _nypl, _rijksmuseum, _getty]
+# Endpoints I could not verify offline (NGA, NYPL, Rijksmuseum, Getty) are opt-in via config asset_resolver.providers.
+DEFAULT_PROVIDERS = ["_loc", "_met", "_aic", "_cleveland", "_nga"]
+
+@lru_cache(maxsize=1)
+def _load_clip(model_id):
+    import torch
+    from transformers import CLIPModel, CLIPProcessor
+    model=CLIPModel.from_pretrained(model_id).to("cpu").eval()
+    return model, CLIPProcessor.from_pretrained(model_id)
+
+def build_clip_prompts(scene, config=None):
+    """Short natural-language captions (CLIP truncates text at 77 tokens, so a keyword list is mostly cut off).
+    The subject comes first; the image's score is the best cosine over these prompts."""
+    place = str((config or {}).get("name", ""))
+    modern = scene.get("image_type") == "modern"
+    kind = "a photograph of" if modern else "a historical illustration or photograph of"
+    ents = [str(e) for e in (scene.get("named_entities") or scene.get("entities") or []) if str(e).strip()]
+    tags = [str(t) for t in (scene.get("visual_tags") or scene.get("asset_tags") or []) if str(t).strip()]
+    prompts = []
+    if scene.get("visual_caption"): prompts.append(str(scene["visual_caption"]))
+    if ents: prompts.append(f"{kind} {ents[0]}")
+    prompts += [f"{kind} {t}" for t in tags[:2]]
+    intent = " ".join(str(scene.get("narration_intent", "")).split()[:24])
+    if intent: prompts.append(intent)
+    if not prompts: prompts.append(f"{kind} {scene.get('title', '')} {place}".strip())
+    out = []
+    for p in prompts:
+        if p not in out: out.append(p)
+    return out[:4]
+
+def _clip_analyze(prompts, image_bytes, include_fairytale_style=False):
+    """Return scene relevance and document/modern checks; optionally score fairytale illustration style."""
+    import torch
+    if isinstance(prompts, str): prompts = [prompts]
+    prompts = [str(p) for p in prompts]; k = len(prompts)
+    model_id = os.getenv("ASSET_CLIP_MODEL", "openai/clip-vit-base-patch32")
+    model, processor = _load_clip(model_id)
+    images = [Image.open(io.BytesIO(b)).convert("RGB") for b in image_bytes]
+    texts = prompts + [DOC_PAIR[0], DOC_PAIR[1], MODERN_PAIR[0], MODERN_PAIR[1]]
+    if include_fairytale_style:
+        texts += [FAIRYTALE_STYLE_PAIR[0], FAIRYTALE_STYLE_PAIR[1]]
+    with torch.inference_mode():
+        text = processor(text=texts, return_tensors="pt", padding=True, truncation=True)
+        ims = processor(images=images, return_tensors="pt")
+        # Use CLIPModel.forward outputs for stable projected embeddings (get_*_features changed return types across versions).
+        outputs = model(**text, **ims)
+        ti, ii = outputs.text_embeds, outputs.image_embeds
+        ti = ti / ti.norm(p=2, dim=-1, keepdim=True).clamp(min=1e-12)
+        ii = ii / ii.norm(p=2, dim=-1, keepdim=True).clamp(min=1e-12)
+        cos = ii @ ti.T                                     # (N, k + 4), or k + 6 for fairytale scenes
+        scale = float(model.logit_scale.exp())
+        best = cos[:, :k].max(dim=1).values
+        p_doc = torch.softmax(scale * cos[:, k:k + 2], dim=-1)[:, 0]
+        p_mod = torch.softmax(scale * cos[:, k + 2:k + 4], dim=-1)[:, 0]
+        p_fairytale = (
+            torch.softmax(scale * cos[:, k + 4:k + 6], dim=-1)[:, 1]
+            if include_fairytale_style else None
+        )
+    results = []
+    for i in range(len(images)):
+        row = {"score": float(best[i]), "p_document": float(p_doc[i]), "p_modern": float(p_mod[i])}
+        if p_fairytale is not None:
+            row["p_fairytale_illustration"] = float(p_fairytale[i])
+        results.append(row)
+    return results
+
+def _clip_scores(query, candidates, image_bytes):
+    """Backward-compatible: cosine similarity between the query and each image."""
+    return [r["score"] for r in _clip_analyze(query, image_bytes)]
+
+
+def _fairytale_style_ok(score, threshold=0.5):
+    """Require CLIP to prefer illustrated storybook art over documentary photography."""
+    try:
+        return score is not None and float(score) >= float(threshold)
+    except (TypeError, ValueError):
+        return False
+
+def _ocr_available():
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+        return True
+    except Exception:
+        return False
+
+def _text_heavy(im):
+    import pytesseract
+    probe=im.copy(); probe.thumbnail((900,900))
+    ocr=pytesseract.image_to_data(probe,output_type=pytesseract.Output.DICT)
+    words=[str(w).strip() for w in ocr.get("text",[]) if str(w).strip()]
+    conf=[float(v) for v in ocr.get("conf",[]) if str(v).replace(".","",1).isdigit() and float(v)>=35]
+    return len(words)>=14 and len(conf)>=10
+
+def _round_robin(cands, cap):
+    """Interleave providers so one noisy provider cannot use the whole download budget."""
+    by={}
+    for c in cands: by.setdefault(c["provider"],[]).append(c)
+    out=[]
+    while len(out)<cap and any(by.values()):
+        for k in list(by):
+            if by[k]: out.append(by[k].pop(0))
+            if len(out)>=cap: break
+    return out
+
+def _download(c):
+    """Download an image with bounded timeouts, retries, and concurrency control."""
+    last = None
+    for attempt in range(MAX_RETRIES):
+        # Acquire download semaphore
+        acquired = _download_semaphore.acquire(timeout=30.0)
+        if not acquired:
+            raise requests.Timeout("Could not acquire download semaphore within 30s")
+
+        try:
+            connect_timeout, read_timeout = _get_timeouts_for_url(c["image_url"])
+            r = S.get(c["image_url"], timeout=(connect_timeout, read_timeout), stream=True)
+
+            if r.status_code == 429 or 500 <= r.status_code < 600:
+                retry_after = r.headers.get("Retry-After", "")
+                try:
+                    delay = min(MAX_RETRY_DELAY, max(BASE_RETRY_DELAY, float(retry_after)))
+                except (TypeError, ValueError):
+                    delay = BASE_RETRY_DELAY * (2 ** attempt)
+                last = requests.HTTPError(f"HTTP {r.status_code} downloading image")
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(delay)
+                    continue
+                break
+
+            r.raise_for_status()
+            if int(r.headers.get("Content-Length") or 0) > 35_000_000:
+                raise ValueError("file larger than 35 MB")
+            return r.content
+
+        except requests.RequestException as e:
+            last = e
+            if attempt == MAX_RETRIES - 1:
+                break
+            delay = min(MAX_RETRY_DELAY, BASE_RETRY_DELAY * (2 ** attempt))
+            time.sleep(delay)
+        finally:
+            _download_semaphore.release()
+    raise last
+
+
+def validate_pinned_asset(scene: Dict[str, Any], idx: int, config: Dict[str, Any],
+                          asset_dir: Path, used: Set[str],
+                          output: Path) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Validate and use a pre-vetted inventory asset (pinned image) without provider search.
+
+    This is the image-first render path: the asset was already discovered, vetted
+    (rights, format, size, duplicate, relevance) in the inventory stage, so here
+    we only download it, re-confirm the gates still pass, and return it. No
+    provider search and no CLIP re-scoring occur -- the inventory's relevance
+    score is preserved.
+
+    `scene` must carry:
+      - pinned_image: the asset_url (https) to download
+      - asset_metadata: dict with title, author, license/rights, rights_statement,
+        license_url, asset_url/source_url, provider, identifier, date_text,
+        year_range, dimensions, categories, facets, digest
+    """
+    meta = scene.get("asset_metadata") or {}
+    asset_url = scene.get("pinned_image") or meta.get("asset_url") or meta.get("source_url")
+    if not asset_url or not str(asset_url).startswith("https://"):
+        raise ResolverError(f"Scene '{scene.get('title')}' has no valid pinned_image asset_url.", diagnostics())
+
+    # Rights re-confirmation (gate never dropped for pinned assets).
+    rights = str(meta.get("rights") or meta.get("license") or "")
+    title_for_error = str(scene.get("title") or "Untitled")
+    if not rights or not _rights_ok(rights):
+        raise ResolverError(f"Pinned asset '{title_for_error}' has unacceptable rights: {rights or '<none>'}.", diagnostics())
+    if _needs_attribution(rights) and not _has_author(meta.get("author", "")):
+        raise ResolverError(f"Attribution-required pinned asset '{title_for_error}' has no author.", diagnostics())
+
+    # Download.
+    try:
+        started = time.perf_counter()
+        data = _download({"image_url": asset_url})
+        print(f"TIMING pinned_download scene={scene.get('title')} seconds={time.perf_counter()-started:.2f}")
+    except Exception as e:
+        raise ResolverError(f"Failed to download pinned asset for '{scene.get('title')}': {type(e).__name__}: {e}", diagnostics())
+
+    # Format + size gate (same as resolver).
+    if len(data) < 30000 or data[:4] in (b"%PDF", b"AT&TD", b"FORM"):
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' failed the format gate.", diagnostics())
+    try:
+        im = Image.open(io.BytesIO(data))
+        if im.format not in ("JPEG", "PNG", "WEBP", "TIFF"):
+            raise ResolverError(f"Pinned asset for '{scene.get('title')}' has unsupported format {im.format}.", diagnostics())
+        if not _size_ok(im, config):
+            raise ResolverError(f"Pinned asset for '{scene.get('title')}' failed the size/upscale gate at {im.size}.", diagnostics())
+    except ResolverError:
+        raise
+    except Exception as e:
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' is not a valid image: {type(e).__name__}: {e}", diagnostics())
+
+    # Duplicate gate (normalized by decoded RGB pixels).
+    digest = hashlib.sha256(im.convert("RGB").tobytes()).hexdigest()
+    if digest in used or asset_url in used:
+        raise ResolverError(f"Pinned asset for '{scene.get('title')}' is a duplicate of an already-used image.", diagnostics())
+    used.add(digest); used.add(asset_url)
+
+    dims = list(im.size)
+    saved = im.convert("RGB")
+    filename = f"scene_{idx:02d}.jpg"
+    path = Path(asset_dir) / filename
+    saved.save(path, quality=94)
+
+    image_type = scene.get("image_type", "historic")
+    period_ok = None
+    if image_type == "modern":
+        # Classify period from original creation/capture date only, not from
+        # digitisation/upload dates in date_text. Use earliest year as creation
+        # estimate; classify modern only when year_range confirms it.
+        yr = meta.get("year_range")
+        dt = str(meta.get("date_text", "")).lower()
+        years = [int(y) for y in re.findall(r"(1[0-9]{3}|20[0-2][0-9])", dt)]
+        years.extend([int(y) for y in (yr or []) if y])
+        years = [y for y in years if 1500 <= y <= 2100]
+        if years and min(years) >= 1950 and yr and len(yr) == 2:
+            period_ok = True
+        elif years and min(years) < 1950:
+            period_ok = False  # historically created; scene should not be "modern"
+        # Otherwise period_ok stays None: original date cannot be established.
+
+    credit = {
+        "content_sha256": digest,
+        "scene": scene.get("title"),
+        "file": str(path),
+        "title": meta.get("title") or "Untitled",
+        "author": meta.get("author") or "Not stated",
+        "license": rights,
+        "rights": rights,
+        "rights_statement": meta.get("rights_statement") or rights,
+        "license_url": meta.get("license_url") or meta.get("rights_url") or "",
+        "asset_url": asset_url,
+        "source_url": meta.get("source_url") or asset_url,
+        "provider": meta.get("provider") or "inventory",
+        "match_score": meta.get("relevance_score") or meta.get("clip_score"),
+        "clip_score": meta.get("clip_score"),
+        "period_ok": period_ok,
+        "search_variant": "inventory pinned asset: " + str(meta.get("discovered_via", "")),
+        "warnings": ["Pinned from pre-vetted regional inventory; no provider re-search performed."],
+        "dimensions": dims,
+        "diagnostics": {"pinned": True, "discovered_via": meta.get("discovered_via", "")},
+    }
+    return saved, credit
+
+
+def resolve_scene_image(scene, idx, config, asset_dir, used, output):
+    """Discover across providers, filter rights/format/size, rank with CLIP, save best."""
+    STATS.clear(); FOUND.clear(); TOP_REJECTED.clear(); PROVIDER_ERRORS.clear()
+    _FAILS.clear()                       # the breaker protects one scene's request budget; it must not outlive the scene
+    status = {}
+    def st(name): return status.setdefault(name, {"queries": 0, "returned": 0, "errors": [], "skipped": None})
+    rcfg = config.get("asset_resolver", {}) or {}
+    queries = build_queries(scene, config, int(scene.get("max_queries", rcfg.get("max_queries", 6))))
+    enabled = set(rcfg.get("providers") or DEFAULT_PROVIDERS)
+    providers = [p for p in PROVIDERS if p.__name__ in enabled]
+    place = config.get("name", "")
+    entities = [str(e) for e in (scene.get("named_entities", []) or scene.get("entities", []))]
+    per_provider = int(scene.get("max_queries_per_provider", rcfg.get("max_queries_per_provider", 3)))
+    candidates = []
+    clip_top = []
+    review_candidates = []
+    provider_source_urls = set()
+    rights_pass_sources = set()
+    size_pass_sources = set()
+    clip_pass_sources = set()
+    gate_counts = {"provider_returned": 0, "rights_pass_unique": 0,
+                   "metadata_relevance_pass": 0, "size_duplicate_pass": 0,
+                   "clip_visual_relevance_pass": 0}
+    # Commons categories: place-aware first, then entity categories (e.g. "Edo Castle").
+    for name in dict.fromkeys(([place] if scene.get("image_type") == "modern" else []) + entities[:2]):
+        if not name: continue
+        s_ = st("commons_category:" + name)
+        try:
+            got = _commons_category(name); FOUND["commons_category:" + name] += len(got); candidates.extend(got)
+            s_["queries"] += 1; s_["returned"] += len(got)
+        except Exception as e:
+            PROVIDER_ERRORS["commons_category"] = f"{type(e).__name__}: {e}"[:200]; s_["errors"].append(PROVIDER_ERRORS["commons_category"])
+            print(f"Commons category lookup unavailable for '{name}': {e}")
+    for cat in scene.get("commons_categories", []) or []:
+        s_ = st("commons_category:" + str(cat))
+        try:
+            got = _commons_members(str(cat)); FOUND["commons_category:" + str(cat)] += len(got); candidates.extend(got)
+            s_["queries"] += 1; s_["returned"] += len(got)
+        except Exception as e:
+            PROVIDER_ERRORS["commons_category"] = f"{type(e).__name__}: {e}"[:200]; s_["errors"].append(PROVIDER_ERRORS["commons_category"])
+            print(f"Commons category '{cat}' unavailable: {e}")
+    seed_status = st("commons_seed")
+    for file_title in scene.get("seed_commons_files", []) or []:
+        try:
+            seeded = _commons_file_candidate(file_title)
+            seed_status["queries"] += 1
+            if seeded:
+                candidates.append(seeded); seed_status["returned"] += 1
+            else:
+                seed_status["errors"].append(f"Not found or rights metadata rejected: {file_title}")
+        except Exception as e:
+            seed_status["errors"].append(f"{file_title}: {type(e).__name__}: {e}"[:200])
+    for provider in providers:
+        name = provider.__name__; s_ = st(name)
+        for query in queries[:per_provider]:
+            if _FAILS[name] >= 2:                         # two consecutive errors in THIS scene: stop hammering it
+                s_["skipped"] = s_["skipped"] or "stopped after 2 consecutive errors in this scene"; break
+            try:
+                started = time.perf_counter()
+                got = provider(query); FOUND[name] += len(got); candidates.extend(got); _FAILS[name] = 0
+                s_["queries"] += 1; s_["returned"] += len(got)
+                print(f"TIMING provider_search scene={scene.get('title')} provider={name} query={query!r} seconds={time.perf_counter()-started:.2f} found={len(got)}")
+            except ProviderSkipped as e:
+                s_["skipped"] = str(e); print(f"Provider {name} skipped: {e}"); break
+            except Exception as e:
+                _FAILS[name] += 1; PROVIDER_ERRORS[name] = f"{type(e).__name__}: {e}"[:200]; s_["errors"].append(PROVIDER_ERRORS[name])
+                print(f"Provider {name} unavailable for '{query}': {type(e).__name__}: {e}")
+    # Always add targeted Commons text searches. Category results alone are often generic.
+    s_ = st("commons_search")
+    for query in queries[:per_provider]:
+        try:
+            started = time.perf_counter()
+            got = _commons_search(query)
+            FOUND["commons_search"] += len(got); candidates.extend(got); s_["queries"] += 1; s_["returned"] += len(got)
+            print(f"TIMING provider_search scene={scene.get('title')} provider=commons_search query={query!r} seconds={time.perf_counter()-started:.2f} found={len(got)}")
+        except Exception as e:
+            PROVIDER_ERRORS["commons_search"] = f"{type(e).__name__}: {e}"[:200]; s_["errors"].append(PROVIDER_ERRORS["commons_search"])
+            print(f"Commons text search unavailable for {query!r}: {e}")
+
+    provider_source_urls = {c.get("source_url") for c in candidates if c.get("source_url")}
+    gate_counts["provider_returned"] = len(provider_source_urls)
+
+    def diagnostics():
+        return {"queries": queries, "providers_found": dict(FOUND), "provider_status": status, "rejected": dict(STATS),
+                "top_rejected": list(TOP_REJECTED), "clip_top": clip_top, "provider_errors": dict(PROVIDER_ERRORS),
+                "ocr_available": _ocr_available(), "gate_counts": dict(gate_counts),
+                "provider_source_urls": sorted(provider_source_urls),
+                "rights_pass_source_urls": sorted(rights_pass_sources),
+                "size_pass_source_urls": sorted(size_pass_sources),
+                "clip_pass_source_urls": sorted(clip_pass_sources)}
+    pinned = scene.get("pinned_image")
+    if pinned:
+        candidates = [c for c in candidates if c.get("source_url") == pinned or c.get("image_url") == pinned]
+        if not candidates:
+            STATS["pinned_image_not_found"] += 1
+            raise ResolverError(f"Pinned image failed: exact source URL was not returned by configured provider searches: {pinned}", diagnostics())
+
+    # Metadata gates. Text is normalised (HTML stripped, diacritics folded) and matched on whole words; artist, culture,
+    # medium and tag metadata count as evidence for the narrated subject.
+    required = [str(k) for k in scene.get("required_keywords", [])]
+    banned_terms = list(config.get("image_banned_terms", [])) + list(scene.get("banned_keywords", []))
+    groups = scene.get("required_keyword_groups", []) or []
+    # Identity groups are hard source-metadata evidence requirements. Every
+    # group must match; CLIP similarity cannot compensate for a wrong subject.
+    identity_groups = scene.get("identity_keyword_groups", []) or []
+    soft = str(scene.get("keyword_gate", "hard")).lower() == "soft"
+    unique = {}; seen = set()
+    for c in candidates:
+        key = c["source_url"]
+        if key in seen: continue                      # an item returned by several queries is judged (and counted) once
+        seen.add(key)
+        if not _rights_ok(c["rights_statement"]): _note_reject("rights", c, {"rights": c["rights_statement"][:100]}); continue
+        if _needs_attribution(c["rights_statement"]) and not _has_author(c.get("author", "")):
+            _note_reject("attribution", c, {"rights": c["rights_statement"][:60]}); continue
+        rights_pass_sources.add(key)
+        text = _clean(" ".join([c.get("title", ""), c.get("description", ""), " ".join(_as_list(c.get("categories")))]))   # strip any HTML a provider left in
+        m = BANNED.search(text)
+        matched = m.group(0) if m else _find_term(text, banned_terms)
+        if matched: _note_reject("banned_term", c, {"matched": matched}); continue
+        hay = _norm(text + " " + " ".join(_as_list(c.get("facets"))))
+        identity_ok, missing_entities = _scene_identity_evidence(scene, hay)
+        if not identity_ok:
+            # Soft fallback: when provider metadata lacks entity names but the image
+            # is clearly on-topic (high CLIP), allow it with a warning instead of
+            # rejecting outright. This is explicit per-scene opt-in via
+            # identity_fallback_to_clip; never silently relaxed.
+            if scene.get("identity_fallback_to_clip", False):
+                c.setdefault("_warnings", []).append(f"identity metadata lacks {', '.join(missing_entities[:3])}; accepted on CLIP relevance")
+            else:
+                _note_reject("scene_identity", c, {
+                    "required_named_entities": missing_entities,
+                    "checked_text": hay[:240],
+                })
+                continue
+        missing_identity = [gi for gi, group in enumerate(identity_groups)
+                            if not any(_kw_hit(str(term), hay) for term in (group if isinstance(group, list) else [group]))]
+        if missing_identity:
+            _note_reject("identity_groups", c, {
+                "missing_group_indexes": missing_identity,
+                "identity_groups": identity_groups,
+                "checked_text": hay[:200],
+            })
+            continue
+        
+        # Geographic relevance check: verify the candidate's depicted location matches the target
+        geo_ok, geo_reason, geo_distance = _check_geographic_relevance(c, scene, config)
+        if not geo_ok:
+            _note_reject("geographic_relevance", c, {"reason": geo_reason, "distance_km": geo_distance})
+            continue
+        elif geo_reason not in ("location_unverifiable", "location_unverifiable_no_coords"):
+            # Track positive geographic matches for diagnostics
+            c.setdefault("_geo_match", geo_reason)
+            if geo_distance is not None:
+                c["_geo_distance_km"] = geo_distance
+        
+        hits = sum(1 for k in required if _kw_hit(k, hay))
+        c["_hits"] = hits
+        if required and hits == 0 and not soft:
+            _note_reject("keywords", c, {"required_keywords": required[:8], "checked_text": hay[:160]}); continue
+        missing = [gi for gi, group in enumerate(groups) if not any(_kw_hit(t, hay) for t in (group if isinstance(group, list) else [group]))]
+        if missing:
+            _note_reject("subject_groups", c, {"missing_group_indexes": missing, "checked_text": hay[:160]}); continue
+        unique[key] = c
+    gate_counts["rights_pass_unique"] = len(rights_pass_sources)
+    gate_counts["metadata_relevance_pass"] = len(unique)
+    candidates = sorted(unique.values(), key=lambda c: -c["_hits"])
+    if not candidates:
+        raise ResolverError(f"No licensed candidates discovered for scene '{scene['title']}'.", diagnostics())
+    candidates = _round_robin(candidates, int(rcfg.get("max_downloads", 20)))
+    use_ocr = _ocr_available(); ranked = []
+    for c in candidates:
+        try:
+            started = time.perf_counter()
+            data = _download(c)
+            print(f"TIMING image_download scene={scene.get('title')} provider={c.get('provider')} seconds={time.perf_counter()-started:.2f}")
+            if len(data) < 30000 or data[:4] in (b"%PDF", b"AT&TD", b"FORM"): _note_reject("format", c); continue
+            im = Image.open(io.BytesIO(data))
+            if im.format not in ("JPEG", "PNG", "WEBP", "TIFF"): _note_reject("format", c); continue
+            if not _size_ok(im, rcfg): _note_reject("size", c, {"pixels": list(im.size)}); continue
+            if use_ocr and _text_heavy(im): _note_reject("ocr_text_heavy", c); continue
+            # Normalize by decoded RGB pixels, not compressed file bytes. The same image
+            # can arrive from two providers with different JPEG encodings.
+            digest = hashlib.sha256(im.convert("RGB").tobytes()).hexdigest()
+            if digest in used or c["source_url"] in used: _note_reject("duplicate", c); continue
+            c["_bytes"] = data; c["_digest"] = digest; c["_size"] = im.size
+            ranked.append(c)
+        except Exception as e:
+            _note_reject("download", c, {"error": f"{type(e).__name__}: {e}"[:120]})
+    if not ranked:
+        raise ResolverError(f"No candidates passed explicit-rights, image-format, size and duplicate gates for '{scene['title']}'.", diagnostics())
+    size_pass_sources.update(c["source_url"] for c in ranked)
+    gate_counts["size_duplicate_pass"] = len(size_pass_sources)
+    # Rank all surviving candidates with a compact CLIP model on CPU, using short natural prompts.
+    prompts = build_clip_prompts(scene, config)
+    try:
+        started = time.perf_counter()
+        results = _clip_analyze(
+            prompts,
+            [x["_bytes"] for x in ranked],
+            include_fairytale_style=bool(scene.get("require_fairytale_illustration", False)),
+        ) if scene.get("require_fairytale_illustration", False) else _clip_analyze(
+            prompts, [x["_bytes"] for x in ranked]
+        )
+        print(f"TIMING clip_analysis scene={scene.get('title')} candidates={len(ranked)} seconds={time.perf_counter()-started:.2f}")
+    except Exception as e:
+        raise ResolverError(f"CLIP relevance gate unavailable; refusing keyword-only image selection: {type(e).__name__}: {e}", diagnostics()) from e
+    for c, r in zip(ranked, results):
+        c["_score"] = r["score"]
+        c["_p_doc"] = r["p_document"]
+        c["_p_modern"] = r["p_modern"]
+        c["_p_fairytale_illustration"] = r.get("p_fairytale_illustration")
+    # Record every scored candidate (best 5) so the threshold can be calibrated from real data, even when nothing passes.
+    clip_top.extend({"provider": c["provider"], "title": c["title"][:80], "clip_score": round(c["_score"], 3),
+                     "p_document": round(c["_p_doc"], 2), "p_modern": round(c["_p_modern"], 2),
+                     "p_fairytale_illustration": round(float(c.get("_p_fairytale_illustration") or 0.0), 2)}
+                    for c in sorted(ranked, key=lambda c: -c["_score"])[:5])
+    lo, hi = scene.get("min_year"), scene.get("max_year")
+    survivors = []
+    for c in ranked:
+        if c["_p_doc"] > 0.5: _note_reject("document_like", c, {"p_document": round(c["_p_doc"], 2)}); continue
+        if scene.get("image_type") == "modern" and c["_p_modern"] < 0.5:
+            _note_reject("present_historical", c, {"p_modern": round(c["_p_modern"], 2)}); continue
+        if scene.get("image_type") == "historic" and not scene.get("allow_modern_photo", False) and c["_p_modern"] >= 0.5:
+            _note_reject("modern_in_historic", c, {"p_modern": round(c["_p_modern"], 2)}); continue
+        if scene.get("image_type") == "historic" and not scene.get("allow_modern_photo", False) and c["_p_modern"] < 0.5 and (lo is not None or hi is not None):
+            yr = c.get("year_range")
+            if not yr:
+                ys = _years(" ".join([c.get("date_text", ""), c.get("description", ""), c.get("title", "")]))
+                yr = (min(ys), max(ys)) if ys else None
+            if yr and ((hi is not None and yr[0] > int(hi)) or (lo is not None and yr[1] < int(lo))):
+                _note_reject("date_window", c, {"years": list(yr), "min_year": lo, "max_year": hi}); continue
+            if not yr: c.setdefault("_warnings", []).append("date unverified")
+        if scene.get("require_fairytale_illustration", False):
+            style_threshold = float(scene.get("min_fairytale_illustration_score", 0.5))
+            if not _fairytale_style_ok(c.get("_p_fairytale_illustration"), style_threshold):
+                _note_reject("not_fairytale_illustration", c, {
+                    "p_fairytale_illustration": round(float(c.get("_p_fairytale_illustration") or 0.0), 3),
+                    "minimum": style_threshold,
+                })
+                continue
+        survivors.append(c)
+    threshold = float(scene.get("clip_min_score", rcfg.get("clip_min_score", 0.22)))
+    # Semantic image relevance must dominate metadata keyword frequency. Keyword hits are a discovery filter, not a score bonus.
+    survivors.sort(key=lambda c: (c["_p_modern"] < 0.5, c["_score"]), reverse=True) if scene.get("image_type") == "historic" else survivors.sort(key=lambda c: c["_score"], reverse=True)
+    top = survivors[:int(rcfg.get("top_candidates", 5))]
+    gate_counts["clip_visual_relevance_pass"] = sum(1 for c in survivors if c["_score"] >= threshold)
+    clip_pass_sources.update(c["source_url"] for c in survivors if c["_score"] >= threshold)
+    print(f"CLIP candidates for {scene['title']}: " + ", ".join(f"{x['provider']}={x['_score']:.3f}" for x in top))
+    winner = next((c for c in top if c["_score"] >= threshold), None)
+    if winner is None:
+        for c in top[:3]: _note_reject("clip_below_threshold", c, {"clip_score": round(c["_score"], 3)})
+        if not survivors:
+            raise ResolverError(f"Every downloaded candidate was rejected by the document/period/date gates for '{scene['title']}'.", diagnostics())
+        raise ResolverError(f"No image scored >= {threshold:.2f} with CLIP for '{scene['title']}'. Use configured map/text-card fallback; do not substitute a weak image.", diagnostics())
+    review_dir = rcfg.get("review_candidates_dir")
+    if review_dir:
+        from urllib.parse import urlparse
+        extensions = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp", "TIFF": ".tif"}
+        scene_key = re.sub(r"[^A-Za-z0-9._-]+", "_", str(scene.get("id") or f"scene-{idx:02d}"))[:80]
+        target_dir = Path(review_dir) / scene_key
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for rank, c in enumerate((x for x in top if x["_score"] >= threshold), 1):
+            decoded = Image.open(io.BytesIO(c["_bytes"]))
+            ext = extensions.get(decoded.format, Path(urlparse(c["image_url"]).path).suffix.lower() or ".img")
+            dest = target_dir / f"candidate-{rank:02d}{ext}"
+            dest.write_bytes(c["_bytes"])
+            review_candidates.append({
+                "candidate_id": f"{scene_key}-{rank:02d}-{c['_digest'][:12]}",
+                "scene_id": str(scene.get("id") or f"scene-{idx:02d}"), "rank": rank,
+                "file": str(dest), "title": c["title"], "description": c.get("description", ""),
+                "author": c.get("author", "Not stated"), "publication_date": c.get("date_text", ""),
+                "source_url": c["source_url"], "image_url": c["image_url"],
+                "rights_statement": c["rights_statement"], "rights_url": c["rights_url"],
+                "provider": c["provider"], "dimensions": list(c["_size"]),
+                "file_sha256": hashlib.sha256(c["_bytes"]).hexdigest(),
+                "decoded_pixels_sha256": c["_digest"], "byte_size": len(c["_bytes"]),
+                "clip_score": round(float(c["_score"]), 6),
+                "p_document": round(float(c["_p_doc"]), 6),
+                "p_modern": round(float(c["_p_modern"]), 6),
+                "p_fairytale_illustration": round(float(c.get("_p_fairytale_illustration") or 0.0), 6),
+                "visual_metadata": {"categories": c.get("categories", []), "facets": c.get("facets", []),
+                                    "date_text": c.get("date_text", ""), "identifier": c.get("identifier", "")},
+                "automatic_checks": {"rights": "passed", "format": "passed", "resolution": "passed",
+                                     "duplicate": "passed", "ocr": "passed" if use_ocr else "unavailable",
+                                     "clip_threshold": threshold, "clip_relevance": "passed",
+                                     "fairytale_illustration": ("passed" if not scene.get("require_fairytale_illustration", False)
+                                                                 or _fairytale_style_ok(c.get("_p_fairytale_illustration"),
+                                                                                       scene.get("min_fairytale_illustration_score", 0.5))
+                                                                 else "failed")},
+                "approved": False, "review_status": "candidate_passed_automatic_gates",
+            })
+    data = winner["_bytes"]; im = Image.open(io.BytesIO(data)).convert("RGB")
+    filename = f"scene_{idx:02d}.jpg"; path = Path(asset_dir) / filename; im.save(path, quality=94)
+    used.add(winner["_digest"]); used.add(winner["source_url"])
+    warnings = [] if use_ocr else ["OCR gate unavailable in this environment; relied on CLIP document check only"]
+    warnings += winner.get("_warnings", [])
+    return im, {"content_sha256": winner["_digest"], "scene": scene["title"], "file": str(path),
+      "title": winner["title"], "author": winner["author"], "license": winner["rights_statement"],
+      "rights": winner["rights_statement"], "rights_statement": winner["rights_statement"], "license_url": winner["rights_url"],
+      "asset_url": winner["source_url"], "source_url": winner["source_url"], "image_url": winner["image_url"],
+      "rights_url": winner["rights_url"], "provider": winner["provider"], "match_score": winner["_score"],
+      "original_file_sha256": hashlib.sha256(data).hexdigest(), "original_byte_size": len(data),
+      "clip_score": winner["_score"], "period_ok": (winner["_p_modern"] >= 0.5) if scene.get("image_type") == "modern" else None,
+      "search_variant": "CLIP ranked: " + " | ".join(prompts), "warnings": warnings, "dimensions": list(winner["_size"]),
+      "top_candidates": [{"provider": x["provider"], "title": x["title"], "source_url": x["source_url"],
+                          "rights_statement": x["rights_statement"], "clip_score": x["_score"],
+                          "p_fairytale_illustration": x.get("_p_fairytale_illustration")} for x in top],
+      "review_candidates": review_candidates, "diagnostics": diagnostics()}

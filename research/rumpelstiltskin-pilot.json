@@ -1,0 +1,237 @@
+{
+  "series": "The Dark Side of Once Upon a Time",
+  "title": "Rumpelstiltskin: The Bargain and the Secret Name",
+  "story_family": "Grimm, KHM 55",
+  "version_scope": "Brothers Grimm, final 1857 German edition, as rendered in Margaret Hunt's 1884 English translation. This is one documented literary version, not a claim about the tale's first or only form.",
+  "format": "dark_folklore_documentary",
+  "status": "draft_needs_human_fact_check_and_asset_review",
+  "aspect_ratio": "9:16",
+  "target_fps": 30,
+  "target_duration_seconds": 90,
+  "narration_word_count": 234,
+  "source_ids": [
+    "grimm1857_hunt1884"
+  ],
+  "sources": [
+    {
+      "id": "grimm1857_hunt1884",
+      "type": "primary_text_in_translation",
+      "edition": "Jacob Grimm and Wilhelm Grimm, Kinder- und Hausmärchen, 7th edition (1857), vol. 1, tale 55, Rumpelstilzchen; translated by Margaret Hunt as Grimm's Household Tales, vol. 1 (London: George Bell and Sons, 1884), tale 55, Rumpelstiltskin, pp. 221–225.",
+      "url": "https://www.gutenberg.org/files/5314/5314-h/5314-h.htm",
+      "translation_record": "https://www.gutenberg.org/ebooks/5314",
+      "scope_note": "The linked online transcription is Hunt's English text based on the Grimm tale; the episode identifies the German source edition and translation separately. The 1857 story ends with Rumpelstiltskin stamping his foot into the floor and wrenching it free."
+    }
+  ],
+  "narration": "A miller wanted to impress the king, so he made a reckless boast: his daughter could spin straw into gold. That boast would put her life in danger. The king locked her in a room piled with straw. “Make it gold by morning,” he ordered. “Or you die.” Then a tiny stranger appeared. “I can help,” he said. “What will you give me?” She handed over her necklace. By dawn, the straw had become gold. But the king wanted more. The next night, he filled a larger room. The little man returned, and this time he took her ring. On the third night, there was still more straw—and she had nothing left. The king promised to marry her if she succeeded. The stranger demanded her first child. She agreed. The king kept his promise. A year later, the stranger came for the baby. The queen offered riches instead. “No,” he said. He wanted the child. He gave her three days to guess his name. For two days, every guess failed. Her messengers searched the land, but no one knew the answer. On the third day, a messenger returned: he had seen the little man dancing beside a fire at the forest's edge, singing to himself. The queen spoke the name: “Rumpelstiltskin!” Enraged, he stamped his foot so deep into the floor he had to wrench it free. Then he fled. Her child was safe.",
+  "scenes": [
+    {
+      "id": "beat-02-boast",
+      "type": "still_kenburns",
+      "duration_seconds": 8,
+      "narration": "A miller wanted to impress the king, so he made a reckless boast: his daughter could spin straw into gold. That boast would put her life in danger.",
+      "title": "The Miller's Foolish Boast",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: the miller tells the king his daughter can spin gold from straw.",
+      "asset_requirement": {
+        "search_terms": [
+          "miller daughter Rumpelstiltskin illustration Grimm",
+          "Rumpelstilzchen Müller Tochter illustration historische Buchillustration"
+        ],
+        "must_show": "The miller and daughter, or an illustration explicitly identified as this tale",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "THE BOAST"
+    },
+    {
+      "id": "beat-01-threat",
+      "type": "still_kenburns",
+      "duration_seconds": 9,
+      "narration": "The king locked her in a room piled with straw. “Make it gold by morning,” he ordered. “Or you die.”",
+      "title": "A Deadly Test",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: the king locks the miller's daughter in a chamber and threatens her life if the straw is not spun into gold by morning.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin spinning straw gold antique book illustration",
+          "Grimm Rumpelstilzchen straw spinning wheel engraving"
+        ],
+        "must_show": "A story-relevant antique illustration of straw, a spinning wheel, or the threatened miller's daughter",
+        "style": "single antique storybook engraving / woodcut look",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "GOLD BY MORNING—OR DIE"
+    },
+    {
+      "id": "beat-03-first-bargains",
+      "type": "still_kenburns",
+      "duration_seconds": 11,
+      "narration": "Then a tiny stranger appeared. “I can help,” he said. “What will you give me?” She handed over her necklace. By dawn, the straw had become gold.",
+      "title": "A Stranger at the Wheel",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: the little man spins the first two rooms of straw for the daughter's necklace and ring.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin necklace spinning wheel illustration",
+          "Rumpelstiltskin ring straw gold illustration engraving"
+        ],
+        "must_show": "The little helper at a spinning wheel, with straw/gold; necklace or ring motif preferred",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "NIGHT ONE — THE NECKLACE"
+    },
+    {
+      "id": "beat-04-king-demands",
+      "type": "still_kenburns",
+      "duration_seconds": 9,
+      "narration": "But the king wanted more. The next night, he filled a larger room. The little man returned, and this time he took her ring.",
+      "title": "The King Wants More",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: on the second night the king takes the daughter to another room filled with straw; the little man spins it for her ring.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin king straw chamber illustration",
+          "Grimm Rumpelstilzchen king chamber engraving"
+        ],
+        "must_show": "The king's second straw-filled chamber and spinning wheel; the ring payment is explained in narration.",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "NIGHT TWO — THE RING"
+    },
+    {
+      "id": "beat-05-child-pact",
+      "type": "still_kenburns",
+      "duration_seconds": 12,
+      "narration": "On the third night, there was still more straw—and she had nothing left. The king promised to marry her if she succeeded. The stranger demanded her first child. She agreed.",
+      "title": "The Price of a Crown",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: unable to pay with another possession, she promises the little man her first child if she becomes queen.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin bargain first child illustration Grimm",
+          "Rumpelstilzchen Versprechen Kind Illustration"
+        ],
+        "must_show": "Tale-specific image suggesting the bargain; do not depict violence or invent an exchange scene",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "NIGHT THREE — HER FIRST CHILD"
+    },
+    {
+      "id": "beat-06-claim",
+      "type": "still_kenburns",
+      "duration_seconds": 11,
+      "narration": "The king kept his promise. A year later, the stranger came for the baby. The queen offered riches instead. “No,” he said. He wanted the child.",
+      "title": "The Promise Comes Due",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: she becomes queen, has her first child, and the little man later reminds her of her promise.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin queen baby illustration Grimm tale",
+          "Rumpelstilzchen Königin Kind illustration public domain"
+        ],
+        "must_show": "Queen with infant and the little man, or identified illustration of the claim scene",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "A YEAR LATER"
+    },
+    {
+      "id": "beat-07-three-days",
+      "type": "still_kenburns",
+      "duration_seconds": 10,
+      "narration": "He gave her three days to guess his name. For two days, every guess failed. Her messengers searched the land, but no one knew the answer.",
+      "title": "Three Days to Guess",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: moved by her tears, the little man grants three days; naming him means she keeps her child.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin queen guessing name illustration",
+          "Rumpelstiltskin messenger forest name illustration"
+        ],
+        "must_show": "The queen or a messenger searching for the little man's name",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "THREE DAYS TO NAME HIM"
+    },
+    {
+      "id": "beat-08-forest-fire",
+      "type": "still_kenburns",
+      "duration_seconds": 9,
+      "narration": "On the third day, a messenger returned: he had seen the little man dancing beside a fire at the forest's edge, singing to himself.",
+      "title": "The Secret in the Forest",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55: the messenger sees the dwarf dancing on one leg beside a fire and singing that he will take the child; narration paraphrases rather than quotes the song.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin dancing fire hut forest illustration Grimm",
+          "Rumpelstilzchen Feuer tanzend Illustration"
+        ],
+        "must_show": "The little man dancing by a fire near a forest hut, identified as Rumpelstiltskin",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "THE MESSENGER'S DISCOVERY"
+    },
+    {
+      "id": "beat-09-foot-revelation",
+      "type": "still_kenburns",
+      "duration_seconds": 11,
+      "narration": "The queen spoke the name: “Rumpelstiltskin!” Enraged, he stamped his foot so deep into the floor he had to wrench it free. Then he fled. Her child was safe.",
+      "title": "The Name Breaks the Bargain",
+      "source_ids": [
+        "grimm1857_hunt1884"
+      ],
+      "evidence": "Hunt translation, KHM 55 ending: after the queen names him, the enraged little man stamps his right foot into the floor and has to pull it out with both hands; he leaves, and the baby remains. The review cut omits a literal depiction of the foot-stamping action because the dedicated ninth image could not be generated after the free image quota was exhausted; the closing visual is a symbolic close-up of the named character's furious reaction.",
+      "asset_requirement": {
+        "search_terms": [
+          "Rumpelstiltskin foot stuck floor illustration Grimm ending",
+          "Rumpelstilzchen Fuß Boden steckt Illustration"
+        ],
+        "must_show": "Rumpelstiltskin reacting in fury after the queen speaks his name; the current review cut uses a disclosed symbolic close-up, not a literal foot-stamp illustration.",
+        "style": "antique engraved storybook illustration",
+        "minimum_resolution": "1920x1080",
+        "status": "missing"
+      },
+      "chapter": "RUMPELSTILTSKIN!"
+    }
+  ],
+  "asset_policy": {
+    "accepted_sources_priority": [
+      "Wikimedia Commons",
+      "Library of Congress",
+      "public-domain historical book scans"
+    ],
+    "accepted_license_categories": "Reuse destination_history.COMMERCIAL_LICENSES only; record exact source URL, rights URL, creator, rights statement, resolution, content hash, and review result.",
+    "render_gate": "Every image-backed beat requires a relevant, high-resolution, downloaded and validated asset with explicit human approval and no unresolved review flags. No illustration or text-card fallback.",
+    "current_status": "No assets have been sourced, verified, or approved. This plan is not renderable."
+  },
+  "narration_style": "Spoken dark-fairytale storyteller: conversational hook, short dramatic sentences, direct dialogue, contrast and suspense; avoid academic/expository summary."
+}
