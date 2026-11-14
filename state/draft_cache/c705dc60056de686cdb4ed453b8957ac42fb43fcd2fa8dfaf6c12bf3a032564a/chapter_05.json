@@ -1,0 +1,193 @@
+{
+  "number": 5,
+  "summary": "Kenji wraps up the chapter by spotlighting the 1964 Olympics' legacy, the emergence of high‑rise districts, and the lingering social divides that still shape Tokyo's urban fabric.",
+  "scenes": [
+    {
+      "id": "c05s001",
+      "narration": "The opening of the 1964 Olympic Stadium was less a sporting event and more a grand proclamation: Tokyo had shed its ashes and donned a gleaming, modern mantle.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "proclamation"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c05s002",
+      "narration": "Aerial footage of Shinjuku’s towering cranes, their glass facades reflecting a city that once lay in ruins, now pulsed with ambition.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.4,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_right",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "spear"
+      ],
+      "emphasis_words": [
+        "Shinjuku",
+        "cranes"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c05s003",
+      "narration": "Marunouchi’s business district, a grid of steel and ambition, stands as a testament to the 1949 Metropolitan Plan’s vision—if only a few streets were left unpaved.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.3,
+          "pose": "praying",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "static",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "torch"
+      ],
+      "emphasis_words": [
+        "Marunouchi",
+        "grid"
+      ],
+      "source_ids": [],
+      "uncertainty": "disputed"
+    },
+    {
+      "id": "c05s004",
+      "narration": "Yet, beneath the glitter, socioeconomic cleavages—born from wartime rationing and post‑war subsidies—continue to echo through Tokyo’s alleyways.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "sad"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_left",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "cleavages",
+        "echo"
+      ],
+      "source_ids": [],
+      "uncertainty": "medium"
+    },
+    {
+      "id": "c05s005",
+      "narration": "By the mid‑1960s, Tokyo had not merely rebuilt; it had reinvented itself into a symbol of resilience and paradox, where progress coexists with the ghosts of its past.",
+      "characters_on_screen": [
+        {
+          "id": "entrepreneurs",
+          "x": 0.5,
+          "pose": "laughing",
+          "expression": "happy"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "reinvented",
+        "ghosts"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c05s006",
+      "narration": "The Olympic torch lit not just the stadium but the imagination of a nation; new highways spanned the city, linking once‑isolated neighborhoods into a pulsating network of commerce and culture.",
+      "characters_on_screen": [
+        {
+          "id": "occupation_forces",
+          "x": 0.2,
+          "pose": "standing",
+          "expression": "neutral"
+        },
+        {
+          "id": "city_planners",
+          "x": 0.7,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_right",
+      "effects": [
+        "fade"
+      ],
+      "props": [
+        "spear"
+      ],
+      "emphasis_words": [
+        "highways",
+        "network"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c05s007",
+      "narration": "Yet, as glass towers rose, pockets of old‑town shanties persisted, reminding us that the gleam of progress often casts shadows where inequality quietly endures.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "sad"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "shadows",
+        "inequality"
+      ],
+      "source_ids": [],
+      "uncertainty": "medium"
+    }
+  ],
+  "word_count": 181,
+  "title": "From Ruins to Skyline"
+}

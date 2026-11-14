@@ -1,0 +1,100 @@
+{
+  "title": "Rising from the Rubble: Tokyo's Post‑War Metamorphosis",
+  "hook": "When the fires finally died, a shattered city faced a choice: rebuild as it was, or reinvent itself entirely.",
+  "logline": "A narrator guides us through five decisive phases that turned war‑torn Tokyo into a modern metropolis, spotlighting the policies, people, and paradoxes that shaped its rebirth.",
+  "cast": [
+    {
+      "id": "narrator",
+      "name": "Kenji",
+      "role": "Narrator",
+      "trait": "dry‑witted historian with a knack for spotting irony",
+      "accessory": "glasses",
+      "accent": "#2B2B2B"
+    },
+    {
+      "id": "occupation_forces",
+      "name": "Allied Occupation",
+      "role": "Policy Enforcer",
+      "trait": "bureaucratic pragmatism",
+      "accessory": "none",
+      "accent": "#1FA2A6"
+    },
+    {
+      "id": "city_planners",
+      "name": "Tokyo City Planners",
+      "role": "Urban Architects",
+      "trait": "visionary yet constrained by scarcity",
+      "accessory": "sash",
+      "accent": "#E0A526"
+    },
+    {
+      "id": "entrepreneurs",
+      "name": "Post‑War Entrepreneurs",
+      "role": "Economic Catalysts",
+      "trait": "opportunistic optimism",
+      "accessory": "bow_tie",
+      "accent": "#C0392B"
+    },
+    {
+      "id": "civic_residents",
+      "name": "Everyday Residents",
+      "role": "Grass‑roots Movers",
+      "trait": "resilient community spirit",
+      "accessory": "none",
+      "accent": "#1FA2A6"
+    }
+  ],
+  "chapters": [
+    {
+      "number": 1,
+      "title": "The Ashes of 1945",
+      "purpose": "Set the immediate post‑war context and the scale of devastation that forced a radical rethink of the city.",
+      "key_events": [
+        "Bombings and firestorms leave two‑thirds of Tokyo destroyed",
+        "Mass displacement of civilians into temporary shelters",
+        "Allied forces issue the initial demolition orders"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Occupation Blueprint",
+      "purpose": "Explain how the Allied Occupation introduced reforms that reshaped governance, land use, and infrastructure.",
+      "key_events": [
+        "1946 Land Reform redistributes tenant farms",
+        "Establishment of the Supreme Commander for the Allied Powers (SCAP) urban planning office",
+        "Introduction of fire‑break zoning and wider streets"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Designing a Modern Grid",
+      "purpose": "Show the city planners’ attempts to impose order on chaos, balancing tradition with modernist ideals.",
+      "key_events": [
+        "1949 Draft of the Tokyo Metropolitan Plan emphasizes mixed‑use districts",
+        "Construction of the first wide‑avenue thoroughfares (e.g., Shinjuku‑Gaien)",
+        "Debates over preserving historic neighborhoods versus bulldozing them"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Economic Engine Revving Up",
+      "purpose": "Detail how private entrepreneurs and the emerging “Japanese Economic Miracle” fueled rapid reconstruction.",
+      "key_events": [
+        "1950s emergence of small manufacturing firms in reclaimed districts",
+        "Government subsidies for housing cooperatives",
+        "Opening of the first subway line (Toei Line 1) in 1960"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "From Ruins to Skyline",
+      "purpose": "Conclude with the tangible outcomes—Tokyo’s transformed physical and cultural landscape—while noting lingering tensions.",
+      "key_events": [
+        "1964 Olympic Games showcase the new Tokyo",
+        "Completion of high‑rise districts like Shinjuku and Marunouchi",
+        "Persistent socioeconomic gaps trace back to post‑war policies"
+      ]
+    }
+  ],
+  "ending": "By the mid‑1960s Tokyo stood not merely rebuilt but reinvented—a testament to coordinated policy, daring entrepreneurship, and a citizenry that turned ash into ambition, even as the shadows of those early choices still linger in the city’s fabric."
+}

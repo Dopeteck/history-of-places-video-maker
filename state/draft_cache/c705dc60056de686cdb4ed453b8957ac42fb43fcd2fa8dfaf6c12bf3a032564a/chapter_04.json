@@ -1,0 +1,217 @@
+{
+  "number": 4,
+  "summary": "Kenji highlights the surge of private enterprise, the launch of the Toei subway, and the ripple effects on Tokyo's economy, setting the stage for the city's rapid ascent.",
+  "scenes": [
+    {
+      "id": "c04s001",
+      "narration": "When the last ember in the city’s heart sputtered out, a quiet stillness settled over Tokyo—an uneasy pause before the engines of change would roar to life.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "stillness"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s002",
+      "narration": "By the early 1950s, a handful of modest workshops popped up in reclaimed districts, their wooden frames a stark contrast to the steel skeletons of the old shanty towns.",
+      "characters_on_screen": [
+        {
+          "id": "entrepreneurs",
+          "x": 0.2,
+          "pose": "thinking",
+          "expression": "neutral"
+        },
+        {
+          "id": "city_planners",
+          "x": 0.8,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_right",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "coin"
+      ],
+      "emphasis_words": [
+        "workshops",
+        "reclaimed"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s003",
+      "narration": "The government, wary of another housing crisis, rolled out subsidies for cooperative dwellings, turning cramped alleyways into orderly rows of modest homes.",
+      "characters_on_screen": [
+        {
+          "id": "civic_residents",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "occupation_forces",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "room",
+      "camera": "push_in",
+      "effects": [
+        "cut"
+      ],
+      "props": [
+        "scroll"
+      ],
+      "emphasis_words": [
+        "subsidies"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s004",
+      "narration": "In 1960, the first Toei Subway Line sliced through the city, its trains humming beneath the streets like a second heartbeat, promising swift movement for the masses.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "thinking",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "pan_left",
+      "effects": [
+        "shake"
+      ],
+      "props": [
+        "torch"
+      ],
+      "emphasis_words": [
+        "subway",
+        "heartbeat"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s005",
+      "narration": "The convergence of private zeal and public policy sparked a wave of industrial output—electronics, textiles, and automobiles—propelling Tokyo onto the world stage.",
+      "characters_on_screen": [
+        {
+          "id": "entrepreneurs",
+          "x": 0.3,
+          "pose": "standing",
+          "expression": "happy"
+        },
+        {
+          "id": "city_planners",
+          "x": 0.7,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "market",
+      "camera": "push_in",
+      "effects": [
+        "pop_in"
+      ],
+      "props": [
+        "spear"
+      ],
+      "emphasis_words": [
+        "industrial",
+        "output"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s006",
+      "narration": "By the mid‑1960s, Tokyo’s skyline had reborn itself: steel spires kissed the clouds, and the city’s pulse, once a ragged drumbeat, now thrummed with calculated rhythm—an engineered miracle born of ash and ambition.",
+      "characters_on_screen": [
+        {
+          "id": "narrator",
+          "x": 0.5,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "palace",
+      "camera": "push_in",
+      "effects": [
+        "fade"
+      ],
+      "props": [],
+      "emphasis_words": [
+        "miracle"
+      ],
+      "source_ids": [],
+      "uncertainty": "documented"
+    },
+    {
+      "id": "c04s007",
+      "narration": "Entrepreneurs flooded reclaimed zones, stitching together a new industrial tapestry.",
+      "characters_on_screen": [
+        {
+          "id": "entrepreneurs",
+          "x": 0.4,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "street",
+      "camera": "static",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    },
+    {
+      "id": "c04s008",
+      "narration": "The Toei line roared, linking factories to markets and commuters alike.",
+      "characters_on_screen": [
+        {
+          "id": "city_planners",
+          "x": 0.6,
+          "pose": "standing",
+          "expression": "neutral"
+        }
+      ],
+      "background": "map",
+      "camera": "pan_right",
+      "effects": [
+        "cut"
+      ],
+      "props": [],
+      "emphasis_words": [],
+      "source_ids": [],
+      "uncertainty": "unverified"
+    }
+  ],
+  "word_count": 186,
+  "title": "Economic Engine Revving Up"
+}
