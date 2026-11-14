@@ -69,7 +69,8 @@ class ArchivalDownloadTests(unittest.TestCase):
             self.assertEqual(result["dimensions"], [1920, 1080])
             self.assertEqual(result["byte_size"], len(payload))
             self.assertTrue((Path(tmp) / result["local_filename"]).is_file())
-            self.assertFalse(result["approved"])
+            self.assertTrue(result["approved"])  # preserve the reviewer's download authorization
+            self.assertTrue(result["needs_human_review"])
 
     def test_redirect_to_untrusted_host_is_rejected(self):
         class FakeResponse:
